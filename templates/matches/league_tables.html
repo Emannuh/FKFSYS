@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}League Tables - FKF Meru League{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-primary">League Tables</h2>
+        <p class="lead">FKF Meru County League Standings</p>
+    </div>
+</div>
+
+<!-- Zone Tabs -->
+<ul class="nav nav-tabs mb-4" id="zoneTabs" role="tablist">
+    {% for zone in zones %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                id="zone-{{ zone.id }}-tab" data-bs-toggle="tab" 
+                data-bs-target="#zone-{{ zone.id }}" type="button" role="tab">
+            {{ zone.name }}
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+
+<!-- Zone Tables -->
+<div class="tab-content" id="zoneTabContent">
+    {% for zone, table in tables.items %}
+    <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+         id="zone-{{ zone.id }}" role="tabpanel">
+        
+        <div class="card">
+            <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ zone.name }} League Table</h4>
+                <span class="badge bg-white text-primary">{{ table|length }} Teams</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Team</th>
+                                <th>P</th>
+                                <th>W</th>
+                                <th>D</th>
+                                <th>L</th>
+                                <th>GF</th>
+                                <th>GA</th>
+                                <th>GD</th>
+                                <th>Pts</th>
+                                <th>Form</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in table %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if entry.team.logo %}
+                                        <img src="{{ entry.team.logo.url }}" alt="{{ entry.team.team_name }}"
+                                             class="team-logo me-2">
+                                        {% endif %}
+                                        <strong>{{ entry.team.team_name }}</strong>
+                                    </div>
+                                </td>
+                                <td>{{ entry.matches_played }}</td>
+                                <td>{{ entry.wins }}</td>
+                                <td>{{ entry.draws }}</td>
+                                <td>{{ entry.losses }}</td>
+                                <td>{{ entry.goals_for }}</td>
+                                <td>{{ entry.goals_against }}</td>
+                                <td>
+                                    {% if entry.goal_difference > 0 %}
+                                    <span class="text-success">+{{ entry.goal_difference }}</span>
+                                    {% elif entry.goal_difference < 0 %}
+                                    <span class="text-danger">{{ entry.goal_difference }}</span>
+                                    {% else %}
+                                    <span class="text-muted">{{ entry.goal_difference }}</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ entry.points }}</strong></td>
+                                <td>
+                                    <!-- Would show last 5 matches form -->
+                                    <span class="badge bg-secondary">- - - - -</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="11" class="text-center py-4">
+                                    <i class="fas fa-table fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No teams in this zone yet</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Statistics Section -->
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header card-header-custom">
+                <h5 class="mb-0">Top Scorers</h5>
+            </div>
+            <div class="card-body">
+                {% if top_scorers %}
+                <div class="list-group">
+                    {% for player in top_scorers %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                {% if player.photo %}
+                                <img src="{{ player.photo.url }}" alt="{{ player.full_name }}"
+                                     class="player-photo me-3">
+                                {% else %}
+                                <div class="player-photo bg-secondary me-3 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ player.full_name }}</h6>
+                                    <small class="text-muted">{{ player.team.team_name }} • {{ player.position }}</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary" style="font-size: 1.2rem;">{{ player.goals_scored }}</span>
+                                <p class="mb-0"><small>goals</small></p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-center text-muted py-4">No goal scorers yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header card-header-custom">
+                <h5 class="mb-0">Goalkeepers</h5>
+            </div>
+            <div class="card-body">
+                {% if goalkeepers %}
+                <div class="list-group">
+                    {% for goalkeeper in goalkeepers %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                {% if goalkeeper.photo %}
+                                <img src="{{ goalkeeper.photo.url }}" alt="{{ goalkeeper.full_name }}"
+                                     class="player-photo me-3">
+                                {% else %}
+                                <div class="player-photo bg-secondary me-3 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ goalkeeper.full_name }}</h6>
+                                    <small class="text-muted">{{ goalkeeper.team.team_name }}</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success" style="font-size: 1.2rem;">{{ goalkeeper.matches_played }}</span>
+                                <p class="mb-0"><small>matches</small></p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-center text-muted py-4">No goalkeeper data yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

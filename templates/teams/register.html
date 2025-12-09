@@ -1,0 +1,220 @@
+<!-- templates/teams/register.html -->
+{% extends 'base.html' %}
+
+{% block title %}Team Registration - FKF Meru County League{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header card-header-custom">
+                    <h4 class="mb-0"><i class="fas fa-user-plus"></i> Team Registration</h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <h5 class="text-primary mb-3"><i class="fas fa-info-circle"></i> Team Information</h5>
+                        
+                        <!-- Team Name -->
+                        <div class="mb-3">
+                            <label for="id_team_name" class="form-label">Team Name *</label>
+                            {{ form.team_name }}
+                            {% if form.team_name.errors %}
+                            <div class="text-danger small">{{ form.team_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_location" class="form-label">Location *</label>
+                                {{ form.location }}
+                                {% if form.location.errors %}
+                                <div class="text-danger small">{{ form.location.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_home_ground" class="form-label">Home Ground *</label>
+                                {{ form.home_ground }}
+                                {% if form.home_ground.errors %}
+                                <div class="text-danger small">{{ form.home_ground.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Zone Selection -->
+                        <div class="mb-3">
+                            <label class="form-label">Zone *</label>
+                            {{ form.zone }}
+                            {% if form.zone.errors %}
+                            <div class="text-danger small">{{ form.zone.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <h5 class="text-primary mt-4 mb-3"><i class="fas fa-user-tie"></i> Team Officials</h5>
+                        
+                        <!-- Contact Person -->
+                        <div class="mb-3">
+                            <label for="id_contact_person" class="form-label">Contact Person (Manager) *</label>
+                            {{ form.contact_person }}
+                            {% if form.contact_person.errors %}
+                            <div class="text-danger small">{{ form.contact_person.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_phone_number" class="form-label">Phone Number *</label>
+                                {{ form.phone_number }}
+                                {% if form.phone_number.errors %}
+                                <div class="text-danger small">{{ form.phone_number.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_email" class="form-label">Email</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="text-danger small">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Captain Name -->
+                        <div class="mb-3">
+                            <label class="form-label">Captain Name (Optional)</label>
+                            {{ form.captain_name }}
+                            {% if form.captain_name.errors %}
+                            <div class="text-danger small">{{ form.captain_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <h5 class="text-primary mt-4 mb-3"><i class="fas fa-map-marker-alt"></i> Location Details</h5>
+                        
+                        <!-- Coordinates -->
+                        <div class="mb-3">
+                            <label class="form-label">Ground Coordinates (Optional)</label>
+                            {{ form.coordinates }}
+                            <small class="text-muted">Format: Latitude, Longitude (e.g., -0.05181, 37.6456)</small>
+                            {% if form.coordinates.errors %}
+                            <div class="text-danger small">{{ form.coordinates.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <h5 class="text-primary mt-4 mb-3"><i class="fas fa-camera"></i> Team Logo</h5>
+                        
+                        <!-- Team Logo -->
+                        <div class="mb-4">
+                            <label for="id_logo" class="form-label">Team Logo (Optional)</label>
+                            {{ form.logo }}
+                            <small class="text-muted">Max 2MB. Recommended: 300x300 pixels</small>
+                            {% if form.logo.errors %}
+                            <div class="text-danger small">{{ form.logo.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="alert alert-info mt-4">
+                            <h6><i class="fas fa-money-bill-wave"></i> Registration Fee: KSh 5,000</h6>
+                            <p class="mb-0">Payment via MPesa will be available after registration.</p>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="reset" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-redo"></i> Clear Form
+                            </button>
+                            <button type="submit" class="btn btn-primary-custom">
+                                <i class="fas fa-paper-plane"></i> Register Team
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6><i class="fas fa-question-circle text-primary me-2"></i>Need Help?</h6>
+                    <p class="mb-0">Contact: <strong>+254 700 000 000</strong> | Email: <strong>info@fkfmeruleague.co.ke</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .form-control, .form-select {
+        margin-bottom: 5px;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-red);
+        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+    }
+    
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Phone number formatting
+        const phoneInput = document.querySelector('#id_phone_number');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.startsWith('0')) {
+                    value = '+254' + value.substring(1);
+                } else if (!value.startsWith('+')) {
+                    value = '+254' + value;
+                }
+                e.target.value = value;
+            });
+        }
+        
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const required = form.querySelectorAll('[required]');
+            let valid = true;
+            
+            required.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    valid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            if (!valid) {
+                e.preventDefault();
+                alert('Please fill in all required fields (*)');
+            }
+        });
+        
+        // Remove invalid class when user starts typing
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                this.classList.remove('is-invalid');
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Contact Us - FKF Meru League{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="text-primary mb-4">Contact FKF Meru County League</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header card-header-custom">
+                <h5 class="mb-0">Contact Form</h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <select class="form-control" id="subject">
+                            <option value="">Select a subject</option>
+                            <option value="registration">Team Registration</option>
+                            <option value="payment">Payment Issues</option>
+                            <option value="fixtures">Match Fixtures</option>
+                            <option value="referee">Referee Information</option>
+                            <option value="other">Other Inquiry</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" id="message" rows="5" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary-custom">
+                        <i class="fas fa-paper-plane"></i> Send Message
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header card-header-custom">
+                <h5 class="mb-0">Contact Information</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="text-primary">FKF Meru County Office</h6>
+                <p>
+                    <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                    Meru County Sports Office<br>
+                    Meru Town, Meru County
+                </p>
+                <p>
+                    <i class="fas fa-phone text-success me-2"></i>
+                    +254 700 000 000
+                </p>
+                <p>
+                    <i class="fas fa-envelope text-primary me-2"></i>
+                    meru@fkf.co.ke
+                </p>
+                <hr>
+                <h6 class="text-primary">Office Hours</h6>
+                <p>Monday - Friday: 8:30 AM - 4:30 PM</p>
+                <p>Saturday:Closed</p>
+                <p>Sunday: Closed</p>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header card-header-custom">
+                <h5 class="mb-0">Emergency Contacts</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <h6>League Secretary</h6>
+                        <p class="mb-0">Nicholus Mugambi: +254 711 000 000</p>
+                    </div>
+                    <div class="list-group-item">
+                        <h6>Technical Director</h6>
+                        <p class="mb-0">Jane Smith: +254 722 000 000</p>
+                    </div>
+                    <div class="list-group-item">
+                        <h6>Referees Manager</h6>
+                        <p class="mb-0">Manuh: +254 733 000 000</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

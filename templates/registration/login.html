@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Login - FKF Meru League{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card">
+            <div class="card-header card-header-custom">
+                <h3 class="mb-0 text-center">Login</h3>
+            </div>
+            <div class="card-body">
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    Your username and password didn't match. Please try again.
+                </div>
+                {% endif %}
+                
+                {% if next %}
+                    {% if user.is_authenticated %}
+                    <div class="alert alert-warning">
+                        Your account doesn't have access to this page. To proceed,
+                        please login with an account that has access.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        Please login to access this page.
+                    </div>
+                    {% endif %}
+                {% endif %}
+                
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        {{ form.username|as_crispy_field }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password|as_crispy_field }}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary-custom btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </div>
+                    
+                    <input type="hidden" name="next" value="{{ next }}">
+                </form>
+                
+                <div class="mt-4 text-center">
+                    <p class="mb-2">
+                        <a href="{% url 'password_reset' %}">Forgot your password?</a>
+                    </p>
+                    <p class="mb-0">
+                        Need an account? 
+                        <a href="{% url 'teams:team_registration' %}">Register your team</a> or
+                        <a href="{% url 'referees:referee_registration' %}">Register as referee</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <h5>Access Information</h5>
+                <div class="row mt-3">
+                    <div class="col-6">
+                        <h6>For Teams</h6>
+                        <p class="small">Register your team first, then use your team code to login</p>
+                    </div>
+                    <div class="col-6">
+                        <h6>For Referees</h6>
+                        <p class="small">Register as a referee first, then login with your credentials</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+                    <p>&copy; {{ current_year }} FKF Meru County League. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="{% url 'frontend:privacy_policy' %}" class="text-white me-3">Privacy Policy</a>
+                    <a href="{% url 'frontend:terms_of_service' %}" class="text-white">Terms of Service</a>
+                </div>      

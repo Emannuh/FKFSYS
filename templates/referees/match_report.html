@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Match Report - {{ match }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .team-header {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .score-input {
+        font-size: 2rem;
+        font-weight: bold;
+        text-align: center;
+        max-width: 80px;
+    }
+    .formset-form {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        border-left: 4px solid var(--primary-red);
+    }
+    .delete-form {
+        background-color: #ffebee;
+        border-left-color: #f44336;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-primary">Match Report</h2>
+            <p class="lead">{{ match }} - {{ match.match_date|date:"F j, Y, g:i a" }}</p>
+            <p class="text-muted">Venue: {{ match.venue }}</p>
+        </div>
+    </div>
+    
+    <form method="POST" id="matchReportForm">
+        {% csrf_token %}
+        
+        <!-- Match Result Section -->
+        <div class="card mb-4">
+            <div class="card-header card-header-custom">
+                <h4 class="mb-0">Match Result</h4>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-5 text-center">
+                        <h5>{{ match.home_team }}</h5>
+                        {% if match.home_team.logo %}
+                            <img src="{{ match.home_team.logo.url }}" alt="{{ match.home_team }}" 
+                                 class="team-logo mb-2">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <div class="row">
+                            <div class="col-6">
+                                {{ result_form.home_score|as_crispy_field }}
+                            </div>
+                            <div class="col-6">
+                                {{ result_form.away_score|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            {{ result_form.status|as_crispy_field }}
+                        </div>
+                    </div>
+                    <div class="col-md-5 text-center">
+                        <h5>{{ match.away_team }}</h5>
+                        {% if match.away_team.logo %}
+                            <img src="{{ match.away_team.logo.url }}" alt="{{ match.away_team }}" 
+                                 class="team-logo mb-2">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Goals Section -->
+        <div class="card mb-4">
+            <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Goals Scored</h4>
+                <button type="button" class="btn btn-sm btn-success" id="add-goal-form">
+                    <i class="fas fa-plus"></i> Add Goal
+                </button>
+            </div>
+            <div class="card-body" id="goal-formset">
+                {{ goal_formset.management_form }}
+                {% for form in goal_formset %}
+                <div class="formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %} 
+                     {% if form.DELETE.value %}delete-form{% endif %}" id="goal-form-{{ forloop.counter0 }}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.scorer|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ form.minute|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                {{ form.is_penalty }}
+                                <label class="form-check-label" for="{{ form.is_penalty.id_for_label }}">
+                                    Penalty
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.is_own_goal }}
+                                <label class="form-check-label" for="{{ form.is_own_goal.id_for_label }}">
+                                    Own Goal
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            {% if form.instance.pk %}
+                                <div class="form-check mt-4">
+                                    {{ form.DELETE }}
+                                    <label class="form-check-label text-danger" for="{{ form.DELETE.id_for_label }}">
+                                        Delete
+                                    </label>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {{ form.id }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Cards Section -->
+        <div class="card mb-4">
+            <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Cards Issued</h4>
+                <button type="button" class="btn btn-sm btn-warning" id="add-card-form">
+                    <i class="fas fa-plus"></i> Add Card
+                </button>
+            </div>
+            <div class="card-body" id="card-formset">
+                {{ card_formset.management_form }}
+                {% for form in card_formset %}
+                <div class="formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %}
+                     {% if form.DELETE.value %}delete-form{% endif %}" id="card-form-{{ forloop.counter0 }}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.player|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ form.card_type|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ form.minute|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.reason|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2">
+                            {% if form.instance.pk %}
+                                <div class="form-check mt-4">
+                                    {{ form.DELETE }}
+                                    <label class="form-check-label text-danger" for="{{ form.DELETE.id_for_label }}">
+                                        Delete
+                                    </label>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {{ form.id }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Match Details Section -->
+        <div class="card mb-4">
+            <div class="card-header card-header-custom">
+                <h4 class="mb-0">Match Details</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ report_form.weather_conditions|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ report_form.pitch_conditions|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ report_form.attendance|as_crispy_field }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        {{ report_form.major_incidents|as_crispy_field }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        {{ report_form.referee_comments|as_crispy_field }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Submit Buttons -->
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <button type="submit" name="save_draft" class="btn btn-lg btn-secondary">
+                            <i class="fas fa-save"></i> Save as Draft
+                        </button>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="submit" name="submit_report" class="btn btn-lg btn-primary-custom">
+                            <i class="fas fa-paper-plane"></i> Submit Final Report
+                        </button>
+                        <a href="{% url 'referee_dashboard' %}" class="btn btn-lg btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Add goal form
+    $('#add-goal-form').click(function() {
+        let formIdx = $('#id_goals-TOTAL_FORMS').val();
+        let newForm = `
+        <div class="formset-form new-form" id="goal-form-${formIdx}">
+            <div class="row">
+                <div class="col-md-3">
+                    <select name="goals-${formIdx}-scorer" class="select form-control" id="id_goals-${formIdx}-scorer">
+                        {% for player in home_players %}
+                        <option value="{{ player.id }}">{{ player.full_name }} ({{ player.team.team_name }})</option>
+                        {% endfor %}
+                        {% for player in away_players %}
+                        <option value="{{ player.id }}">{{ player.full_name }} ({{ player.team.team_name }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" name="goals-${formIdx}-minute" class="form-control" id="id_goals-${formIdx}-minute" min="0" max="120">
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        <input type="checkbox" name="goals-${formIdx}-is_penalty" class="form-check-input" id="id_goals-${formIdx}-is_penalty">
+                        <label class="form-check-label" for="id_goals-${formIdx}-is_penalty">Penalty</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" name="goals-${formIdx}-is_own_goal" class="form-check-input" id="id_goals-${formIdx}-is_own_goal">
+                        <label class="form-check-label" for="id_goals-${formIdx}-is_own_goal">Own Goal</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger mt-4 remove-form">Remove</button>
+                </div>
+            </div>
+            <input type="hidden" name="goals-${formIdx}-id" id="id_goals-${formIdx}-id">
+        </div>`;
+        
+        $('#goal-formset').append(newForm);
+        $('#id_goals-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+    });
+    
+    // Add card form
+    $('#add-card-form').click(function() {
+        let formIdx = $('#id_cards-TOTAL_FORMS').val();
+        let newForm = `
+        <div class="formset-form new-form" id="card-form-${formIdx}">
+            <div class="row">
+                <div class="col-md-3">
+                    <select name="cards-${formIdx}-player" class="select form-control" id="id_cards-${formIdx}-player">
+                        {% for player in home_players %}
+                        <option value="{{ player.id }}">{{ player.full_name }} ({{ player.team.team_name }})</option>
+                        {% endfor %}
+                        {% for player in away_players %}
+                        <option value="{{ player.id }}">{{ player.full_name }} ({{ player.team.team_name }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="cards-${formIdx}-card_type" class="form-control" id="id_cards-${formIdx}-card_type">
+                        <option value="yellow">Yellow Card</option>
+                        <option value="red">Red Card</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" name="cards-${formIdx}-minute" class="form-control" id="id_cards-${formIdx}-minute" min="0" max="120">
+                </div>
+                <div class="col-md-3">
+                    <textarea name="cards-${formIdx}-reason" class="form-control" id="id_cards-${formIdx}-reason" rows="2" placeholder="Reason"></textarea>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger mt-4 remove-form">Remove</button>
+                </div>
+            </div>
+            <input type="hidden" name="cards-${formIdx}-id" id="id_cards-${formIdx}-id">
+        </div>`;
+        
+        $('#card-formset').append(newForm);
+        $('#id_cards-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+    });
+    
+    // Remove form
+    $(document).on('click', '.remove-form', function() {
+        $(this).closest('.formset-form').remove();
+    });
+    
+    // Handle save as draft
+    $('button[name="save_draft"]').click(function(e) {
+        $('#matchReportForm').append('<input type="hidden" name="draft" value="1">');
+    });
+});
+</script>
+{% endblock %}

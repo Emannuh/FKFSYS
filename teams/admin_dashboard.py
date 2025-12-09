@@ -1,0 +1,34 @@
+# teams/admin_dashboard.py
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render
+from .models import Team, Player, Zone
+
+@staff_member_required  # Only staff/admin can access this
+def admin_dashboard(request):
+    # Collect statistics
+    stats = {
+        'total_teams': Team.objects.count(),
+        'pending_teams': Team.objects.filter(status='pending').count(),
+        'approved_teams': Team.objects.filter(status='approved').count(),
+        'paid_teams': Team.objects.filter(payment_status=True).count(),
+        'total_players': Player.objects.count(),
+        'suspended_players': Player.objects.filter(is_suspended=True).count(),
+        'zones': Zone.objects.count(),
+    }
+    
+    # Get recent data
+    recent_teams = Team.objects.order_by('-registration_date')[:10]  # Last 10 teams
+    pending_registrations = Team.objects.filter(status='pending')[:10]
+    suspended_players = Player.objects.filter(is_suspended=True)[:10]
+    
+    # Prepare data to send to template
+    context = {
+        'stats': stats,
+        'recent_teams': recent_teams,
+        'pending_registrations': pending_registrations,
+        'suspended_players': suspended_players,
+        'title': 'Admin Dashboard',
+    }
+    
+    # Render the dashboard page
+    return render(request, 'admin/dashboard.html', context)

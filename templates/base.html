@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FKF Meru County League{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS with Theme Colors - UPDATED -->
+    <style>
+        :root {
+            --primary-red: #DC3545;
+            --primary-green: #198754;
+            --primary-white: #FFFFFF;
+            --primary-black: #212529;
+            --hover-green: #28a745;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        main.container {
+            flex: 1;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        
+        /* ========== NAVBAR STYLES ========== */
+        .navbar-custom {
+            background-color: var(--primary-red) !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 0;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+            padding: 0.5rem 0;
+            color: white !important;
+        }
+        
+        .navbar-brand i {
+            margin-right: 8px;
+        }
+        
+        .nav-link {
+            color: white !important;
+            font-weight: 500;
+            padding: 0.7rem 1rem !important;
+            margin: 0 3px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background-color: var(--hover-green) !important;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+        
+        .nav-link.active {
+            background-color: var(--hover-green) !important;
+        }
+        
+        .navbar-toggler {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.8%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+        
+        /* ========== FOOTER STYLES ========== */
+        .footer-custom {
+            background-color: var(--primary-black);
+            color: white;
+            padding: 30px 0 15px 0;
+            margin-top: auto;
+            border-top: 5px solid var(--primary-green);
+            width: 100%;
+        }
+        
+        .footer-custom h5 {
+            color: var(--primary-green);
+            font-weight: 600;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--primary-green);
+            padding-left: 10px;
+        }
+        
+        .footer-custom p {
+            color: #ddd;
+            line-height: 1.6;
+        }
+        
+        .footer-custom a {
+            color: #ddd;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-custom a:hover {
+            color: var(--primary-green);
+            text-decoration: underline;
+        }
+        
+        .copyright {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        /* Registration alert in footer */
+        .registration-alert {
+            background-color: rgba(40, 167, 69, 0.15);
+            border: 1px solid var(--primary-green);
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin-top: 15px;
+        }
+        
+        /* ========== EXISTING STYLES ========== */
+        .btn-primary-custom {
+            background-color: var(--primary-red);
+            border-color: var(--primary-red);
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
+        }
+        
+        .btn-success-custom {
+            background-color: var(--primary-green);
+            border-color: var(--primary-green);
+        }
+        
+        .card-header-custom {
+            background-color: var(--primary-red);
+            color: white;
+        }
+        
+        .zone-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .zone-a { background-color: #ff6b6b; color: white; }
+        .zone-b { background-color: #4ecdc4; color: white; }
+        .zone-c { background-color: #45b7d1; color: white; }
+        
+        .team-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid var(--primary-red);
+        }
+        
+        .player-photo {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+            
+            .nav-link {
+                padding: 0.5rem !important;
+                margin: 2px 0;
+            }
+            
+            .footer-custom {
+                padding: 20px 0 10px 0;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'frontend:home' %}">
+                <i class="fas fa-futbol"></i> FKF Meru County League
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'frontend:home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'teams:team_registration' %}">Register Team</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'teams:all_teams' %}">Teams</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'matches:league_tables' %}">League Tables</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'matches:fixtures' %}">Fixtures</a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        {% if user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin:index' %}">Admin</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin_dashboard' %}">Dashboard</a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <form method="POST" action="{% url 'logout' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="nav-link btn btn-link" style="border: none; background: none; padding: 8px 0;">
+                                    Logout
+                                </button>
+                            </form>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer - UPDATED -->
+    <footer class="footer-custom">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5>FKF Meru County League</h5>
+                    <p>Official Football Kenya Federation Meru County League Management System</p>
+                    <p>Register your team, manage matches, track statistics, and follow the league standings all in one place.</p>
+                    
+                    <div class="registration-alert">
+                        <strong><i class="fas fa-bullhorn me-2"></i>Team Registration Now Open!</strong>
+                        <p class="mb-0 mt-2">Register your team for the 2024 season. Don't miss out!</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'frontend:home' %}"><i class="fas fa-home me-2"></i>Home</a></li>
+                        <li><a href="{% url 'teams:team_registration' %}"><i class="fas fa-user-plus me-2"></i>Register Team</a></li>
+                        <li><a href="{% url 'teams:all_teams' %}"><i class="fas fa-users me-2"></i>All Teams</a></li>
+                        <li><a href="{% url 'matches:league_tables' %}"><i class="fas fa-table me-2"></i>League Tables</a></li>
+                        <li><a href="{% url 'matches:fixtures' %}"><i class="fas fa-calendar-alt me-2"></i>Fixtures</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="row copyright">
+                <div class="col-md-12 text-center">
+                    <p class="mb-0">&copy; 2024 FKF Meru County League. All rights reserved.</p>
+                    <p class="mb-0 mt-2">
+                        <small>
+                            <i class="fas fa-map-marker-alt me-1"></i> Meru County, Kenya
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- JavaScript for active nav links -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add active class to current page nav link
+            const currentUrl = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                const linkUrl = link.getAttribute('href');
+                
+                // Check for exact match or partial match (for home page)
+                if (currentUrl === linkUrl || 
+                    (linkUrl !== '/' && currentUrl.includes(linkUrl))) {
+                    link.classList.add('active');
+                }
+                
+                // Add hover effect
+                link.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                });
+                
+                link.addEventListener('mouseleave', function() {
+                    if (!this.classList.contains('active')) {
+                        this.style.transform = 'translateY(0)';
+                        this.style.boxShadow = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

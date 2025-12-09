@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}FKF Meru County League Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="jumbotron bg-light p-5 rounded">
+            <h1 class="display-4 text-primary">FKF Meru County League</h1>
+            <p class="lead">Official Football Kenya Federation Meru County League Management System</p>
+            <hr class="my-4">
+            <p>Register your team, manage matches, track statistics, and follow the league standings all in one place.</p>
+            <div class="mt-4">
+                <a class="btn btn-primary-custom btn-lg" href="{% url 'teams:team_registration' %}" role="button">
+                    <i class="fas fa-user-plus"></i> Register Your Team
+                </a>
+                <a class="btn btn-outline-primary btn-lg" href="{% url 'teams:all_teams' %}" role="button">
+                    <i class="fas fa-users"></i> View All Teams
+                </a>
+                <a class="btn btn-outline-success btn-lg" href="{% url 'matches:league_tables' %}" role="button">
+                    <i class="fas fa-table"></i> League Tables
+                </a>
+            </div>
+        </div>
+        
+        <div class="row mt-5">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="text-primary"><i class="fas fa-futbol"></i></h3>
+                        <h5>Team Registration</h5>
+                        <p>Register your team with location, home ground, and map coordinates</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="text-success"><i class="fas fa-money-bill-wave"></i></h3>
+                        <h5>MPesa Payment</h5>
+                        <p>Secure payment integration using Safaricom Daraja API</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="text-danger"><i class="fas fa-table"></i></h3>
+                        <h5>League Tables</h5>
+                        <p>Automatically generated league tables for three zones</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header card-header-custom">
+                <h5 class="mb-0">Latest News</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{% url 'teams:team_registration' %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Registration Open</h6>
+                            <small>Now</small>
+                        </div>
+                        <p class="mb-1">Team registration for 2024 season is now open.</p>
+                    </a>
+                    <a href="{% url 'matches:fixtures' %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Fixtures Released</h6>
+                            <small>Coming soon</small>
+                        </div>
+                        <p class="mb-1">First round fixtures will be released soon.</p>
+                    </a>
+                    <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Referee Training</h6>
+                            <small>Coming soon</small>
+                        </div>
+                        <p class="mb-1">Referee training scheduled for next month.</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header card-header-custom">
+                <h5 class="mb-0">Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h2 class="text-primary">{{ total_teams|default:"0" }}</h2>
+                        <p class="text-muted">Teams Registered</p>
+                    </div>
+                    <div class="col-6">
+                        <h2 class="text-success">{{ completed_matches|default:"0" }}</h2>
+                        <p class="text-muted">Matches Played</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header card-header-custom">
+                <h5 class="mb-0">Quick Links</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{% url 'matches:top_scorers' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-futbol text-primary me-2"></i> Top Scorers
+                    </a>
+                    <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-whistle text-success me-2"></i> Become a Referee
+                    </a>
+                    <a href="{% url 'frontend:rules' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-book text-danger me-2"></i> League Rules
+                    </a>
+                    <a href="{% url 'frontend:contact' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-envelope text-warning me-2"></i> Contact Us
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

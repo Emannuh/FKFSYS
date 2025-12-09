@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Teams{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <h2>All Teams</h2>
+    {% if zones %}
+      {% for zone in zones %}
+        <h4 class="mt-4">{{ zone.name }}</h4>
+        <div class="row">
+          {% for team in teams|dictsort:"team_name" %}
+            {% if team.zone and team.zone.id == zone.id %}
+              <div class="col-md-3 mb-3">
+                <div class="card">
+                  <div class="card-body text-center">
+                    {% if team.logo %}
+                      <img src="{{ team.logo.url }}" class="team-logo mb-2" alt="{{ team.team_name }}">
+                    {% else %}
+                      <img src="{% static 'images/default_team.png' %}" class="team-logo mb-2" alt="{{ team.team_name }}">
+                    {% endif %}
+                    <h5 class="card-title">{{ team.team_name }}</h5>
+                    <p class="card-text text-muted">{{ team.location }}</p>
+                    <a href="{% url 'teams:team_detail' team.id %}" class="btn btn-sm btn-primary-custom">View</a>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No zones defined yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

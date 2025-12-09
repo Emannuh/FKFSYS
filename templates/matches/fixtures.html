@@ -1,0 +1,226 @@
+<!-- templates/matches/fixtures.html -->
+{% extends 'base.html' %}
+
+{% block title %}Fixtures - FKF Meru County League{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1><i class="fas fa-calendar-alt"></i> Match Fixtures</h1>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary active" id="allFixtures">All Fixtures</button>
+                    <button type="button" class="btn btn-outline-success" id="upcomingFixtures">Upcoming</button>
+                    <button type="button" class="btn btn-outline-secondary" id="completedFixtures">Completed</button>
+                </div>
+            </div>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="zoneFilter" class="form-label">Filter by Zone</label>
+                            <select class="form-select" id="zoneFilter">
+                                <option value="all">All Zones</option>
+                                <option value="A">Zone A</option>
+                                <option value="B">Zone B</option>
+                                <option value="C">Zone C</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="roundFilter" class="form-label">Filter by Round</label>
+                            <select class="form-select" id="roundFilter">
+                                <option value="all">All Rounds</option>
+                                <option value="1">Round 1</option>
+                                <option value="2">Round 2</option>
+                                <option value="3">Round 3</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="dateFilter" class="form-label">Filter by Date</label>
+                            <input type="date" class="form-control" id="dateFilter">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fixtures Display -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Upcoming Fixtures</h5>
+                    <span class="badge bg-warning">Latest</span>
+                </div>
+                <div class="card-body">
+                    {% if fixtures %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Home Team</th>
+                                    <th></th>
+                                    <th>Away Team</th>
+                                    <th>Venue</th>
+                                    <th>Zone</th>
+                                    <th>Round</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fixture in fixtures %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ fixture.date|date:"D, M d" }}</strong><br>
+                                        <small>{{ fixture.time|time:"g:i A" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="team-logo me-2">
+                                                {% if fixture.home_team.logo %}
+                                                <img src="{{ fixture.home_team.logo.url }}" alt="{{ fixture.home_team.name }}" class="team-logo">
+                                                {% else %}
+                                                <div class="team-logo bg-secondary d-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-shield-alt text-white"></i>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <span>{{ fixture.home_team.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong>VS</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="team-logo me-2">
+                                                {% if fixture.away_team.logo %}
+                                                <img src="{{ fixture.away_team.logo.url }}" alt="{{ fixture.away_team.name }}" class="team-logo">
+                                                {% else %}
+                                                <div class="team-logo bg-secondary d-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-shield-alt text-white"></i>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <span>{{ fixture.away_team.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ fixture.venue }}</td>
+                                    <td>
+                                        <span class="badge zone-{{ fixture.zone|lower }}">{{ fixture.zone }}</span>
+                                    </td>
+                                    <td>Round {{ fixture.round }}</td>
+                                    <td>
+                                        {% if fixture.status == 'scheduled' %}
+                                        <span class="badge bg-info">Scheduled</span>
+                                        {% elif fixture.status == 'ongoing' %}
+                                        <span class="badge bg-warning">Ongoing</span>
+                                        {% elif fixture.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                        {% elif fixture.status == 'postponed' %}
+                                        <span class="badge bg-danger">Postponed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h4>No Fixtures Available</h4>
+                        <p class="text-muted">Fixtures will be published soon. Check back later!</p>
+                        <a href="{% url 'matches:league_tables' %}" class="btn btn-primary-custom mt-3">
+                            <i class="fas fa-table"></i> View League Tables
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Matches -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header card-header-custom">
+                    <h5 class="mb-0">Recent Results</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        Match results will be displayed here as they become available.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .team-logo {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid var(--primary-red);
+    }
+    
+    .zone-a { background-color: #ff6b6b !important; }
+    .zone-b { background-color: #4ecdc4 !important; }
+    .zone-c { background-color: #45b7d1 !important; }
+    
+    table tbody tr:hover {
+        background-color: rgba(220, 53, 69, 0.05);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter buttons functionality
+        document.getElementById('allFixtures').addEventListener('click', function() {
+            setActiveButton(this);
+            // Add filtering logic here
+        });
+        
+        document.getElementById('upcomingFixtures').addEventListener('click', function() {
+            setActiveButton(this);
+            // Add filtering logic here
+        });
+        
+        document.getElementById('completedFixtures').addEventListener('click', function() {
+            setActiveButton(this);
+            // Add filtering logic here
+        });
+        
+        function setActiveButton(button) {
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+        }
+        
+        // Filter select changes
+        document.getElementById('zoneFilter').addEventListener('change', filterFixtures);
+        document.getElementById('roundFilter').addEventListener('change', filterFixtures);
+        document.getElementById('dateFilter').addEventListener('change', filterFixtures);
+        
+        function filterFixtures() {
+            // Add filtering logic here
+            console.log('Filtering fixtures...');
+        }
+    });
+</script>
+{% endblock %}
