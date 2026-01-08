@@ -100,7 +100,7 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3 mb-3">
-                        <a href="{% url 'approve_registrations' %}" class="btn btn-primary-custom btn-block">
+                        <a href="{% url 'admin_dashboard:approve_registrations' %}" class="btn btn-primary-custom btn-block">
                             <i class="fas fa-user-check"></i> Approve Registrations
                             {% if pending_registrations > 0 %}
                             <span class="badge bg-white text-danger">{{ pending_registrations }}</span>
@@ -108,7 +108,7 @@
                         </a>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a href="{% url 'approve_reports' %}" class="btn btn-warning btn-block text-dark">
+                        <a href="{% url 'admin_dashboard:approve_reports' %}" class="btn btn-warning btn-block text-dark">
                             <i class="fas fa-clipboard-check"></i> Approve Reports
                             {% if pending_reports > 0 %}
                             <span class="badge bg-white text-danger">{{ pending_reports }}</span>
@@ -116,15 +116,27 @@
                         </a>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a href="{% url 'assign_zones' %}" class="btn btn-success btn-block">
+                        <a href="{% url 'admin_dashboard:assign_zones' %}" class="btn btn-success btn-block">
                             <i class="fas fa-map-marker-alt"></i> Assign Zones
                         </a>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a href="{% url 'view_suspensions' %}" class="btn btn-danger btn-block">
+                        <a href="{% url 'admin_dashboard:view_suspensions' %}" class="btn btn-danger btn-block">
                             <i class="fas fa-ban"></i> Manage Suspensions
                         </a>
                     </div>
+                    {% if request.user.is_staff %}
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin_dashboard:generate_fixtures_admin' %}" class="btn btn-info btn-block">
+                            <i class="fas fa-random"></i> Generate Fixtures
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="btn btn-warning btn-block">
+                            <i class="fas fa-calendar-alt"></i> Reschedule Fixtures
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 # frontend/views.py
 from django.shortcuts import render
 from django.db.models import Count, Sum
-from teams.models import Team, Zone
+from teams.models import Team, Zone, LeagueSettings
 from matches.models import Match
 from payments.models import Payment
 
@@ -19,11 +19,15 @@ def home(request):
     # Get league leaders
     zones = Zone.objects.all()
     
+    # Get league settings for deadlines
+    settings = LeagueSettings.get_settings()
+    
     context = {
         'total_teams': total_teams,
         'completed_matches': completed_matches,
         'recent_matches': recent_matches,
         'zones': zones,
+        'league_settings': settings,
     }
     return render(request, 'home.html', context)
 

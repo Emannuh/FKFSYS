@@ -19,7 +19,22 @@ class Match(models.Model):
     home_team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='home_matches')
     away_team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='away_matches')
     zone = models.ForeignKey('teams.Zone', on_delete=models.CASCADE)
+    
+    # ⬇⬇⬇ NEW FIELD ADDED ⬇⬇⬇
+    round_number = models.IntegerField(default=1)
+    # ⬆⬆⬆ NEW FIELD ADDED ⬆⬆⬆
+    
     match_date = models.DateTimeField()
+    
+    # ⬇⬇⬇ ADD kickoff_time HERE (BETWEEN match_date AND venue) ⬇⬇⬇
+    kickoff_time = models.CharField(
+        max_length=5, 
+        blank=True, 
+        null=True,
+        help_text="Format: HH:MM (e.g., 15:00 for 3 PM)"
+    )
+    # ⬆⬆⬆ ADD kickoff_time HERE ⬆⬆⬆
+    
     venue = models.CharField(max_length=200)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
     
@@ -114,9 +129,6 @@ class LeagueTable(models.Model):
         pass
 
 
-# ----------------------------
-# Suspension model (new)
-# ----------------------------
 class Suspension(models.Model):
     REASON_CHOICES = [
         ('red_card', 'Direct Red Card'),
@@ -150,7 +162,6 @@ class Suspension(models.Model):
             raise ValidationError("matches_served cannot exceed matches_missed.")
         if self.end_date and self.end_date < self.start_date:
             raise ValidationError("end_date cannot be before start_date.")
-        # optional rule: active suspensions generally should have at least 1 match_missed
         if self.is_active and self.matches_missed == 0:
             raise ValidationError("Active suspensions should have a positive matches_missed value.")
 
@@ -160,20 +171,15 @@ class Suspension(models.Model):
         return remaining if remaining > 0 else 0
 
     def save(self, *args, **kwargs):
-        # validate before saving
         self.full_clean()
-
         super().save(*args, **kwargs)
 
-        # synchronize player suspension flags in the database directly (avoid extra racey read/write)
         if self.is_active and self.matches_remaining > 0:
-            # set player as suspended; adjust field names if your Player model differs
             Player.objects.filter(pk=self.player.pk).update(
                 is_suspended=True,
                 suspension_end=self.end_date if self.end_date else None,
             )
         else:
-            # clear player suspension only if no other active suspensions exist
             other_active = Suspension.objects.filter(player=self.player, is_active=True).exclude(pk=self.pk).exists()
             if not other_active:
                 Player.objects.filter(pk=self.player.pk).update(
@@ -182,9 +188,7 @@ class Suspension(models.Model):
                 )
 
     def serve_match(self):
-        """Mark one match as served in a concurrency-safe way and close suspension when done.
-        Returns the new matches_served value.
-        """
+        """Mark one match as served in a concurrency-safe way and close suspension when done."""
         if not self.is_active:
             return self.matches_served
 
@@ -206,6 +210,5 @@ class Suspension(models.Model):
                     )
 
             return s.matches_served
-
-# NOTE: If your Player model uses different field names for suspension state (e.g. `suspended_until`),
-# adjust the `Player.objects.filter(...).update(...)` calls above accordingly.
+# Remove this duplicate line from the end of your file:
+# kickoff_time = models.CharField(max_length=5, blank=True, null=True, help_text="Format: HH:MM")

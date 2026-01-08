@@ -1,0 +1,223 @@
+<!-- templates/admin/dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - FKF Meru League</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #dc3545;
+            border-bottom: 2px solid #dc3545;
+            padding-bottom: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .stat-card h3 {
+            font-size: 2.5em;
+            margin: 0;
+            color: #198754;
+        }
+        
+        .stat-card p {
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #dc3545;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #c82333;
+        }
+        
+        .quick-links {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FKF Meru County League - Admin Dashboard</h1>
+        
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>{{ stats.total_teams }}</h3>
+                <p>Total Teams</p>
+            </div>
+            
+            <div class="stat-card">
+                <h3>{{ stats.pending_teams }}</h3>
+                <p>Pending Approval</p>
+            </div>
+            
+            <div class="stat-card">
+                <h3>{{ stats.approved_teams }}</h3>
+                <p>Approved Teams</p>
+            </div>
+            
+            <div class="stat-card">
+                <h3>{{ stats.total_players }}</h3>
+                <p>Total Players</p>
+            </div>
+            
+            <div class="stat-card">
+                <h3>{{ stats.paid_teams }}</h3>
+                <p>Paid Teams</p>
+            </div>
+            
+            <div class="stat-card">
+                <h3>{{ stats.zones }}</h3>
+                <p>Zones</p>
+            </div>
+        </div>
+        
+        <!-- Pending Registrations -->
+        <h2>Pending Team Registrations</h2>
+        {% if pending_registrations %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Team Name</th>
+                    <th>Contact Person</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team in pending_registrations %}
+                <tr>
+                    <td>{{ team.team_name }}</td>
+                    <td>{{ team.contact_person }}</td>
+                    <td>{{ team.phone_number }}</td>
+                    <td>{{ team.email|default:"-" }}</td>
+                    <td>
+                        <a href="/admin/teams/team/{{ team.id }}/change/" class="btn">
+                            Review
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No pending registrations.</p>
+        {% endif %}
+        
+        <!-- Recent Teams -->
+        <h2>Recently Registered Teams</h2>
+        {% if recent_teams %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Team Name</th>
+                    <th>Zone</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Registered</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team in recent_teams %}
+                <tr>
+                    <td>{{ team.team_name }}</td>
+                    <td>{{ team.zone.name|default:"-" }}</td>
+                    <td>
+                        {% if team.status == 'approved' %}
+                        <span style="color: green;">✓ Approved</span>
+                        {% elif team.status == 'pending' %}
+                        <span style="color: orange;">Pending</span>
+                        {% else %}
+                        {{ team.status|title }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if team.payment_status %}
+                        <span style="color: green;">✓ Paid</span>
+                        {% else %}
+                        <span style="color: red;">Unpaid</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ team.registration_date|date:"M d, Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No teams registered yet.</p>
+        {% endif %}
+        
+        <!-- Quick Links -->
+        <div class="quick-links">
+            <h3>Quick Actions</h3>
+            <div>
+                <a href="/admin/teams/team/" class="btn">Manage Teams</a>
+                <a href="/admin/teams/player/" class="btn">Manage Players</a>
+                <a href="/admin/teams/zone/" class="btn">Manage Zones</a>
+                <a href="/admin/teams/team/add/" class="btn">Add New Team</a>
+                <a href="/admin/" class="btn">Admin Panel</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -3,8 +3,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils import timezone
+from datetime import datetime
 from django.db.models import Sum, Count, Q
-from teams.models import Team, Player, Zone
+from teams.models import Team, Player, Zone, LeagueSettings, TransferRequest
 from payments.models import Payment
 from matches.models import Match, LeagueTable
 from referees.models import MatchReport, Referee
@@ -66,7 +67,7 @@ def admin_dashboard(request):
 @login_required
 @user_passes_test(admin_required)
 def approve_registrations(request):
-    """Approve team registrations"""
+    """Approve team registrations and create manager accounts"""
     pending_teams = Team.objects.filter(status='pending').order_by('-registration_date')
     
     if request.method == 'POST':
@@ -79,18 +80,76 @@ def approve_registrations(request):
             team.status = 'approved'
             team.save()
             
-            # Check if payment is made
-            if not team.payment_status:
-                messages.warning(request, f'{team.team_name} approved but payment not verified!')
+            # CREATE MANAGER ACCOUNT WITH DEFAULT PASSWORD
+            if not team.manager:
+                try:
+                    from django.contrib.auth.models import User, Group
+                    
+                    # Generate username from email
+                    base_username = team.email.split('@')[0] if '@' in team.email else team.team_name.replace(' ', '_').lower()
+                    username = base_username
+                    
+                    # CHECK IF USER ALREADY EXISTS BY EMAIL
+                    if User.objects.filter(email=team.email).exists():
+                        user = User.objects.get(email=team.email)
+                        created = False
+                    else:
+                        # Ensure username is unique by adding number suffix if needed
+                        counter = 1
+                        while User.objects.filter(username=username).exists():
+                            username = f"{base_username}{counter}"
+                            counter += 1
+                        # CREATE NEW USER WITH DEFAULT PASSWORD
+                        default_password = f"{team.team_code.lower()}123"
+                        
+                        user = User.objects.create_user(
+                            username=username,
+                            email=team.email,
+                            password=default_password,
+                            first_name=team.contact_person.split()[0] if team.contact_person else '',
+                            last_name=' '.join(team.contact_person.split()[1:]) if team.contact_person and len(team.contact_person.split()) > 1 else '',
+                            is_active=True
+                        )
+                        created = True
+                    
+                    # Add to Team Managers group
+                    group, _ = Group.objects.get_or_create(name='Team Managers')
+                    user.groups.add(group)
+                    
+                    # Link user to team
+                    team.manager = user
+                    team.save()
+                    
+                    if created:
+                        # SHOW DEFAULT PASSWORD TO ADMIN
+                        messages.success(request, 
+                            f'✅ {team.team_name} approved!\n'
+                            f'✅ Manager account created for: {team.contact_person}\n'
+                            f'📧 Email: {team.email}\n'
+                            f'🔑 Default Password: {team.team_code.lower()}123\n'
+                            f'📝 Tell manager to login and change password immediately.'
+                        )
+                    else:
+                        messages.success(request, 
+                            f'✅ {team.team_name} approved!\n'
+                            f'✅ Linked to existing user: {team.email}'
+                        )
+                        
+                except Exception as e:
+                    messages.error(request, f'❌ Team approved but manager account creation failed: {str(e)}')
             else:
-                messages.success(request, f'{team.team_name} registration approved!')
+                messages.success(request, f'✅ {team.team_name} already has a manager account.')
+            
+            # Check payment status
+            if not team.payment_status:
+                messages.warning(request, f'⚠ Payment not verified for {team.team_name}!')
         
         elif action == 'reject':
-            team.status = 'suspended'
+            team.status = 'rejected'
             team.save()
-            messages.warning(request, f'{team.team_name} registration rejected.')
+            messages.warning(request, f'❌ {team.team_name} registration rejected.')
         
-        return redirect('approve_registrations')
+        return redirect('admin_dashboard:approve_registrations')
     
     return render(request, 'admin_dashboard/approve_registrations.html', {
         'pending_teams': pending_teams
@@ -129,7 +188,7 @@ def approve_reports(request):
             
             messages.warning(request, f'Report for {report.match} rejected.')
         
-        return redirect('approve_reports')
+        return redirect('admin_dashboard:approve_reports')
     
     return render(request, 'admin_dashboard/approve_reports.html', {
         'pending_reports': pending_reports
@@ -196,7 +255,7 @@ def manage_suspension(request, player_id):
             messages.success(request, f'{player.full_name} suspension cleared.')
         
         player.save()
-        return redirect('view_suspensions')
+        return redirect('admin_dashboard:view_suspensions')
     
     return render(request, 'admin_dashboard/manage_suspension.html', {
         'player': player
@@ -274,7 +333,7 @@ def assign_zones(request):
             LeagueTable.objects.create(team=team, zone=zone)
         
         messages.success(request, f'{team.team_name} assigned to {zone.name if zone else "No Zone"}.')
-        return redirect('assign_zones')
+        return redirect('admin_dashboard:assign_zones')
     
     # Get zone assignments
     zone_assignments = {}
@@ -285,4 +344,261 @@ def assign_zones(request):
         'teams': teams,
         'zones': zones,
         'zone_assignments': zone_assignments
+    })
+
+@login_required
+def view_report(request, report_id):
+    """
+    View a specific match report in detail
+    """
+    report = get_object_or_404(MatchReport, id=report_id)
+    
+    # Check permissions - only staff or the referee who submitted it can view
+    if not request.user.is_staff and report.referee.user != request.user:
+        messages.error(request, "You don't have permission to view this report.")
+        return redirect('admin_dashboard:dashboard')
+    context = {
+        'report': report,
+        'title': f'Match Report #{report.id}'
+    }
+    
+    return render(request, 'admin_dashboard/view_report.html', context)
+
+
+@login_required
+def dashboard(request):
+    """
+    Main dashboard router - redirects users to appropriate dashboard based on role
+    """
+    from datetime import datetime, timedelta
+    
+    user = request.user
+    
+    # 1. CHECK IF USER IS TEAM MANAGER
+    if user.groups.filter(name='Team Managers').exists():
+        team = Team.objects.filter(manager=user).first()
+        
+        if not team:
+            messages.error(request, "You are not assigned to any team.")
+            return render(request, 'dashboard/default.html')
+        
+        # Check if team is approved
+        if team.status != 'approved':
+            messages.warning(request, f"Your team '{team.team_name}' is pending approval.")
+            return render(request, 'dashboard/pending_approval.html', {'team': team})
+        
+        # Only force kit selection on first login; honor stored flag thereafter
+        if not team.kit_colors_set:
+            messages.info(request, "Please select your team kit colors first.")
+            return redirect('teams:update_kits', team_id=team.id)
+        
+        # Get team manager dashboard data
+        player_count = Player.objects.filter(team=team).count()
+        
+        # Get captain name
+        captain = Player.objects.filter(team=team, is_captain=True).first()
+        captain_name = captain.full_name if captain else "Not set"
+        
+        # Get upcoming matches (next 7 days)
+        today = datetime.now().date()
+        upcoming_matches = Match.objects.filter(
+            Q(home_team=team) | Q(away_team=team),
+            match_date__gte=today,
+            match_date__lte=today + timedelta(days=7)
+        ).count()
+        
+        # Get league settings for deadlines
+        settings = LeagueSettings.get_settings()
+        
+        # Get incoming transfer requests (other teams requesting your players)
+        incoming_transfers = TransferRequest.objects.filter(
+            from_team=team,
+            status='pending_parent'
+        ).select_related('player', 'to_team', 'requested_by').order_by('-request_date')
+        
+        context = {
+            'team': team,
+            'player_count': player_count,
+            'captain_name': captain_name,
+            'upcoming_matches': upcoming_matches,
+            'recent_players': Player.objects.filter(team=team).order_by('-registration_date')[:10],
+            'kit_complete': team.kit_colors_set,
+            'show_kit_prompt': False,
+            'league_settings': settings,  # Add league settings for deadlines/countdowns
+            'player_registration_deadline': settings.player_registration_deadline,
+            'player_registration_closed_date': settings.player_registration_closed_date,
+            'transfer_window_deadline': settings.transfer_window_deadline,
+            'transfer_window_closed_date': settings.transfer_window_closed_date,
+            'player_registration_open': settings.player_registration_open,
+            'transfer_window_open': settings.transfer_window_open,
+            'incoming_transfers': incoming_transfers,  # Add incoming transfer requests
+        }
+        return render(request, 'dashboard/team_manager.html', context)
+    
+    # 2. CHECK IF USER IS REFEREES MANAGER
+    elif user.groups.filter(name='Referees Manager').exists():
+        if user.has_perm('referees.appoint_referees'):
+            return render(request, 'dashboard/referees_manager.html')
+    
+    # 3. CHECK IF USER IS REFEREE
+    elif user.groups.filter(name='Referee').exists():
+        return redirect('referees:referee_dashboard')
+    
+    # 4. CHECK IF USER IS LEAGUE ADMIN OR STAFF
+    elif user.groups.filter(name='League Admin').exists() or user.is_staff:
+        # Get league settings
+        settings = LeagueSettings.get_settings()
+        
+        # Get transfer stats
+        pending_transfers = TransferRequest.objects.filter(status='pending_parent').count()
+        rejected_transfers = TransferRequest.objects.filter(status='rejected').count()
+        
+        context = {
+            'pending_teams': Team.objects.filter(status='pending'),
+            'pending_referees': Referee.objects.filter(status='pending'),
+            'pending_reports': MatchReport.objects.filter(status='draft'),
+            'league_settings': settings,
+            'pending_transfers': pending_transfers,
+            'rejected_transfers': rejected_transfers,
+        }
+        return render(request, 'dashboard/league_admin.html', context)
+    
+    # 5. DEFAULT DASHBOARD FOR OTHER USERS
+    return render(request, 'dashboard/default.html')
+
+
+@login_required
+@user_passes_test(admin_required)
+def toggle_registration_window(request):
+    """Toggle team/player/transfer registration windows"""
+    if request.method == 'POST':
+        settings = LeagueSettings.get_settings()
+        window_type = request.POST.get('window_type')
+        
+        if window_type == 'team':
+            settings.team_registration_open = not settings.team_registration_open
+            status = "opened" if settings.team_registration_open else "closed"
+            messages.success(request, f"Team registration {status}")
+        elif window_type == 'player':
+            settings.player_registration_open = not settings.player_registration_open
+            status = "opened" if settings.player_registration_open else "closed"
+            messages.success(request, f"Player registration {status}")
+        elif window_type == 'transfer':
+            settings.transfer_window_open = not settings.transfer_window_open
+            status = "opened" if settings.transfer_window_open else "closed"
+            messages.success(request, f"Transfer window {status}")
+        
+        settings.updated_by = request.user
+        settings.save()
+    
+    return redirect('dashboard')
+
+
+@login_required
+@user_passes_test(admin_required)
+def update_registration_deadlines(request):
+    """Set or clear deadlines for team/player registrations and transfer window"""
+    if request.method != 'POST':
+        return redirect('dashboard')
+
+    settings = LeagueSettings.get_settings()
+    tz = timezone.get_default_timezone()
+    errors = []
+
+    def parse_deadline(field, label):
+        value = request.POST.get(field, '').strip()
+        if not value:
+            return None
+        try:
+            dt = datetime.fromisoformat(value)
+        except ValueError:
+            errors.append(f"Invalid {label} datetime format. Please use the picker provided.")
+            return None
+        if timezone.is_naive(dt):
+            dt = timezone.make_aware(dt, tz)
+        else:
+            dt = dt.astimezone(tz)
+        return dt
+
+    team_deadline = parse_deadline('team_deadline', 'team registration')
+    player_deadline = parse_deadline('player_deadline', 'player registration')
+    transfer_deadline = parse_deadline('transfer_deadline', 'transfer window')
+
+    if errors:
+        messages.error(request, ' '.join(errors))
+        return redirect('dashboard')
+    
+    now = timezone.now()
+
+    # Auto-open windows when setting future deadlines and clear closed dates
+    if team_deadline and team_deadline > now:
+        if not settings.team_registration_open:
+            settings.team_registration_open = True
+            messages.info(request, "Team registration automatically opened due to future deadline.")
+        settings.team_registration_closed_date = None
+    
+    if player_deadline and player_deadline > now:
+        if not settings.player_registration_open:
+            settings.player_registration_open = True
+            messages.info(request, "Player registration automatically opened due to future deadline.")
+        settings.player_registration_closed_date = None
+    
+    if transfer_deadline and transfer_deadline > now:
+        if not settings.transfer_window_open:
+            settings.transfer_window_open = True
+            messages.info(request, "Transfer window automatically opened due to future deadline.")
+        settings.transfer_window_closed_date = None
+
+    settings.team_registration_deadline = team_deadline
+    settings.player_registration_deadline = player_deadline
+    settings.transfer_window_deadline = transfer_deadline
+    settings.updated_by = request.user
+    settings.save()
+
+    messages.success(request, "Deadlines updated successfully.")
+    return redirect('dashboard')
+
+
+@login_required
+@user_passes_test(admin_required)
+def manage_transfers(request):
+    """Admin view to manage all transfer requests"""
+    pending = TransferRequest.objects.filter(status='pending_parent').select_related(
+        'player', 'from_team', 'to_team', 'requested_by'
+    )
+    rejected = TransferRequest.objects.filter(status='rejected').select_related(
+        'player', 'from_team', 'to_team', 'parent_decision_by'
+    )
+    approved = TransferRequest.objects.filter(status='approved').select_related(
+        'player', 'from_team', 'to_team'
+    )[:20]
+    
+    context = {
+        'pending_transfers': pending,
+        'rejected_transfers': rejected,
+        'approved_transfers': approved,
+    }
+    return render(request, 'admin_dashboard/transfers.html', context)
+
+
+@login_required
+@user_passes_test(admin_required)
+def admin_override_transfer(request, transfer_id):
+    """Super admin overrides rejection and forces approval"""
+    transfer = get_object_or_404(TransferRequest, id=transfer_id)
+    
+    if transfer.status != 'rejected':
+        messages.error(request, "Only rejected transfers can be overridden")
+        return redirect('admin_dashboard:manage_transfers')
+    
+    if request.method == 'POST':
+        reason = request.POST.get('reason', 'Admin override: Approved by super admin')
+        transfer.override_by_admin(user=request.user, reason=reason)
+        messages.success(request, 
+            f"✅ Transfer approved: {transfer.player.full_name} → {transfer.to_team.team_name}"
+        )
+        return redirect('admin_dashboard:manage_transfers')
+    
+    return render(request, 'admin_dashboard/override_transfer.html', {
+        'transfer': transfer
     })

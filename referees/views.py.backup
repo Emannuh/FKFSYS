@@ -1,0 +1,606 @@
+# referees/views.py
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Q, Count
+from django.core.paginator import Paginator
+from django.http import HttpResponse
+from .models import Referee, MatchReport, RefereeAppointment, Match, Team
+from .forms import RefereeRegistrationForm, RefereeProfileForm, MatchReportForm, ComprehensiveMatchReportForm
+import json
+from datetime import datetime, timedelta
+from django.utils import timezone
+from django.db.models.functions import TruncMonth
+
+def is_admin(user):
+    """Check if user is admin/staff"""
+    return user.is_staff or user.is_superuser
+
+# =============== PUBLIC VIEWS ===============
+
+def referee_registration(request):
+    """Public referee registration"""
+    if request.method == 'POST':
+        form = RefereeRegistrationForm(request.POST, request.FILES)
+        if form.is_valid():
+            referee = form.save(commit=False)
+            referee.status = 'pending'
+            referee.save()
+            messages.success(request, 'Your registration has been submitted successfully! You will be notified via email once approved.')
+            return redirect('referees:login_instructions')
+    else:
+        form = RefereeRegistrationForm()
+    
+    context = {
+        'form': form,
+    }
+    return render(request, 'referees/registration.html', context)
+
+def login_instructions(request):
+    """Login instructions page"""
+    return render(request, 'referees/login_instructions.html')
+
+# =============== REFEREE DASHBOARD VIEWS ===============
+
+@login_required
+def referee_dashboard(request):
+    """Referee dashboard"""
+    try:
+        referee = request.user.referee
+    except Referee.DoesNotExist:
+        messages.error(request, 'You are not registered as a referee.')
+        return redirect('frontend:home')
+    
+    # Get pending confirmations
+    pending_confirmation = RefereeAppointment.objects.filter(
+        referee=referee,
+        confirmed=False,
+        match__match_date__gte=timezone.now()
+    ).select_related('match')
+    
+    # Get upcoming matches
+    upcoming_matches = RefereeAppointment.objects.filter(
+        referee=referee,
+        match__match_date__gte=timezone.now()
+    ).select_related('match').order_by('match__match_date')
+    
+    # Get pending reports
+    pending_reports = MatchReport.objects.filter(
+        referee=referee,
+        status__in=['draft', 'pending']
+    ).select_related('match')
+    
+    # Get submitted reports
+    submitted_reports = MatchReport.objects.filter(
+        referee=referee,
+        status='submitted'
+    ).select_related('match')
+    
+    # Get draft reports
+    draft_reports = MatchReport.objects.filter(
+        referee=referee,
+        status='draft'
+    ).select_related('match')
+    
+    context = {
+        'referee': referee,
+        'pending_confirmation': pending_confirmation,
+        'upcoming_matches': upcoming_matches,
+        'pending_reports': pending_reports,
+        'submitted_reports': submitted_reports,
+        'draft_reports': draft_reports,
+        'can_submit_report': True,
+    }
+    return render(request, 'referees/dashboard.html', context)
+
+@login_required
+def referee_profile(request):
+    """Referee profile management"""
+    try:
+        referee = request.user.referee
+    except Referee.DoesNotExist:
+        messages.error(request, 'You are not registered as a referee.')
+        return redirect('frontend:home')
+    
+    if request.method == 'POST':
+        form = RefereeProfileForm(request.POST, request.FILES, instance=referee)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile has been updated successfully!')
+            return redirect('referees:referee_profile')
+    else:
+        form = RefereeProfileForm(instance=referee)
+    
+    context = {
+        'form': form,
+        'referee': referee,
+    }
+    return render(request, 'referees/profile.html', context)
+
+@login_required
+def referee_availability(request):
+    """Referee availability management"""
+    try:
+        referee = request.user.referee
+    except Referee.DoesNotExist:
+        messages.error(request, 'You are not registered as a referee.')
+        return redirect('frontend:home')
+    
+    context = {
+        'referee': referee,
+    }
+    return render(request, 'referees/availability.html', context)
+
+# =============== REFEREE MATCH ACTIONS ===============
+
+@login_required
+def confirm_appointment(request, match_id):
+    """Confirm match appointment"""
+    try:
+        referee = request.user.referee
+    except Referee.DoesNotExist:
+        messages.error(request, 'You are not registered as a referee.')
+        return redirect('frontend:home')
+    
+    match = get_object_or_404(Match, id=match_id)
+    appointment = get_object_or_404(RefereeAppointment, match=match, referee=referee)
+    
+    if request.method == 'POST':
+        appointment.confirmed = True
+        appointment.confirmed_at = timezone.now()
+        appointment.save()
+        messages.success(request, f'You have confirmed your appointment for {match.home_team} vs {match.away_team}.')
+        return redirect('referees:referee_dashboard')
+    
+    context = {
+        'match': match,
+        'appointment': appointment,
+    }
+    return render(request, 'referees/confirm_appointment.html', context)
+
+@login_required
+def submit_match_report(request, match_id):
+    """Submit match report"""
+    try:
+        referee = request.user.referee
+    except Referee.DoesNotExist:
+        messages.error(request, 'You are not registered as a referee.')
+        return redirect('frontend:home')
+    
+    match = get_object_or_404(Match, id=match_id)
+    
+    # Check if report exists
+    report = MatchReport.objects.filter(match=match, referee=referee).first()
+    
+    if request.method == 'POST':
+        if report:
+            form = MatchReportForm(request.POST, instance=report)
+        else:
+            form = MatchReportForm(request.POST)
+        
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.match = match
+            report.referee = referee
+            report.status = 'submitted'
+            report.submitted_at = timezone.now()
+            report.save()
+            
+            # Update match status if needed
+            if not match.is_finished:
+                match.is_finished = True
+                match.save()
+            
+            messages.success(request, 'Match report submitted successfully!')
+            return redirect('referees:referee_dashboard')
+    else:
+        if report:
+            form = MatchReportForm(instance=report)
+        else:
+            form = MatchReportForm(initial={
+                'match': match,
+                'referee': referee,
+            })
+    
+    context = {
+        'form': form,
+        'match': match,
+        'report': report,
+    }
+    return render(request, 'referees/submit_report.html', context)
+
+@login_required
+def submit_comprehensive_report(request, match_id):
+    """Submit comprehensive match report"""
+    try:
+        referee = request.user.referee
+    except Referee.DoesNotExist:
+        messages.error(request, 'You are not registered as a referee.')
+        return redirect('frontend:home')
+    
+    match = get_object_or_404(Match, id=match_id)
+    report = MatchReport.objects.filter(match=match, referee=referee).first()
+    
+    if request.method == 'POST':
+        if report:
+            form = ComprehensiveMatchReportForm(request.POST, instance=report)
+        else:
+            form = ComprehensiveMatchReportForm(request.POST)
+        
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.match = match
+            report.referee = referee
+            report.status = 'draft' if 'save_draft' in request.POST else 'submitted'
+            
+            if report.status == 'submitted':
+                report.submitted_at = timezone.now()
+                # Update match status
+                if not match.is_finished:
+                    match.is_finished = True
+                    match.save()
+            
+            report.save()
+            
+            if report.status == 'draft':
+                messages.success(request, 'Report saved as draft.')
+            else:
+                messages.success(request, 'Comprehensive match report submitted successfully!')
+            
+            return redirect('referees:referee_dashboard')
+    else:
+        if report:
+            form = ComprehensiveMatchReportForm(instance=report)
+        else:
+            form = ComprehensiveMatchReportForm(initial={
+                'match': match,
+                'referee': referee,
+            })
+    
+    context = {
+        'form': form,
+        'match': match,
+        'report': report,
+    }
+    return render(request, 'referees/submit_comprehensive_report.html', context)
+
+@login_required
+def view_report(request, report_id):
+    """View match report"""
+    try:
+        referee = request.user.referee
+    except Referee.DoesNotExist:
+        messages.error(request, 'You are not registered as a referee.')
+        return redirect('frontend:home')
+    
+    report = get_object_or_404(MatchReport, id=report_id, referee=referee)
+    
+    context = {
+        'report': report,
+    }
+    return render(request, 'referees/view_report.html', context)
+
+# =============== ADMIN/REFEREES MANAGER VIEWS ===============
+
+@login_required
+@user_passes_test(is_admin)
+def matches_needing_officials(request):
+    """View matches needing officials"""
+    # Get matches that need officials (no appointments or incomplete appointments)
+    matches = Match.objects.filter(
+        match_date__gte=timezone.now(),
+        is_finished=False
+    ).prefetch_related('refereeappointment_set').order_by('match_date')
+    
+    # Filter matches that need officials
+    matches_needing_officials = []
+    for match in matches:
+        appointments = match.refereeappointment_set.all()
+        if appointments.count() < 3:  # Need referee, assistant1, assistant2
+            matches_needing_officials.append(match)
+    
+    context = {
+        'matches': matches_needing_officials,
+    }
+    return render(request, 'referees/matches_needing_officials.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def appoint_match_officials(request, match_id):
+    """Appoint officials to a match"""
+    match = get_object_or_404(Match, id=match_id)
+    
+    if request.method == 'POST':
+        # Process appointment logic here
+        messages.success(request, 'Officials appointed successfully!')
+        return redirect('referees:matches_needing_officials')
+    
+    # Get available referees
+    available_referees = Referee.objects.filter(
+        is_active=True,
+        status='approved'
+    ).order_by('grade', 'last_name')
+    
+    context = {
+        'match': match,
+        'available_referees': available_referees,
+    }
+    return render(request, 'referees/appoint_officials.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def replace_referee(request, match_id, role):
+    """Replace a referee in a match"""
+    match = get_object_or_404(Match, id=match_id)
+    
+    # Implementation for replacing referee
+    messages.success(request, f'{role} replaced successfully!')
+    return redirect('referees:matches_needing_officials')
+
+# =============== ADMIN REFEREE MANAGEMENT ===============
+
+@login_required
+@user_passes_test(is_admin)
+def admin_referee_dashboard(request):
+    """Admin referee dashboard"""
+    # Get statistics
+    total_referees = Referee.objects.count()
+    pending_referees = Referee.objects.filter(status='pending').count()
+    approved_referees = Referee.objects.filter(status='approved', is_active=True).count()
+    inactive_referees = Referee.objects.filter(is_active=False).count()
+    
+    # Get recent registrations
+    recent_registrations = Referee.objects.order_by('-date_joined')[:10]
+    
+    context = {
+        'total_referees': total_referees,
+        'pending_referees': pending_referees,
+        'approved_referees': approved_referees,
+        'inactive_referees': inactive_referees,
+        'recent_registrations': recent_registrations,
+    }
+    return render(request, 'referees/admin/dashboard.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def pending_referees(request):
+    """View pending referee applications"""
+    pending_referees = Referee.objects.filter(status='pending').order_by('-date_joined')
+    
+    # Get counts
+    approved_count = Referee.objects.filter(status='approved').count()
+    rejected_count = Referee.objects.filter(status='rejected').count()
+    
+    context = {
+        'pending_referees': pending_referees,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+    }
+    return render(request, 'referees/admin/pending_referees.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def all_referees(request):
+    """View all referees with filters"""
+    referees = Referee.objects.all().order_by('-date_joined')
+    
+    # Apply filters
+    status = request.GET.get('status')
+    grade = request.GET.get('grade')
+    county = request.GET.get('county')
+    search = request.GET.get('q')
+    
+    if status:
+        referees = referees.filter(status=status)
+    if grade:
+        referees = referees.filter(grade=grade)
+    if county:
+        referees = referees.filter(county__icontains=county)
+    if search:
+        referees = referees.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search) |
+            Q(fkf_number__icontains=search)
+        )
+    
+    # Get statistics
+    total_count = Referee.objects.count()
+    active_count = Referee.objects.filter(is_active=True).count()
+    inactive_count = Referee.objects.filter(is_active=False).count()
+    
+    # Pagination
+    paginator = Paginator(referees, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'referees': page_obj,
+        'page_obj': page_obj,
+        'total_count': total_count,
+        'active_count': active_count,
+        'inactive_count': inactive_count,
+        'average_grade': 'N/A',  # You can calculate this if you have a grading system
+    }
+    return render(request, 'referees/admin/all_referees.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def active_referees(request):
+    """View active referees"""
+    active_referees = Referee.objects.filter(is_active=True, status='approved').order_by('-date_joined')
+    
+    context = {
+        'referees': active_referees,
+        'page_title': 'Active Referees',
+        'active_count': active_referees.count(),
+    }
+    return render(request, 'referees/admin/all_referees.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def inactive_referees(request):
+    """View inactive referees"""
+    inactive_referees = Referee.objects.filter(is_active=False).order_by('-date_joined')
+    
+    context = {
+        'referees': inactive_referees,
+        'page_title': 'Inactive Referees',
+        'inactive_count': inactive_referees.count(),
+    }
+    return render(request, 'referees/admin/all_referees.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def approve_referee(request, referee_id):
+    """Approve a referee application"""
+    referee = get_object_or_404(Referee, id=referee_id)
+    
+    if request.method == 'POST':
+        referee.status = 'approved'
+        referee.is_active = True
+        referee.approved_at = timezone.now()
+        referee.approved_by = request.user
+        referee.save()
+        
+        messages.success(request, f'Referee {referee.full_name} has been approved.')
+        return redirect('referees:pending_referees')
+    
+    context = {
+        'referee': referee,
+        'action': 'approve',
+    }
+    return render(request, 'referees/admin/confirm_action.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def reject_referee(request, referee_id):
+    """Reject a referee application"""
+    referee = get_object_or_404(Referee, id=referee_id)
+    
+    if request.method == 'POST':
+        referee.status = 'rejected'
+        referee.is_active = False
+        referee.save()
+        
+        messages.success(request, f'Referee {referee.full_name} has been rejected.')
+        return redirect('referees:pending_referees')
+    
+    context = {
+        'referee': referee,
+        'action': 'reject',
+    }
+    return render(request, 'referees/admin/confirm_action.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def suspend_referee(request, referee_id):
+    """Suspend a referee"""
+    referee = get_object_or_404(Referee, id=referee_id)
+    
+    if request.method == 'POST':
+        referee.is_active = False
+        referee.save()
+        
+        messages.success(request, f'Referee {referee.full_name} has been suspended.')
+        return redirect('referees:all_referees')
+    
+    context = {
+        'referee': referee,
+        'action': 'suspend',
+    }
+    return render(request, 'referees/admin/confirm_action.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def reactivate_referee(request, referee_id):
+    """Reactivate a suspended referee"""
+    referee = get_object_or_404(Referee, id=referee_id)
+    
+    if request.method == 'POST':
+        referee.is_active = True
+        referee.save()
+        
+        messages.success(request, f'Referee {referee.full_name} has been reactivated.')
+        return redirect('referees:all_referees')
+    
+    context = {
+        'referee': referee,
+        'action': 'reactivate',
+    }
+    return render(request, 'referees/admin/confirm_action.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def activate_referee(request, referee_id):
+    """Activate a referee account"""
+    referee = get_object_or_404(Referee, id=referee_id)
+    
+    if request.method == 'POST':
+        referee.is_active = True
+        referee.save()
+        
+        messages.success(request, f'Referee {referee.full_name} has been activated.')
+        return redirect('referees:all_referees')
+    
+    context = {
+        'referee': referee,
+        'action': 'activate',
+    }
+    return render(request, 'referees/admin/confirm_action.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def deactivate_referee(request, referee_id):
+    """Deactivate a referee account"""
+    referee = get_object_or_404(Referee, id=referee_id)
+    
+    if request.method == 'POST':
+        referee.is_active = False
+        referee.save()
+        
+        messages.success(request, f'Referee {referee.full_name} has been deactivated.')
+        return redirect('referees:all_referees')
+    
+    context = {
+        'referee': referee,
+        'action': 'deactivate',
+    }
+    return render(request, 'referees/admin/confirm_action.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def referee_detail(request, referee_id):
+    """View referee details"""
+    referee = get_object_or_404(Referee, id=referee_id)
+    
+    context = {
+        'referee': referee,
+    }
+    return render(request, 'referees/admin/referee_detail.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def referee_matches_admin(request, referee_id):
+    """View referee matches (admin view)"""
+    referee = get_object_or_404(Referee, id=referee_id)
+    appointments = RefereeAppointment.objects.filter(referee=referee).select_related('match')
+    
+    context = {
+        'referee': referee,
+        'appointments': appointments,
+    }
+    return render(request, 'referees/admin/referee_matches.html', context)
+
+@login_required
+@user_passes_test(is_admin)
+def referee_reports(request, referee_id):
+    """View referee reports"""
+    referee = get_object_or_404(Referee, id=referee_id)
+    reports = MatchReport.objects.filter(referee=referee).select_related('match')
+    
+    context = {
+        'referee': referee,
+        'reports': reports,
+    }
+    return render(request, 'referees/admin/referee_reports.html', context)

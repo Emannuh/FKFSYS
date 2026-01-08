@@ -1,0 +1,63 @@
+<!-- templates/admin/reschedule_single.html - CREATE THIS FILE -->
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module">
+        <h2>Reschedule Match</h2>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Match Details</h4>
+            </div>
+            <div class="card-body">
+                <p><strong>Match:</strong> {{ match.home_team.team_name }} vs {{ match.away_team.team_name }}</p>
+                <p><strong>Current Date:</strong> {{ match.match_date|date:"l, F j, Y" }}</p>
+                <p><strong>Current Time:</strong> {{ match.match_date|time:"g:i A" }}</p>
+                <p><strong>Zone:</strong> {{ match.zone.name }} | <strong>Round:</strong> {{ match.round_number }}</p>
+            </div>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group mb-3">
+                <label for="new_date">New Date:</label>
+                <input type="date" id="new_date" name="new_date" 
+                       value="{{ match.match_date|date:'Y-m-d' }}" 
+                       class="form-control" required>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="new_time">New Time (24-hour format):</label>
+                <input type="time" id="new_time" name="new_time" 
+                       value="{{ match.match_date|time:'H:i' }}" 
+                       class="form-control" required>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="reason">Reason for Rescheduling (Optional):</label>
+                <textarea id="reason" name="reason" class="form-control" 
+                          rows="3" placeholder="E.g., Venue unavailable, Weather conditions, etc."></textarea>
+            </div>
+            
+            <div class="submit-row">
+                <input type="submit" value="Reschedule Match" class="btn btn-primary">
+                <a href="{% url 'admin:matches_match_changelist' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-control {
+        max-width: 300px;
+    }
+    .submit-row {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+    }
+</style>
+{% endblock %}

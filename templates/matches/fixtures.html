@@ -1,18 +1,31 @@
-<!-- templates/matches/fixtures.html -->
+<!-- templates/matches/fixtures.html - REPLACE ENTIRE FILE -->
 {% extends 'base.html' %}
 
 {% block title %}Fixtures - FKF Meru County League{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container-fluid py-4">
+    <!-- Header with Stats -->
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center">
-                <h1><i class="fas fa-calendar-alt"></i> Match Fixtures</h1>
+                <div>
+                    <h1 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Match Fixtures</h1>
+                    <p class="text-muted mb-0">Complete match schedule and results</p>
+                </div>
                 <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-outline-primary active" id="allFixtures">All Fixtures</button>
-                    <button type="button" class="btn btn-outline-success" id="upcomingFixtures">Upcoming</button>
-                    <button type="button" class="btn btn-outline-secondary" id="completedFixtures">Completed</button>
+                    <a href="?status=upcoming" 
+                       class="btn btn-outline-success {% if selected_status == 'upcoming' %}active{% endif %}">
+                        <i class="fas fa-clock"></i> Upcoming <span class="badge bg-success">{{ upcoming_count }}</span>
+                    </a>
+                    <a href="?status=completed" 
+                       class="btn btn-outline-secondary {% if selected_status == 'completed' %}active{% endif %}">
+                        <i class="fas fa-check-circle"></i> Completed <span class="badge bg-secondary">{{ completed_count }}</span>
+                    </a>
+                    <a href="?status=all" 
+                       class="btn btn-outline-primary {% if not selected_status or selected_status == 'all' %}active{% endif %}">
+                        <i class="fas fa-list"></i> All <span class="badge bg-primary">{{ all_count }}</span>
+                    </a>
                 </div>
             </div>
             <hr>
@@ -22,33 +35,73 @@
     <!-- Filter Section -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label for="zoneFilter" class="form-label">Filter by Zone</label>
-                            <select class="form-select" id="zoneFilter">
-                                <option value="all">All Zones</option>
-                                <option value="A">Zone A</option>
-                                <option value="B">Zone B</option>
-                                <option value="C">Zone C</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="roundFilter" class="form-label">Filter by Round</label>
-                            <select class="form-select" id="roundFilter">
-                                <option value="all">All Rounds</option>
-                                <option value="1">Round 1</option>
-                                <option value="2">Round 2</option>
-                                <option value="3">Round 3</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="dateFilter" class="form-label">Filter by Date</label>
-                            <input type="date" class="form-control" id="dateFilter">
-                        </div>
-                    </div>
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Fixtures</h5>
                 </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="zone" class="form-label">Zone</label>
+                            <select name="zone" id="zone" class="form-select">
+                                <option value="all">All Zones</option>
+                                {% for zone in zones %}
+                                <option value="{{ zone.id }}" 
+                                    {% if selected_zone == zone.id|stringformat:"i" %}selected{% endif %}>
+                                    {{ zone.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="round" class="form-label">Round</label>
+                            <select name="round" id="round" class="form-select">
+                                <option value="all">All Rounds</option>
+                                {% for round in rounds %}
+                                <option value="{{ round }}" 
+                                    {% if selected_round == round|stringformat:"i" %}selected{% endif %}>
+                                    Round {{ round }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" name="date" id="date" class="form-control" 
+                                   value="{{ selected_date }}">
+                        </div>
+                        
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="d-grid gap-2 w-100">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i> Apply Filters
+                                </button>
+                                <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i> Clear Filters
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Date Navigation -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="btn-group" role="group">
+                <a href="?date={{ today|date:'Y-m-d' }}&status=today" class="btn btn-outline-info">
+                    <i class="fas fa-calendar-day"></i> Today
+                </a>
+                <a href="?status=weekend" class="btn btn-outline-warning">
+                    <i class="fas fa-calendar-week"></i> This Weekend
+                </a>
+                <a href="?date={{ today|date:'Y-m-d' }}" class="btn btn-outline-success">
+                    <i class="fas fa-calendar-alt"></i> {{ today|date:"l, F j, Y" }}
+                </a>
             </div>
         </div>
     </div>
@@ -56,80 +109,119 @@
     <!-- Fixtures Display -->
     <div class="row">
         <div class="col-md-12">
-            <div class="card">
-                <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Upcoming Fixtures</h5>
-                    <span class="badge bg-warning">Latest</span>
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-futbol me-2"></i>
+                        {% if selected_status == 'upcoming' %}Upcoming Fixtures
+                        {% elif selected_status == 'completed' %}Completed Matches
+                        {% else %}All Fixtures{% endif %}
+                    </h5>
+                    <span class="badge bg-light text-dark">
+                        {{ upcoming_matches.count }} matches
+                    </span>
                 </div>
-                <div class="card-body">
-                    {% if fixtures %}
+                <div class="card-body p-0">
+                    {% if upcoming_matches %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover mb-0">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>Date & Time</th>
-                                    <th>Home Team</th>
-                                    <th></th>
-                                    <th>Away Team</th>
-                                    <th>Venue</th>
-                                    <th>Zone</th>
-                                    <th>Round</th>
-                                    <th>Status</th>
+                                    <th width="15%">Date & Time</th>
+                                    <th width="25%">Home Team</th>
+                                    <th width="10%" class="text-center">Result</th>
+                                    <th width="25%">Away Team</th>
+                                    <th width="10%">Venue</th>
+                                    <th width="10%">Zone</th>
+                                    <th width="5%">Round</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for fixture in fixtures %}
-                                <tr>
+                                {% for match in upcoming_matches %}
+                                <tr class="{% if match.status == 'ongoing' %}table-warning{% endif %}">
                                     <td>
-                                        <strong>{{ fixture.date|date:"D, M d" }}</strong><br>
-                                        <small>{{ fixture.time|time:"g:i A" }}</small>
+                                        <div class="d-flex flex-column">
+                                            <strong class="text-primary">{{ match.match_date|date:"D, M d" }}</strong>
+                                            <small class="text-muted">{{ match.match_date|time:"g:i A" }}</small>
+                                            {% if match.match_date.date == today %}
+                                            <span class="badge bg-danger mt-1">TODAY</span>
+                                            {% endif %}
+                                        </div>
                                     </td>
+                                    
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="team-logo me-2">
-                                                {% if fixture.home_team.logo %}
-                                                <img src="{{ fixture.home_team.logo.url }}" alt="{{ fixture.home_team.name }}" class="team-logo">
+                                            <div class="team-logo me-3">
+                                                {% if match.home_team.logo %}
+                                                <img src="{{ match.home_team.logo.url }}" 
+                                                     alt="{{ match.home_team.team_name }}" 
+                                                     class="team-logo-small">
                                                 {% else %}
-                                                <div class="team-logo bg-secondary d-flex align-items-center justify-content-center">
-                                                    <i class="fas fa-shield-alt text-white"></i>
+                                                <div class="team-logo-placeholder bg-secondary">
+                                                    {{ match.home_team.team_name|slice:":2"|upper }}
                                                 </div>
                                                 {% endif %}
                                             </div>
-                                            <span>{{ fixture.home_team.name }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="text-center">
-                                        <strong>VS</strong>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="team-logo me-2">
-                                                {% if fixture.away_team.logo %}
-                                                <img src="{{ fixture.away_team.logo.url }}" alt="{{ fixture.away_team.name }}" class="team-logo">
-                                                {% else %}
-                                                <div class="team-logo bg-secondary d-flex align-items-center justify-content-center">
-                                                    <i class="fas fa-shield-alt text-white"></i>
-                                                </div>
-                                                {% endif %}
+                                            <div>
+                                                <strong>{{ match.home_team.team_name }}</strong><br>
+                                                <small class="text-muted">{{ match.home_team.location }}</small>
                                             </div>
-                                            <span>{{ fixture.away_team.name }}</span>
                                         </div>
                                     </td>
-                                    <td>{{ fixture.venue }}</td>
-                                    <td>
-                                        <span class="badge zone-{{ fixture.zone|lower }}">{{ fixture.zone }}</span>
-                                    </td>
-                                    <td>Round {{ fixture.round }}</td>
-                                    <td>
-                                        {% if fixture.status == 'scheduled' %}
-                                        <span class="badge bg-info">Scheduled</span>
-                                        {% elif fixture.status == 'ongoing' %}
-                                        <span class="badge bg-warning">Ongoing</span>
-                                        {% elif fixture.status == 'completed' %}
-                                        <span class="badge bg-success">Completed</span>
-                                        {% elif fixture.status == 'postponed' %}
-                                        <span class="badge bg-danger">Postponed</span>
+                                    
+                                    <td class="text-center align-middle">
+                                        {% if match.status == 'completed' %}
+                                        <div class="score-display">
+                                            <span class="home-score">{{ match.home_score }}</span>
+                                            <span class="mx-1">-</span>
+                                            <span class="away-score">{{ match.away_score }}</span>
+                                        </div>
+                                        <small class="text-muted d-block">FT</small>
+                                        {% elif match.status == 'ongoing' %}
+                                        <div class="score-display text-warning">
+                                            <span class="home-score">{{ match.home_score|default:"0" }}</span>
+                                            <span class="mx-1">-</span>
+                                            <span class="away-score">{{ match.away_score|default:"0" }}</span>
+                                        </div>
+                                        <small class="text-warning d-block">LIVE</small>
+                                        {% else %}
+                                        <span class="text-muted">VS</span>
                                         {% endif %}
+                                    </td>
+                                    
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="team-logo me-3">
+                                                {% if match.away_team.logo %}
+                                                <img src="{{ match.away_team.logo.url }}" 
+                                                     alt="{{ match.away_team.team_name }}" 
+                                                     class="team-logo-small">
+                                                {% else %}
+                                                <div class="team-logo-placeholder bg-secondary">
+                                                    {{ match.away_team.team_name|slice:":2"|upper }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <strong>{{ match.away_team.team_name }}</strong><br>
+                                                <small class="text-muted">{{ match.away_team.location }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="align-middle">
+                                        <small>{{ match.venue|truncatechars:20 }}</small>
+                                    </td>
+                                    
+                                    <td class="align-middle">
+                                        <span class="badge zone-badge" 
+                                              style="background-color: {{ match.zone.id|stringformat:'d'|add:'100'|stringformat:'#%06x'|slice:'0:7' }}">
+                                            {{ match.zone.name }}
+                                        </span>
+                                    </td>
+                                    
+                                    <td class="align-middle">
+                                        <span class="badge bg-dark">R{{ match.round_number }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -138,11 +230,24 @@
                     </div>
                     {% else %}
                     <div class="text-center py-5">
-                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                        <h4>No Fixtures Available</h4>
-                        <p class="text-muted">Fixtures will be published soon. Check back later!</p>
-                        <a href="{% url 'matches:league_tables' %}" class="btn btn-primary-custom mt-3">
-                            <i class="fas fa-table"></i> View League Tables
+                        <i class="fas fa-calendar-times fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted">No Fixtures Available</h4>
+                        <p class="text-muted mb-4">
+                            {% if selected_status == 'upcoming' %}
+                            No upcoming fixtures found. Fixtures will be generated automatically when teams are approved and assigned to zones.
+                            {% elif selected_status == 'completed' %}
+                            No completed matches yet.
+                            {% else %}
+                            No fixtures found with the current filters.
+                            {% endif %}
+                        </p>
+                        {% if user.is_staff %}
+                        <a href="/admin/teams/zone/" class="btn btn-primary">
+                            <i class="fas fa-cog me-2"></i>Generate Fixtures in Admin
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary ms-2">
+                            <i class="fas fa-eye me-2"></i>View All Fixtures
                         </a>
                     </div>
                     {% endif %}
@@ -151,76 +256,160 @@
         </div>
     </div>
 
-    <!-- Completed Matches -->
+    <!-- Completed Matches (if viewing all) -->
+    {% if selected_status == 'all' or selected_status == 'completed' %}
+    {% if completed_matches %}
     <div class="row mt-5">
         <div class="col-md-12">
-            <div class="card">
-                <div class="card-header card-header-custom">
-                    <h5 class="mb-0">Recent Results</h5>
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Results</h5>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> 
-                        Match results will be displayed here as they become available.
+                    <div class="row">
+                        {% for match in completed_matches|slice:":6" %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card match-result-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <small class="text-muted">{{ match.match_date|date:"M d, Y" }}</small>
+                                        <span class="badge bg-dark">R{{ match.round_number }}</span>
+                                    </div>
+                                    
+                                    <div class="teams-row mb-2">
+                                        <div class="team">
+                                            <small>{{ match.home_team.team_name|truncatechars:20 }}</small>
+                                        </div>
+                                        <div class="score">
+                                            <strong>{{ match.home_score }}</strong>
+                                        </div>
+                                        <div class="vs">-</div>
+                                        <div class="score">
+                                            <strong>{{ match.away_score }}</strong>
+                                        </div>
+                                        <div class="team text-end">
+                                            <small>{{ match.away_team.team_name|truncatechars:20 }}</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ match.zone.name }}</small>
+                                        <a href="{% url 'matches:match_details' match.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    {% endif %}
+    {% endif %}
 </div>
 
 <style>
-    .team-logo {
+    .team-logo-small {
         width: 40px;
         height: 40px;
         object-fit: cover;
         border-radius: 50%;
-        border: 2px solid var(--primary-red);
+        border: 2px solid #dc3545;
     }
     
-    .zone-a { background-color: #ff6b6b !important; }
-    .zone-b { background-color: #4ecdc4 !important; }
-    .zone-c { background-color: #45b7d1 !important; }
+    .team-logo-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 14px;
+    }
     
-    table tbody tr:hover {
-        background-color: rgba(220, 53, 69, 0.05);
+    .zone-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        color: white;
+        font-size: 12px;
+    }
+    
+    .score-display {
+        font-size: 18px;
+        font-weight: bold;
+    }
+    
+    .home-score { color: #dc3545; }
+    .away-score { color: #0d6efd; }
+    
+    .match-result-card {
+        border-left: 4px solid #198754;
+        transition: transform 0.2s;
+    }
+    
+    .match-result-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .teams-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .teams-row .team {
+        flex: 2;
+    }
+    
+    .teams-row .score {
+        flex: 1;
+        text-align: center;
+        font-size: 18px;
+    }
+    
+    .teams-row .vs {
+        flex: 0.5;
+        text-align: center;
+        color: #6c757d;
     }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Filter buttons functionality
-        document.getElementById('allFixtures').addEventListener('click', function() {
-            setActiveButton(this);
-            // Add filtering logic here
-        });
+        // Auto-set date filter to today if empty
+        const dateInput = document.getElementById('date');
+        if (!dateInput.value) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+        }
         
-        document.getElementById('upcomingFixtures').addEventListener('click', function() {
-            setActiveButton(this);
-            // Add filtering logic here
-        });
-        
-        document.getElementById('completedFixtures').addEventListener('click', function() {
-            setActiveButton(this);
-            // Add filtering logic here
-        });
-        
-        function setActiveButton(button) {
-            document.querySelectorAll('.btn-group .btn').forEach(btn => {
-                btn.classList.remove('active');
+        // Quick filter buttons
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (!this.href) e.preventDefault();
+                document.querySelectorAll('.btn-group .btn').forEach(b => {
+                    b.classList.remove('active');
+                });
+                this.classList.add('active');
             });
-            button.classList.add('active');
-        }
+        });
         
-        // Filter select changes
-        document.getElementById('zoneFilter').addEventListener('change', filterFixtures);
-        document.getElementById('roundFilter').addEventListener('change', filterFixtures);
-        document.getElementById('dateFilter').addEventListener('change', filterFixtures);
+        // Auto-submit on filter change (optional)
+        const zoneSelect = document.getElementById('zone');
+        const roundSelect = document.getElementById('round');
         
-        function filterFixtures() {
-            // Add filtering logic here
-            console.log('Filtering fixtures...');
-        }
+        [zoneSelect, roundSelect].forEach(select => {
+            select.addEventListener('change', function() {
+                this.form.submit();
+            });
+        });
     });
 </script>
 {% endblock %}

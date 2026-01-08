@@ -26,7 +26,13 @@
                         <h6 class="mb-0">{{ report.match }}</h6>
                     </div>
                     <div class="card-body">
-                        <p><strong>Referee:</strong> {{ report.referee.full_name }}</p>
+                        <p><strong>Referee:</strong> 
+                            {% if report.referee %}
+                                {{ report.referee.full_name }}
+                            {% else %}
+                                <span class="text-danger">No referee assigned</span>
+                            {% endif %}
+                        </p>
                         <p><strong>Submitted:</strong> {{ report.submitted_at|date:"M d, Y H:i" }}</p>
                         
                         {% if report.major_incidents %}
@@ -73,7 +79,7 @@
 </div>
 
 <div class="mt-4">
-    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">
+    <a href="{% url 'admin_dashboard:admin_dashboard' %}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 </div>

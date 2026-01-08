@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Cancel Appointment - {{ match }}{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h4>Cancel All Appointments</h4>
+        </div>
+        <div class="card-body">
+            <p>Are you sure you want to <strong>cancel all officials</strong> for <strong>{{ match }}</strong>?</p>
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Yes, Cancel All Appointments</button>
+                <a href="{% url 'matches:match_details' match.id %}" class="btn btn-secondary">No, Go Back</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

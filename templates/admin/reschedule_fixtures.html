@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Reschedule Fixtures{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Reschedule Fixtures</h2>
+    <div class="card">
+        <div class="card-body">
+            {% if matches %}
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Match</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Venue</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in matches %}
+                    <tr>
+                        <td>{{ match.home_team }} vs {{ match.away_team }}</td>
+                        <td>{{ match.match_date|date:'M d, Y' }}</td>
+                        <td>{{ match.match_time|time:'H:i' }}</td>
+                        <td>{{ match.venue }}</td>
+                        <td>{{ match.get_status_display }}</td>
+                        <td>
+                            <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-sm btn-warning">Reschedule</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No fixtures available for rescheduling.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="mt-4">
+        <a href="{% url 'admin_dashboard:admin_dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

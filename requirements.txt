@@ -24,3 +24,13 @@ urllib3==2.6.1
 xlrd==2.0.2
 xlwt==1.3.0
 googlemaps==4.10.0
+Django>=4.0
+django-crispy-forms
+crispy-bootstrap5
+requests
+python-decouple
+celery
+redis
+channels
+channels-redis
+daphne

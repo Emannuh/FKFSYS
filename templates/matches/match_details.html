@@ -1,0 +1,218 @@
+<!-- matches/templates/matches/match_details.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Match Details - {{ match.home_team.team_name }} vs {{ match.away_team.team_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Match Header -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">
+                <i class="fas fa-futbol me-2"></i>
+                Match Details
+            </h3>
+        </div>
+        <div class="card-body">
+            <!-- Match Information -->
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    <h4>{{ match.home_team.team_name }}</h4>
+                    <div class="team-logo mb-2">
+                        {% if match.home_team.logo %}
+                            <img src="{{ match.home_team.logo.url }}" alt="{{ match.home_team.team_name }}" class="img-fluid" style="max-height: 100px;">
+                        {% endif %}
+                    </div>
+                    <h2 class="display-4">{{ match.home_score|default:"-" }}</h2>
+                </div>
+                
+                <div class="col-md-4 text-center">
+                    <div class="vs-text">
+                        <h5 class="text-muted">VS</h5>
+                        <hr>
+                        <p class="mb-1"><strong>Date:</strong> {{ match.match_date|date:"F j, Y" }}</p>
+                        <p class="mb-1"><strong>Kickoff Time:</strong> {{ match.kickoff_time }}</p>
+                        <p class="mb-1"><strong>Venue:</strong> {{ match.venue }}</p>
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-success mt-2">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        <p class="mb-0"><strong>Status:</strong> 
+                            <span class="badge bg-{% if match.status == 'completed' %}success{% elif match.status == 'ongoing' %}warning{% else %}info{% endif %}">
+                                {{ match.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 text-center">
+                    <h4>{{ match.away_team.team_name }}</h4>
+                    <div class="team-logo mb-2">
+                        {% if match.away_team.logo %}
+                            <img src="{{ match.away_team.logo.url }}" alt="{{ match.away_team.team_name }}" class="img-fluid" style="max-height: 100px;">
+                        {% endif %}
+                    </div>
+                    <h2 class="display-4">{{ match.away_score|default:"-" }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Referee Appointment Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-whistle me-2"></i>
+                Referee Appointments
+            </h4>
+        </div>
+        <div class="card-body">
+            {% if match.referees.all %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Role</th>
+                                <th>Referee Name</th>
+                                <th>ID Number</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in match.referee_appointments.all %}
+                            <tr>
+                                <td>
+                                    <strong>{{ appointment.role }}</strong>
+                                    {% if appointment.is_main_referee %}
+                                        <span class="badge bg-primary">Main</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ appointment.referee.user.get_full_name|default:appointment.referee.user.username }}</td>
+                                <td>{{ appointment.referee.id_number }}</td>
+                                <td>
+                                    <span class="badge bg-{% if appointment.status == 'confirmed' %}success{% elif appointment.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                                        {{ appointment.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if user.is_staff or user.is_superuser %}
+                                    <a href="{% url 'referees:edit_appointment' appointment.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No referees have been appointed to this match yet.
+                </div>
+            {% endif %}
+
+            <!-- Appoint Referee Button (for staff/admin) -->
+            {% if user.is_staff or user.is_superuser %}
+                <div class="mt-3">
+                    <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-success">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Appoint Referee
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Match Statistics -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Match Statistics</h5>
+                </div>
+                <div class="card-body">
+                    {% if match.statistics %}
+                        <ul class="list-group list-group-flush">
+                            {% for stat in match.statistics %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ stat.name }}
+                                <span class="badge bg-primary rounded-pill">{{ stat.value }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">No statistics available for this match.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Match Timeline</h5>
+                </div>
+                <div class="card-body">
+                    {% if match.events.all %}
+                        <div class="timeline">
+                            {% for event in match.events.all|slice:":5" %}
+                            <div class="d-flex mb-2">
+                                <div class="flex-shrink-0">
+                                    <span class="badge bg-{% if event.event_type == 'goal' %}success{% elif event.event_type == 'yellow_card' %}warning{% else %}danger{% endif %} me-2">
+                                        {{ event.minute }}'
+                                    </span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <strong>{{ event.get_event_type_display }}</strong> - {{ event.player.name }}
+                                    {% if event.description %}
+                                        <br><small class="text-muted">{{ event.description }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No timeline events recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="mt-4">
+        <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Fixtures
+        </a>
+        
+        {% if user.is_staff or user.is_superuser %}
+            <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-outline-primary ms-2">
+                <i class="fas fa-edit me-2"></i>Edit Match
+            </a>
+            {% if match.status != 'completed' %}
+                <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-outline-warning ms-2">
+                    <i class="fas fa-pen me-2"></i>Update Score
+                </a>
+                <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-outline-danger ms-2">
+                    <i class="fas fa-calendar-alt me-2"></i>Reschedule
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // JavaScript for match details interactions
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any interactive functionality here
+        console.log('Match details page loaded');
+    });
+</script>
+{% endblock %}

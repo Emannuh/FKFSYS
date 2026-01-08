@@ -1,0 +1,74 @@
+<!-- templates/admin/generate_fixtures.html - CREATE THIS FILE -->
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module">
+        <h2>Generate Fixtures Manually</h2>
+        
+        {% if zones %}
+        <div class="card">
+            <div class="card-header">
+                <h4>Select Zone to Generate Fixtures</h4>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Zone</th>
+                            <th>Approved Teams</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for zone in zones %}
+                        <tr>
+                            <td><strong>{{ zone.name }}</strong></td>
+                            <td>
+                                <span class="badge {% if zone.approved_teams_count >= 4 %}bg-success{% else %}bg-warning{% endif %}">
+                                    {{ zone.approved_teams_count }} teams
+                                </span>
+                            </td>
+                            <td>
+                                {% if zone.fixtures_generated %}
+                                <span class="badge bg-info">Already Generated</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not zone.fixtures_generated and zone.approved_teams_count >= 2 %}
+                                <form method="post" action="?zone={{ zone.id }}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="fas fa-bolt"></i> Generate Now
+                                    </button>
+                                </form>
+                                {% elif zone.approved_teams_count < 2 %}
+                                <span class="text-muted">Need at least 2 teams</span>
+                                {% else %}
+                                <span class="text-muted">Already generated</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            All zones already have fixtures generated or don't have enough approved teams.
+        </div>
+        {% endif %}
+        
+        <div class="mt-4">
+            <a href="{% url 'admin:teams_zone_changelist' %}" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Back to Zones
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

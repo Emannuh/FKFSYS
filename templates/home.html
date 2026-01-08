@@ -47,7 +47,7 @@
                     <div class="card-body text-center">
                         <h3 class="text-danger"><i class="fas fa-table"></i></h3>
                         <h5>League Tables</h5>
-                        <p>Automatically generated league tables for three zones</p>
+                        <p>Automatically generated league tables for Four zones</p>
                     </div>
                 </div>
             </div>
@@ -55,6 +55,73 @@
     </div>
     
     <div class="col-md-4">
+        <!-- Registration Deadlines Card -->
+        {% if league_settings %}
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Registration Deadlines</h5>
+            </div>
+            <div class="card-body">
+                <!-- Team Registration -->
+                <div class="mb-3">
+                    <h6 class="text-primary">
+                        <i class="fas fa-users"></i> Team Registration
+                        {% if league_settings.team_registration_open %}
+                        <span class="badge bg-success">OPEN</span>
+                        {% else %}
+                        <span class="badge bg-danger">CLOSED</span>
+                        {% endif %}
+                    </h6>
+                    {% if league_settings.team_registration_open and league_settings.team_registration_deadline %}
+                        <small class="text-muted">Closes on: {{ league_settings.team_registration_deadline|date:"M d, Y H:i" }}</small>
+                        <div class="countdown-small" 
+                             data-deadline="{{ league_settings.team_registration_deadline|date:'c' }}"></div>
+                    {% elif not league_settings.team_registration_open and league_settings.team_registration_closed_date %}
+                        <small class="text-muted">Closed on: {{ league_settings.team_registration_closed_date|date:"M d, Y H:i" }}</small>
+                    {% endif %}
+                </div>
+
+                <!-- Player Registration -->
+                <div class="mb-3">
+                    <h6 class="text-success">
+                        <i class="fas fa-user-plus"></i> Player Registration
+                        {% if league_settings.player_registration_open %}
+                        <span class="badge bg-success">OPEN</span>
+                        {% else %}
+                        <span class="badge bg-danger">CLOSED</span>
+                        {% endif %}
+                    </h6>
+                    {% if league_settings.player_registration_open and league_settings.player_registration_deadline %}
+                        <small class="text-muted">Closes on: {{ league_settings.player_registration_deadline|date:"M d, Y H:i" }}</small>
+                        <div class="countdown-small" 
+                             data-deadline="{{ league_settings.player_registration_deadline|date:'c' }}"></div>
+                    {% elif not league_settings.player_registration_open and league_settings.player_registration_closed_date %}
+                        <small class="text-muted">Closed on: {{ league_settings.player_registration_closed_date|date:"M d, Y H:i" }}</small>
+                    {% endif %}
+                </div>
+
+                <!-- Transfer Window -->
+                <div class="mb-0">
+                    <h6 class="text-info">
+                        <i class="fas fa-exchange-alt"></i> Transfer Window
+                        {% if league_settings.transfer_window_open %}
+                        <span class="badge bg-success">OPEN</span>
+                        {% else %}
+                        <span class="badge bg-danger">CLOSED</span>
+                        {% endif %}
+                    </h6>
+                    {% if league_settings.transfer_window_open and league_settings.transfer_window_deadline %}
+                        <small class="text-muted">Closes on: {{ league_settings.transfer_window_deadline|date:"M d, Y H:i" }}</small>
+                        <div class="countdown-small" 
+                             data-deadline="{{ league_settings.transfer_window_deadline|date:'c' }}"></div>
+                    {% elif not league_settings.transfer_window_open and league_settings.transfer_window_closed_date %}
+                        <small class="text-muted">Closed on: {{ league_settings.transfer_window_closed_date|date:"M d, Y H:i" }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="card">
             <div class="card-header card-header-custom">
                 <h5 class="mb-0">Latest News</h5>
@@ -66,21 +133,21 @@
                             <h6 class="mb-1">Registration Open</h6>
                             <small>Now</small>
                         </div>
-                        <p class="mb-1">Team registration for 2024 season is now open.</p>
+                        <p class="mb-1">Team registration for 2025/2026 season is now open.</p>
                     </a>
                     <a href="{% url 'matches:fixtures' %}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
                             <h6 class="mb-1">Fixtures Released</h6>
                             <small>Coming soon</small>
                         </div>
-                        <p class="mb-1">First round fixtures will be released soon.</p>
+                        <p class="mb-1">First round fixtures  released .</p>
                     </a>
                     <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Referee Training</h6>
-                            <small>Coming soon</small>
+                            <h6 class="mb-1">Referee Registration</h6>
+                            <small>Now</small>
                         </div>
-                        <p class="mb-1">Referee training scheduled for next month.</p>
+                        <p class="mb-1">Referee registration is now open.</p>
                     </a>
                 </div>
             </div>
@@ -127,4 +194,50 @@
         </div>
     </div>
 </div>
+
+<style>
+.countdown-small {
+    font-size: 0.9rem;
+    color: #dc3545;
+    font-weight: bold;
+    margin-top: 5px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const countdowns = document.querySelectorAll('.countdown-small');
+    
+    countdowns.forEach(function(el) {
+        const deadline = el.getAttribute('data-deadline');
+        if (!deadline) return;
+        
+        const target = Date.parse(deadline);
+        if (Number.isNaN(target)) return;
+        
+        function update() {
+            const now = new Date().getTime();
+            const diff = target - now;
+            
+            if (diff <= 0) {
+                // Auto-close when deadline arrives - refresh to see closed status
+                el.textContent = 'Deadline reached - Please refresh page';
+                el.classList.add('text-warning');
+                el.classList.remove('text-danger');
+                return;
+            }
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            el.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s remaining`;
+        }
+        
+        update();
+        setInterval(update, 1000);
+    });
+});
+</script>
 {% endblock %}
