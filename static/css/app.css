@@ -1,0 +1,23 @@
+/* Project-wide customizations. Bootstrap is loaded via CDN in base.html.
+   Add your overrides below; keep selectors specific to avoid fighting defaults. */
+
+:root {
+  --fkf-primary: #dc3545; /* matches base.html red */
+  --fkf-accent: #198754;  /* matches base.html green */
+}
+
+body {
+  /* Example: strengthen font smoothing */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.btn-fkf {
+  background-color: var(--fkf-primary);
+  border-color: var(--fkf-primary);
+  color: #fff;
+}
+
+.navbar-fkf {
+  background-color: var(--fkf-primary);
+}
