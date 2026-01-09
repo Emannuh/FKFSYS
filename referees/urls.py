@@ -19,6 +19,7 @@ urlpatterns = [
     path('match/<int:match_id>/confirm/', views.confirm_appointment, name='confirm_appointment'),
     path('match/<int:match_id>/quick-report/', views.submit_match_report, name='submit_match_report'),
     path('match/<int:match_id>/comprehensive-report/', views.submit_comprehensive_report, name='submit_comprehensive_report'),
+    path('match/<int:match_id>/cancel/', views.cancel_appointment, name='cancel_appointment'),
     
     # Manager Report Approval
     path('reports/pending/', views.pending_reports, name='pending_reports'),

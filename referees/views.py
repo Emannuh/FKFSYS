@@ -186,6 +186,10 @@ def reject_referee(request, referee_id):
 @login_required
 def referee_dashboard(request):
     """Referee dashboard - only for approved referees"""
+    # Check if user is a Referees Manager - redirect to manager dashboard
+    if request.user.groups.filter(name='Referees Manager').exists():
+        return redirect('referees:matches_needing_officials')
+    
     # Check if user is in Referee group
     if not request.user.groups.filter(name='Referee').exists():
         messages.error(request, "Access denied. You are not registered as a referee.")
