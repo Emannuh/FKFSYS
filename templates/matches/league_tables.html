@@ -3,6 +3,41 @@
 
 {% block title %}League Tables - FKF Meru League{% endblock %}
 
+{% block extra_css %}
+<style>
+    .nav-tabs .nav-link {
+        border: 2px solid transparent;
+        border-radius: 8px 8px 0 0;
+        color: #6c757d;
+        transition: all 0.3s ease;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-color: #dee2e6;
+        color: #495057;
+        background-color: #f8f9fa;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #fff;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        font-weight: 700;
+    }
+    
+    .form-badges .badge {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
@@ -16,9 +51,15 @@
     {% for zone in zones %}
     <li class="nav-item" role="presentation">
         <button class="nav-link {% if forloop.first %}active{% endif %}" 
-                id="zone-{{ zone.id }}-tab" data-bs-toggle="tab" 
-                data-bs-target="#zone-{{ zone.id }}" type="button" role="tab">
-            {{ zone.name }}
+                id="zone-{{ zone.id }}-tab" 
+                data-bs-toggle="tab" 
+                data-bs-target="#zone-{{ zone.id }}" 
+                type="button" 
+                role="tab"
+                aria-controls="zone-{{ zone.id }}"
+                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                style="font-weight: 600; font-size: 1.1rem;">
+            <i class="fas fa-map-marker-alt me-2"></i>{{ zone.name }}
         </button>
     </li>
     {% endfor %}
@@ -82,9 +123,22 @@
                                     {% endif %}
                                 </td>
                                 <td><strong>{{ entry.points }}</strong></td>
-                                <td>
-                                    <!-- Would show last 5 matches form -->
-                                    <span class="badge bg-secondary">- - - - -</span>
+                                <td class="form-badges">
+                                    {% if entry.form %}
+                                        <div class="d-flex gap-1">
+                                            {% for result in entry.form %}
+                                                {% if result == 'W' %}
+                                                    <span class="badge bg-success" title="Win">W</span>
+                                                {% elif result == 'D' %}
+                                                    <span class="badge bg-warning text-dark" title="Draw">D</span>
+                                                {% elif result == 'L' %}
+                                                    <span class="badge bg-danger" title="Loss">L</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">No data</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -150,7 +204,7 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header card-header-custom">
-                <h5 class="mb-0">Goalkeepers</h5>
+                <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Top Goalkeepers</h5>
             </div>
             <div class="card-body">
                 {% if goalkeepers %}
@@ -173,8 +227,9 @@
                                 </div>
                             </div>
                             <div class="text-end">
-                                <span class="badge bg-success" style="font-size: 1.2rem;">{{ goalkeeper.matches_played }}</span>
-                                <p class="mb-0"><small>matches</small></p>
+                                <span class="badge bg-success" style="font-size: 1.2rem;">{{ goalkeeper.clean_sheets }}</span>
+                                <p class="mb-0"><small>clean sheets</small></p>
+                                <small class="text-muted">{{ goalkeeper.matches_played }} matches</small>
                             </div>
                         </div>
                     </div>

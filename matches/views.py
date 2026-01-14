@@ -23,11 +23,11 @@ def league_tables(request):
         goals_scored__gt=0
     ).order_by('-goals_scored')[:10]
     
-    # Get clean sheets (simplified - would need tracking)
+    # Get top goalkeepers by clean sheets
     goalkeepers = Player.objects.filter(
         position='GK',
         matches_played__gt=0
-    ).order_by('-matches_played')[:10]
+    ).order_by('-clean_sheets', '-matches_played')[:10]
     
     context = {
         'tables': tables,
@@ -134,10 +134,8 @@ def match_details(request, match_id):
         'goals': goals,
         'cards': cards,
     }
-    from django.contrib import messages
-    # If redirected after update, show success message
-    if 'updated' in request.GET:
-        messages.success(request, 'Match details updated successfully.')
+    # Messages are handled by the view that redirects here (e.g., reschedule_match)
+    # No need to add duplicate messages
     return render(request, 'matches/match_details.html', context)
 
 

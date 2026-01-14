@@ -112,6 +112,7 @@ class LeagueTable(models.Model):
     goals_against = models.IntegerField(default=0)
     goal_difference = models.IntegerField(default=0)
     points = models.IntegerField(default=0)
+    form = models.CharField(max_length=5, default='', blank=True, help_text='Last 5 matches form (W/D/L)')
     last_updated = models.DateTimeField(auto_now=True)
     
     class Meta:

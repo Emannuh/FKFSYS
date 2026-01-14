@@ -34,11 +34,6 @@
                         <p class="mb-1"><strong>Date:</strong> {{ match.match_date|date:"F j, Y" }}</p>
                         <p class="mb-1"><strong>Kickoff Time:</strong> {{ match.kickoff_time }}</p>
                         <p class="mb-1"><strong>Venue:</strong> {{ match.venue }}</p>
-                            {% if messages %}
-                                {% for message in messages %}
-                                    <div class="alert alert-success mt-2">{{ message }}</div>
-                                {% endfor %}
-                            {% endif %}
                         <p class="mb-0"><strong>Status:</strong> 
                             <span class="badge bg-{% if match.status == 'completed' %}success{% elif match.status == 'ongoing' %}warning{% else %}info{% endif %}">
                                 {{ match.get_status_display }}
@@ -57,74 +52,6 @@
                     <h2 class="display-4">{{ match.away_score|default:"-" }}</h2>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Referee Appointment Section -->
-    <div class="card mb-4">
-        <div class="card-header bg-info text-white">
-            <h4 class="mb-0">
-                <i class="fas fa-whistle me-2"></i>
-                Referee Appointments
-            </h4>
-        </div>
-        <div class="card-body">
-            {% if match.referees.all %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Role</th>
-                                <th>Referee Name</th>
-                                <th>ID Number</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for appointment in match.referee_appointments.all %}
-                            <tr>
-                                <td>
-                                    <strong>{{ appointment.role }}</strong>
-                                    {% if appointment.is_main_referee %}
-                                        <span class="badge bg-primary">Main</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ appointment.referee.user.get_full_name|default:appointment.referee.user.username }}</td>
-                                <td>{{ appointment.referee.id_number }}</td>
-                                <td>
-                                    <span class="badge bg-{% if appointment.status == 'confirmed' %}success{% elif appointment.status == 'pending' %}warning{% else %}secondary{% endif %}">
-                                        {{ appointment.get_status_display }}
-                                    </span>
-                                </td>
-                                <td>
-                                    {% if user.is_staff or user.is_superuser %}
-                                    <a href="{% url 'referees:edit_appointment' appointment.id %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    No referees have been appointed to this match yet.
-                </div>
-            {% endif %}
-
-            <!-- Appoint Referee Button (for staff/admin) -->
-            {% if user.is_staff or user.is_superuser %}
-                <div class="mt-3">
-                    <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-success">
-                        <i class="fas fa-user-plus me-2"></i>
-                        Appoint Referee
-                    </a>
-                </div>
-            {% endif %}
         </div>
     </div>
 

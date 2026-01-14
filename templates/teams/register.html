@@ -71,14 +71,14 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_phone_number" class="form-label">Phone Number *</label>
+                            <label for="id_phone_digits" class="form-label">Phone Number *</label>
                             <div class="input-group">
-                                <span class="input-group-text">+254</span>
-                                {{ form.phone_number }}
+                                <span class="input-group-text fw-bold bg-primary text-white">+254</span>
+                                {{ form.phone_digits }}
                             </div>
-                            <div class="form-text">{{ form.phone_number.help_text }}</div>
-                            {% if form.phone_number.errors %}
-                            <div class="text-danger small mt-2">{{ form.phone_number.errors }}</div>
+                            <div class="form-text">{{ form.phone_digits.help_text }}</div>
+                            {% if form.phone_digits.errors %}
+                            <div class="text-danger small mt-2">{{ form.phone_digits.errors }}</div>
                             {% endif %}
                         </div>
                         
@@ -164,7 +164,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('teamForm');
-    const phoneInput = document.getElementById('phone-input');
+    const phoneInput = document.getElementById('id_phone_digits');
     const submitBtn = document.getElementById('submitBtn');
     
     // Phone number formatting - ensure only 9 digits (without +254)
@@ -172,9 +172,9 @@ document.addEventListener('DOMContentLoaded', function() {
         phoneInput.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             
-            // Ensure starts with 7
-            if (value && !value.startsWith('7')) {
-                value = '7' + value.replace(/^7/, '');
+            // Ensure starts with 0, 1, or 7
+            if (value && !['0', '1', '7'].includes(value[0])) {
+                value = '';
             }
             
             // Limit to 9 digits
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validate phone on blur
         phoneInput.addEventListener('blur', function() {
             const value = this.value;
-            const phoneRegex = /^7[0-9]{8}$/;
+            const phoneRegex = /^[017][0-9]{8}$/;
             
             if (value && !phoneRegex.test(value)) {
                 this.classList.add('is-invalid');
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Format phone on focus
         phoneInput.addEventListener('focus', function() {
             let value = this.value.replace(/\D/g, '');
-            if (value.length === 9 && value.startsWith('7')) {
+            if (value.length === 9 && ['0', '1', '7'].includes(value[0])) {
                 // Display as 712345678 (user sees 9 digits)
                 this.value = value;
             }
@@ -215,11 +215,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Validate phone
             if (phoneInput) {
                 const value = phoneInput.value;
-                const phoneRegex = /^7[0-9]{8}$/;
+                const phoneRegex = /^[017][0-9]{8}$/;
                 
                 if (!phoneRegex.test(value)) {
                     phoneInput.classList.add('is-invalid');
-                    alert('Please enter a valid phone number (9 digits starting with 7)');
+                    alert('Please enter a valid phone number (9 digits starting with 0, 1, or 7)');
                     e.preventDefault();
                     return false;
                 }

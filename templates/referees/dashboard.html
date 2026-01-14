@@ -4,160 +4,60 @@
 {% block title %}Referee Dashboard - FKF Meru League{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-3">
-    <!-- WELCOME HEADER WITH STATS -->
+<div class="container-fluid">
+    <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-primary shadow">
-                <div class="card-header bg-gradient-primary text-white">
+            <h2 class="text-primary"><i class="fas fa-user-check"></i> My Referee Dashboard</h2>
+            <p class="lead">Welcome back, {{ referee.full_name }}</p>
+        </div>
+    </div>
+
+    <!-- Profile Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <div class="d-flex align-items-center">
                                 {% if referee.photo %}
                                     <img src="{{ referee.photo.url }}" alt="{{ referee.full_name }}" 
-                                         class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                         class="rounded-circle me-3" style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #0d6efd;">
                                 {% else %}
-                                    <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center me-3" 
-                                         style="width: 60px; height: 60px;">
-                                        <i class="fas fa-user fa-lg text-white"></i>
+                                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 80px; height: 80px; border: 3px solid #0d6efd;">
+                                        <i class="fas fa-user fa-2x text-primary"></i>
                                     </div>
                                 {% endif %}
                                 <div>
-                                    <h2 class="mb-1">👋 Welcome, {{ referee.full_name }}</h2>
+                                    <h3 class="mb-1">{{ referee.full_name }}</h3>
                                     <div class="d-flex flex-wrap gap-2 align-items-center">
-                                        <span class="badge bg-white text-primary">
+                                        <span class="badge bg-primary">
                                             ID: {{ referee.unique_id|default:referee.fkf_number }}
                                         </span>
                                         <span class="badge {% if referee.status == 'approved' %}bg-success{% elif referee.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
                                             {{ referee.get_status_display|upper }}
                                         </span>
-                                        <small class="text-white-50">
-                                            {{ referee.get_level_display|default:"Level not set" }} • {{ referee.grade|default:"Grade not set" }}
-                                        </small>
+                                        <span class="badge bg-info">
+                                            {{ referee.get_level_display|default:"Level not set" }}
+                                        </span>
+                                        <span class="badge bg-secondary">
+                                            {{ referee.grade|default:"Grade not set" }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4 text-end">
-                            <div class="d-flex justify-content-end gap-2">
-                                <a href="{% url 'referees:referee_profile' %}" class="btn btn-outline-light btn-sm">
-                                    <i class="fas fa-user-cog"></i> Profile
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'referees:referee_profile' %}" class="btn btn-primary">
+                                    <i class="fas fa-user-cog me-1"></i> Edit Profile
                                 </a>
-                                <a href="{% url 'logout' %}" class="btn btn-light btn-sm">
-                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                <a href="{% url 'referees:referee_availability' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-calendar-check me-1"></i> Availability
                                 </a>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- QUICK STATS ROW -->
-                <div class="card-body bg-light">
-                    <div class="row g-3">
-                        <!-- Pending Confirmations -->
-                        <div class="col-md-3">
-                            <div class="card border-warning border-2 h-100 shadow-sm">
-                                <div class="card-body text-center py-3">
-                                    <div class="text-warning mb-2">
-                                        <i class="fas fa-clock fa-2x"></i>
-                                    </div>
-                                    <h2 class="text-warning mb-1">{{ pending_confirmation|length }}</h2>
-                                    <h6 class="mb-0">Pending Confirmations</h6>
-                                    <small class="text-muted">Need your response</small>
-                                </div>
-                                {% if pending_confirmation %}
-                                <div class="card-footer bg-warning bg-opacity-10 py-2 text-center">
-                                    <a href="#pending-section" class="text-warning text-decoration-none small">
-                                        <i class="fas fa-arrow-right"></i> Respond Now
-                                    </a>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Upcoming Matches -->
-                        <div class="col-md-3">
-                            <div class="card border-success border-2 h-100 shadow-sm">
-                                <div class="card-body text-center py-3">
-                                    <div class="text-success mb-2">
-                                        <i class="fas fa-calendar-alt fa-2x"></i>
-                                    </div>
-                                    <h2 class="text-success mb-1">{{ upcoming_matches|length }}</h2>
-                                    <h6 class="mb-0">Upcoming Matches</h6>
-                                    <small class="text-muted">Assigned to you</small>
-                                </div>
-                                {% if upcoming_matches %}
-                                <div class="card-footer bg-success bg-opacity-10 py-2 text-center">
-                                    <a href="#upcoming-section" class="text-success text-decoration-none small">
-                                        <i class="fas fa-arrow-right"></i> View Schedule
-                                    </a>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Pending Reports -->
-                        <div class="col-md-3">
-                            <div class="card border-info border-2 h-100 shadow-sm">
-                                <div class="card-body text-center py-3">
-                                    <div class="text-info mb-2">
-                                        <i class="fas fa-clipboard-list fa-2x"></i>
-                                    </div>
-                                    <h2 class="text-info mb-1">{{ pending_reports|length }}</h2>
-                                    <h6 class="mb-0">Pending Reports</h6>
-                                    <small class="text-muted">Need submission</small>
-                                </div>
-                                {% if pending_reports %}
-                                <div class="card-footer bg-info bg-opacity-10 py-2 text-center">
-                                    <a href="#reports-section" class="text-info text-decoration-none small">
-                                        <i class="fas fa-arrow-right"></i> Complete Now
-                                    </a>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Performance Stats -->
-                        <div class="col-md-3">
-                            <div class="card border-primary border-2 h-100 shadow-sm">
-                                <div class="card-body text-center py-3">
-                                    <div class="text-primary mb-2">
-                                        <i class="fas fa-chart-line fa-2x"></i>
-                                    </div>
-                                    <h2 class="text-primary mb-1">{{ submitted_reports.count|add:draft_reports.count }}</h2>
-                                    <h6 class="mb-0">Total Reports</h6>
-                                    <small class="text-muted">{{ submitted_reports.count }} submitted</small>
-                                </div>
-                                <div class="card-footer bg-primary bg-opacity-10 py-2 text-center">
-                                    <a href="#recent-activity" class="text-primary text-decoration-none small">
-                                        <i class="fas fa-arrow-right"></i> View Activity
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- QUICK ACTIONS -->
-                    <div class="row mt-4 g-2">
-                        <div class="col-6 col-md-3">
-                            <a href="{% url 'referees:referee_availability' %}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-calendar-check me-2"></i>Availability
-                            </a>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <a href="{% url 'referees:matches_needing_officials' %}" class="btn btn-outline-success w-100">
-                                <i class="fas fa-search me-2"></i>Find Matches
-                            </a>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-info w-100">
-                                <i class="fas fa-calendar-alt me-2"></i>Fixtures
-                            </a>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <a href="{% url 'matches:league_tables' %}" class="btn btn-outline-warning w-100">
-                                <i class="fas fa-table me-2"></i>League Table
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -165,29 +65,159 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT AREA -->
+    <!-- Suspension Alert -->
+    {% if is_suspended %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger shadow" role="alert">
+                <div class="d-flex align-items-start">
+                    <div class="me-3">
+                        <i class="fas fa-ban fa-2x"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Account Suspended
+                        </h5>
+                        <p class="mb-2">Your referee account has been suspended. You cannot be appointed to new matches during this period.</p>
+                        {% if suspension_reason %}
+                        <hr>
+                        <p class="mb-2"><strong>Reason:</strong></p>
+                        <p class="mb-0">{{ suspension_reason|linebreaks }}</p>
+                        {% endif %}
+                        <hr>
+                        <p class="mb-0">
+                            <small><i class="fas fa-info-circle me-1"></i>Please contact the FKF Meru League office for more information or to appeal this suspension.</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-warning text-dark shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Pending Confirmations</h6>
+                            <h2 class="mb-0">{{ pending_confirmation|length }}</h2>
+                            <p class="mb-0 mt-2">
+                                <small>{% if pending_confirmation %}<a href="#pending-section" class="text-dark text-decoration-underline">Respond Now →</a>{% else %}All confirmed!{% endif %}</small>
+                            </p>
+                        </div>
+                        <div>
+                            <i class="fas fa-clock fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-1">Upcoming Matches</h6>
+                            <h2 class="mb-0">{{ upcoming_matches|length }}</h2>
+                            <p class="mb-0 mt-2">
+                                <small>{% if upcoming_matches %}<a href="#upcoming-section" class="text-white text-decoration-underline">View Schedule →</a>{% else %}No matches yet{% endif %}</small>
+                            </p>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-alt fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-info text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-1">Pending Reports</h6>
+                            <h2 class="mb-0">{{ pending_reports|length }}</h2>
+                            <p class="mb-0 mt-2">
+                                <small>{% if pending_reports %}<a href="#reports-section" class="text-white text-decoration-underline">Complete Now →</a>{% else %}Up to date!{% endif %}</small>
+                            </p>
+                        </div>
+                        <div>
+                            <i class="fas fa-clipboard-list fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-1">Total Reports</h6>
+                            <h2 class="mb-0">{{ submitted_reports.count|add:draft_reports.count }}</h2>
+                            <p class="mb-0 mt-2">
+                                <small>{{ submitted_reports.count }} submitted</small>
+                            </p>
+                        </div>
+                        <div>
+                            <i class="fas fa-chart-line fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="btn-group" role="group">
+                <a href="{% url 'referees:matches_needing_officials' %}" class="btn btn-success">
+                    <i class="fas fa-search me-2"></i>Find Matches
+                </a>
+                <a href="{% url 'matches:fixtures' %}" class="btn btn-info">
+                    <i class="fas fa-calendar-alt me-2"></i>Fixtures
+                </a>
+                <a href="{% url 'matches:league_tables' %}" class="btn btn-warning">
+                    <i class="fas fa-table me-2"></i>League Table
+                </a>
+                <a href="{% url 'referees:referee_squad_approval_list' %}" class="btn btn-primary">
+                    <i class="fas fa-clipboard-check me-2"></i>Squad Approvals
+                </a>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Main Content -->
     <div class="row">
-        <!-- LEFT COLUMN: URGENT ACTIONS -->
+        <!-- Left Column -->
         <div class="col-lg-8">
-            <!-- PENDING CONFIRMATIONS (URGENT) -->
+            <!-- Pending Confirmations -->
             {% if pending_confirmation %}
-            <div class="card border-warning shadow mb-4" id="pending-section">
-                <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+            <div class="card shadow mb-4" id="pending-section">
+                <div class="card-header bg-warning text-dark py-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-exclamation-circle me-2"></i>Pending Confirmations
                     </h5>
-                    <span class="badge bg-white text-warning">{{ pending_confirmation|length }} waiting</span>
+                    <span class="badge bg-white text-warning fs-6">{{ pending_confirmation|length }}</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
-                            <thead class="table-warning">
+                            <thead class="table-light">
                                 <tr>
-                                    <th width="120">Date & Time</th>
+                                    <th>Date & Time</th>
                                     <th>Match Details</th>
                                     <th>Venue</th>
                                     <th>Your Role</th>
-                                    <th width="150" class="text-center">Action</th>
+                                    <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -210,10 +240,16 @@
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <a href="{% url 'referees:confirm_appointment' appointment.match.id %}" 
-                                           class="btn btn-sm btn-success px-3">
-                                            <i class="fas fa-check me-1"></i>Confirm
-                                        </a>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'referees:confirm_appointment' appointment.match.id %}" 
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-check me-1"></i>Confirm
+                                            </a>
+                                            <a href="{% url 'referees:decline_appointment' appointment.match.id %}" 
+                                               class="btn btn-sm btn-danger">
+                                                <i class="fas fa-times me-1"></i>Decline
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -224,24 +260,25 @@
             </div>
             {% endif %}
 
-            <!-- UPCOMING MATCHES -->
-            <div class="card border-success shadow mb-4" id="upcoming-section">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+
+            <!-- Upcoming Matches -->
+            <div class="card shadow mb-4" id="upcoming-section">
+                <div class="card-header bg-success text-white py-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-calendar-alt me-2"></i>Upcoming Matches
                     </h5>
-                    <span class="badge bg-white text-success">{{ upcoming_matches|length }} assigned</span>
+                    <span class="badge bg-white text-success fs-6">{{ upcoming_matches|length }}</span>
                 </div>
                 <div class="card-body p-0">
                     {% if upcoming_matches %}
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-success">
+                        <table class="table tabllight">
                                 <tr>
-                                    <th width="140">Date & Time</th>
+                                    <th>Date & Time</th>
                                     <th>Match Details</th>
                                     <th>Venue</th>
                                     <th>Your Role</th>
+                                    <thth>
                                     <th width="200" class="text-center">Actions</th>
                                 </tr>
                             </thead>
@@ -278,6 +315,18 @@
                                                class="btn btn-outline-primary">
                                                 <i class="fas fa-eye"></i> View
                                             </a>
+                                            {% if appointment.role == 'REFEREE' %}
+                                            <a href="{% url 'referees:submit_prematch_form' appointment.match.id %}" 
+                                               class="btn btn-outline-warning" title="Pre-Match Form">
+                                                <i class="fas fa-file-alt"></i> Pre-Match
+                                            </a>
+                                            {% endif %}
+                                            {% if appointment.role == 'FOURTH_OFFICIAL' or appointment.role == 'RESERVE_REFEREE' %}
+                                            <a href="{% url 'referees:fourth_official_substitutions' appointment.match.id %}" 
+                                               class="btn btn-outline-info" title="Manage Substitutions">
+                                                <i class="fas fa-exchange-alt"></i> Subs
+                                            </a>
+                                            {% endif %}
                                             <a href="{% url 'referees:submit_comprehensive_report' appointment.match.id %}" 
                                                class="btn btn-outline-success">
                                                 <i class="fas fa-clipboard-list"></i> Report
@@ -306,14 +355,15 @@
                 </div>
             </div>
 
-            <!-- PENDING REPORTS -->
+
+            <!-- Pending Reports -->
             {% if pending_reports %}
-            <div class="card border-info shadow mb-4" id="reports-section">
-                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <div class="card shadow mb-4" id="reports-section">
+                <div class="card-header bg-info text-white py-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-clipboard-list me-2"></i>Pending Match Reports
                     </h5>
-                    <span class="badge bg-white text-info">{{ pending_reports|length }} pending</span>
+                    <span class="badge bg-white text-info fs-6">{{ pending_reports|length }}</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -371,13 +421,13 @@
             {% endif %}
         </div>
 
-        <!-- RIGHT COLUMN: PROFILE & ACTIVITY -->
+        <!-- Right Column -->
         <div class="col-lg-4">
-            <!-- PROFILE CARD -->
-            <div class="card border-primary shadow mb-4">
-                <div class="card-header bg-gradient-primary text-white">
+            <!-- Referee Info Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white py-3">
                     <h5 class="mb-0">
-                        <i class="fas fa-user me-2"></i>Referee Profile
+                        <i class="fas fa-user me-2"></i>Referee Info
                     </h5>
                 </div>
                 <div class="card-body text-center">
@@ -425,9 +475,9 @@
                 </div>
             </div>
 
-            <!-- RECENT ACTIVITY -->
-            <div class="card shadow" id="recent-activity">
-                <div class="card-header bg-gradient-info text-white">
+            <!-- Recent Activity Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white py-3">
                     <h5 class="mb-0">
                         <i class="fas fa-history me-2"></i>Recent Activity
                     </h5>

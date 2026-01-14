@@ -17,9 +17,9 @@
                     <div class="row">
                         <div class="col-md-8">
                             <h5>FOOTBALL KENYA FEDERATION</h5>
-                            <p class="mb-1">PO Box 49911 - 00100 Nairobi</p>
+                            <p class="mb-1">PO Box 568 - 60200 Meru</p>
                             <p class="mb-1">Email: competitions@fkfmerucounty.com</p>
-                            <p class="mb-0 text-danger"><small>Print in black ink in BLOCK letters</small></p>
+                            <p class="mb-0">Phone: +254 724 280 134</p>
                         </div>
                         <div class="col-md-4 text-end">
                             <h5>FKF MERU COUNTY LEAGUE</h5>
@@ -229,6 +229,25 @@
                         {{ reserve_formset.management_form }}
                         {% endif %}
                         
+                        <!-- Auto-population alert -->
+                        {% if starting_formset.queryset.exists or reserve_formset.queryset.exists %}
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Team sheets auto-populated!</strong> 
+                            Starting lineups and reserve players have been automatically loaded from the approved matchday squads. 
+                            You can edit player details, positions, or add/remove players as needed.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>No approved squads found.</strong> 
+                            Please manually add starting lineups and reserve players for both teams. 
+                            Make sure to include jersey numbers and FKF license numbers.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endif %}
+                        
                         <div class="row">
                             <!-- HOME TEAM STARTING LINEUP -->
                             <div class="col-md-6">
@@ -255,13 +274,14 @@
 
                                 <!-- Editable starting lineup rows -->
                                 <div class="table-responsive mb-3">
-                                    <table class="table table-bordered">
+                                    <table class="table table-bordered table-sm">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>No.</th>
+                                                <th width="60">No.</th>
                                                 <th>Player Name</th>
-                                                <th>Position</th>
-                                                <th>Actions</th>
+                                                <th width="100">FKF License</th>
+                                                <th width="100">Position</th>
+                                                <th width="100">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody id="home-starting-lineup">
@@ -269,11 +289,27 @@
                                             {% if form.team.value == match.home_team.id or not form.team.value %}
                                             <tr class="formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %}" id="starting-form-{{ forloop.counter0 }}">
                                                 <td>{{ form.jersey_number }}</td>
-                                                <td>{{ form.player }}</td>
+                                                <td>
+                                                    {{ form.player }}
+                                                    {% if form.instance.player %}
+                                                    <div class="small text-success">
+                                                        <i class="fas fa-check-circle"></i> From approved squad
+                                                    </div>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if form.instance.player %}
+                                                    <span class="badge bg-info">{{ form.instance.player.fkf_license_number|default:"N/A" }}</span>
+                                                    {% else %}
+                                                    <small class="text-muted">-</small>
+                                                    {% endif %}
+                                                </td>
                                                 <td>{{ form.position }}</td>
                                                 <td>
                                                     {{ form.DELETE }}
-                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-starting-form">Remove</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-starting-form">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </td>
                                                 <td style="display:none;">{{ form.team }}{{ form.id }}</td>
                                             </tr>
@@ -341,13 +377,14 @@
 
                                 <!-- Editable starting lineup rows -->
                                 <div class="table-responsive mb-3">
-                                    <table class="table table-bordered">
+                                    <table class="table table-bordered table-sm">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>No.</th>
+                                                <th width="60">No.</th>
                                                 <th>Player Name</th>
-                                                <th>Position</th>
-                                                <th>Actions</th>
+                                                <th width="100">FKF License</th>
+                                                <th width="100">Position</th>
+                                                <th width="100">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody id="away-starting-lineup">
@@ -355,11 +392,27 @@
                                             {% if form.team.value == match.away_team.id or not form.team.value %}
                                             <tr class="formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %}" id="starting-form-{{ forloop.counter0 }}">
                                                 <td>{{ form.jersey_number }}</td>
-                                                <td>{{ form.player }}</td>
+                                                <td>
+                                                    {{ form.player }}
+                                                    {% if form.instance.player %}
+                                                    <div class="small text-success">
+                                                        <i class="fas fa-check-circle"></i> From approved squad
+                                                    </div>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if form.instance.player %}
+                                                    <span class="badge bg-info">{{ form.instance.player.fkf_license_number|default:"N/A" }}</span>
+                                                    {% else %}
+                                                    <small class="text-muted">-</small>
+                                                    {% endif %}
+                                                </td>
                                                 <td>{{ form.position }}</td>
                                                 <td>
                                                     {{ form.DELETE }}
-                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-starting-form">Remove</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-starting-form">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </td>
                                                 <td style="display:none;">{{ form.team }}{{ form.id }}</td>
                                             </tr>
@@ -384,11 +437,11 @@
                         <div class="row mt-4">
                             <!-- HOME TEAM RESERVES -->
                             <div class="col-md-6">
-                                <h5 class="mb-3"><i class="fas fa-people-group"></i> SUBSTITUTES - {{ match.home_team }}</h5>
+                                <h5 class="mb-3"><i class="fas fa-people-group"></i> RESERVE PLAYERS - {{ match.home_team }}</h5>
                                 
                                 <!-- List of added reserves -->
                                 <div class="mb-3 p-3 bg-light rounded">
-                                    <small class="text-muted d-block mb-2">Added Substitutes:</small>
+                                    <small class="text-muted d-block mb-2">Added Reserve Players:</small>
                                     {% if reserve_formset %}
                                         {% for form in reserve_formset %}
                                             {% if form.team.value == match.home_team.id and form.instance.pk or not form.team.value %}
@@ -399,7 +452,7 @@
                                         {% endfor %}
                                     {% endif %}
                                     {% if not reserve_formset %}
-                                        <small class="text-muted">No substitutes added yet</small>
+                                        <small class="text-muted">No reserve players added yet</small>
                                     {% endif %}
                                 </div>
                                 
@@ -407,12 +460,33 @@
                                 <div id="home-reserves" class="mb-3">
                                     {% for form in reserve_formset %}
                                         {% if form.team.value == match.home_team.id or not form.team.value %}
-                                        <div class="row g-3 mb-2 formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %}" id="reserve-form-{{ forloop.counter0 }}">
-                                            <div class="col-md-3">{{ form.jersey_number }}</div>
-                                            <div class="col-md-7">{{ form.player }}</div>
+                                        <div class="row g-2 mb-2 p-2 border rounded formset-form {% if form.instance.pk %}existing-form bg-light{% else %}new-form{% endif %}" id="reserve-form-{{ forloop.counter0 }}">
+                                            <div class="col-md-2">
+                                                <label class="small text-muted">No.</label>
+                                                {{ form.jersey_number }}
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="small text-muted">Player</label>
+                                                {{ form.player }}
+                                                {% if form.instance.player %}
+                                                <div class="small text-success">
+                                                    <i class="fas fa-check-circle"></i> From squad
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="small text-muted">FKF License</label>
+                                                {% if form.instance.player %}
+                                                <div><span class="badge bg-info">{{ form.instance.player.fkf_license_number|default:"N/A" }}</span></div>
+                                                {% else %}
+                                                <div><small class="text-muted">-</small></div>
+                                                {% endif %}
+                                            </div>
                                             <div class="col-md-2 d-flex justify-content-end align-items-start">
                                                 {{ form.DELETE }}
-                                                <button type="button" class="btn btn-sm btn-outline-danger remove-reserve-form">Remove</button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-reserve-form">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                             </div>
                                             <div style="display:none;">{{ form.team }}{{ form.id }}</div>
                                         </div>
@@ -422,7 +496,7 @@
                                 <div class="d-flex justify-content-end">
                                     {% if can_edit %}
                                     <button type="button" class="btn btn-sm btn-primary" id="add-home-reserves">
-                                        <i class="fas fa-plus"></i> Add Substitute
+                                        <i class="fas fa-plus"></i> Add Reserve Player
                                     </button>
                                     {% endif %}
                                 </div>
@@ -430,11 +504,11 @@
                             
                             <!-- AWAY TEAM RESERVES -->
                             <div class="col-md-6">
-                                <h5 class="mb-3"><i class="fas fa-people-group"></i> SUBSTITUTES - {{ match.away_team }}</h5>
+                                <h5 class="mb-3"><i class="fas fa-people-group"></i> RESERVE PLAYERS - {{ match.away_team }}</h5>
                                 
                                 <!-- List of added reserves -->
                                 <div class="mb-3 p-3 bg-light rounded">
-                                    <small class="text-muted d-block mb-2">Added Substitutes:</small>
+                                    <small class="text-muted d-block mb-2">Added Reserve Players:</small>
                                     {% if reserve_formset %}
                                         {% for form in reserve_formset %}
                                             {% if form.team.value == match.away_team.id and form.instance.pk or not form.team.value %}
@@ -445,7 +519,7 @@
                                         {% endfor %}
                                     {% endif %}
                                     {% if not reserve_formset %}
-                                        <small class="text-muted">No substitutes added yet</small>
+                                        <small class="text-muted">No reserve players added yet</small>
                                     {% endif %}
                                 </div>
                                 
@@ -453,12 +527,33 @@
                                 <div id="away-reserves" class="mb-3">
                                     {% for form in reserve_formset %}
                                         {% if form.team.value == match.away_team.id or not form.team.value %}
-                                        <div class="row g-3 mb-2 formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %}" id="reserve-form-{{ forloop.counter0 }}">
-                                            <div class="col-md-3">{{ form.jersey_number }}</div>
-                                            <div class="col-md-7">{{ form.player }}</div>
+                                        <div class="row g-2 mb-2 p-2 border rounded formset-form {% if form.instance.pk %}existing-form bg-light{% else %}new-form{% endif %}" id="reserve-form-{{ forloop.counter0 }}">
+                                            <div class="col-md-2">
+                                                <label class="small text-muted">No.</label>
+                                                {{ form.jersey_number }}
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="small text-muted">Player</label>
+                                                {{ form.player }}
+                                                {% if form.instance.player %}
+                                                <div class="small text-success">
+                                                    <i class="fas fa-check-circle"></i> From squad
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="small text-muted">FKF License</label>
+                                                {% if form.instance.player %}
+                                                <div><span class="badge bg-info">{{ form.instance.player.fkf_license_number|default:"N/A" }}</span></div>
+                                                {% else %}
+                                                <div><small class="text-muted">-</small></div>
+                                                {% endif %}
+                                            </div>
                                             <div class="col-md-2 d-flex justify-content-end align-items-start">
                                                 {{ form.DELETE }}
-                                                <button type="button" class="btn btn-sm btn-outline-danger remove-reserve-form">Remove</button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-reserve-form">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                             </div>
                                             <div style="display:none;">{{ form.team }}{{ form.id }}</div>
                                         </div>
@@ -468,7 +563,7 @@
                                 <div class="d-flex justify-content-end">
                                     {% if can_edit %}
                                     <button type="button" class="btn btn-sm btn-primary" id="add-away-reserves">
-                                        <i class="fas fa-plus"></i> Add Substitute
+                                        <i class="fas fa-plus"></i> Add Reserve Player
                                     </button>
                                     {% endif %}
                                 </div>

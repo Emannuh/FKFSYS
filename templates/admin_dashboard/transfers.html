@@ -2,13 +2,16 @@
 {% block title %}Manage Transfers{% endblock %}
 
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Manage Transfers</li>
+    </ol>
+</nav>
+
 <div class="container mt-4">
     <h1><i class="fas fa-exchange-alt"></i> Transfer Management</h1>
     <p class="lead">Review and manage all player transfer requests</p>
-    
-    <a href="{% url 'dashboard' %}" class="btn btn-secondary mb-3">
-        <i class="fas fa-arrow-left"></i> Back to Dashboard
-    </a>
     
     <!-- Rejected Transfers (Admin Override) -->
     {% if rejected_transfers %}
@@ -81,7 +84,7 @@
             <h5 class="mb-0"><i class="fas fa-clock"></i> Pending Transfers ({{ pending_transfers.count }})</h5>
         </div>
         <div class="card-body">
-            <p class="text-muted">Awaiting parent club decision</p>
+            <p class="text-muted">Awaiting parent club decision. Admin can approve these transfers directly.</p>
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
@@ -91,6 +94,7 @@
                             <th>Requested By</th>
                             <th>Request Date</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,6 +105,12 @@
                             <td>{{ transfer.requested_by.username }}</td>
                             <td>{{ transfer.request_date|date:"M d, Y" }}</td>
                             <td><span class="badge bg-warning">⏳ Pending</span></td>
+                            <td>
+                                <a href="{% url 'admin_dashboard:override_transfer' transfer.id %}" 
+                                   class="btn btn-sm btn-success">
+                                    <i class="fas fa-check"></i> Approve Now
+                                </a>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

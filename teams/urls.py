@@ -35,4 +35,17 @@ urlpatterns = [
     path('team-dashboard/<int:team_id>/', views.team_dashboard, name='team_dashboard'),
     path('admin-team-dashboard/', views.league_admin_dashboard, name='dashboard'),
     
+    # Admin Player Management
+    path('admin/players/', views.admin_manage_players, name='admin_manage_players'),
+    path('admin/player/<int:player_id>/delete/', views.admin_delete_player, name='admin_delete_player'),
+    path('admin/player/<int:player_id>/suspend/', views.admin_suspend_player, name='admin_suspend_player'),
+    path('admin/player/<int:player_id>/unsuspend/', views.admin_unsuspend_player, name='admin_unsuspend_player'),
+    
+    # Admin Officials Management
+    path('admin/officials/', views.admin_manage_officials, name='admin_manage_officials'),
+    path('admin/official/add/', views.admin_add_team_official, name='admin_add_official'),
+    path('admin/official/<int:official_id>/suspend/', views.admin_suspend_official, name='admin_suspend_official'),
+    path('admin/official/<int:official_id>/unsuspend/', views.admin_unsuspend_official, name='admin_unsuspend_official'),
+    path('admin/official/<int:official_id>/delete/', views.admin_delete_official, name='admin_delete_official'),
+    
 ]

@@ -3,11 +3,14 @@
 
 from django import forms
 from django.forms import inlineformset_factory
+from django.core.exceptions import ValidationError
+from fkf_league.validators import normalize_kenya_phone
+from fkf_league.constants import KENYA_COUNTIES
 
 from .models import (
     Referee, MatchReport, MatchOfficials, TeamOfficial,
     PlayingKit, MatchVenueDetails, StartingLineup,
-    ReservePlayer, Substitution, Caution, Expulsion, MatchGoal
+    ReservePlayer, Substitution, Caution, Expulsion, MatchGoal, PreMatchMeetingForm
 )
 
 from matches.models import Match
@@ -17,13 +20,25 @@ from teams.models import Player, Team
 class RefereeRegistrationForm(forms.ModelForm):
     """
     SIMPLE REGISTRATION FORM - Only 4 required fields!
-    Optional fields: phone_number, photo, county, id_number
+    Optional fields: phone_digits, photo, county, id_number
     """
+    phone_digits = forms.CharField(
+        max_length=9,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '712345678',
+            'pattern': '[0-9]{9}',
+            'maxlength': '9'
+        }),
+        help_text='Enter 9 digits only (e.g., 712345678)'
+    )
+    
     class Meta:
         model = Referee
         fields = [
             'first_name', 'last_name', 'fkf_number', 'email',  # Required
-            'phone_number', 'photo', 'county', 'id_number'     # Optional
+            'photo', 'county', 'id_number'                      # Optional (phone_digits handled separately)
         ]
         widgets = {
             'first_name': forms.TextInput(attrs={
@@ -46,13 +61,8 @@ class RefereeRegistrationForm(forms.ModelForm):
                 'placeholder': 'referee@example.com',
                 'required': True
             }),
-            'phone_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '+254...'
-            }),
-            'county': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g., Nairobi'
+            'county': forms.Select(attrs={
+                'class': 'form-control'
             }),
             'id_number': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -68,7 +78,6 @@ class RefereeRegistrationForm(forms.ModelForm):
             'last_name': 'Last Name *',
             'fkf_number': 'FKF License Number *',
             'email': 'Email Address *',
-            'phone_number': 'Phone Number',
             'county': 'County',
             'id_number': 'National ID Number',
             'photo': 'Profile Photo',
@@ -78,17 +87,59 @@ class RefereeRegistrationForm(forms.ModelForm):
             'email': 'A valid email address for account notifications',
             'photo': 'Upload a clear passport-size photo (optional)',
         }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        phone_digits = cleaned_data.get('phone_digits', '')
+        
+        # If phone digits provided, validate and create full phone number
+        if phone_digits:
+            # Remove any non-digit characters
+            phone_digits = ''.join(filter(str.isdigit, phone_digits))
+            
+            if len(phone_digits) != 9:
+                raise forms.ValidationError({'phone_digits': 'Please enter exactly 9 digits'})
+            
+            if not phone_digits[0] in ['0', '1', '7']:
+                raise forms.ValidationError({'phone_digits': 'Phone number must start with 0, 1, or 7'})
+            
+            # Create full phone number with +254 prefix
+            cleaned_data['phone_number'] = f'+254{phone_digits}'
+        else:
+            cleaned_data['phone_number'] = ''
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Set the phone_number from cleaned_data
+        instance.phone_number = self.cleaned_data.get('phone_number', '')
+        if commit:
+            instance.save()
+        return instance
 
 
 class RefereeProfileUpdateForm(forms.ModelForm):
     """
     Form for referees to update their profile after approval
     """
+    phone_digits = forms.CharField(
+        max_length=9,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '712345678',
+            'pattern': '[0-9]{9}',
+            'maxlength': '9'
+        }),
+        help_text='Enter 9 digits only (e.g., 712345678)'
+    )
+    
     class Meta:
         model = Referee
         fields = [
             'first_name', 'last_name', 'email', 'fkf_number', 'level', 
-            'phone_number', 'county', 'id_number', 'photo'
+            'county', 'id_number', 'photo'
         ]
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
@@ -96,8 +147,7 @@ class RefereeProfileUpdateForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control', 'readonly': True}),
             'fkf_number': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
             'level': forms.Select(attrs={'class': 'form-control'}),
-            'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'county': forms.TextInput(attrs={'class': 'form-control'}),
+            'county': forms.Select(attrs={'class': 'form-control'}),
             'id_number': forms.TextInput(attrs={'class': 'form-control'}),
             'photo': forms.FileInput(attrs={'class': 'form-control'}),
         }
@@ -107,11 +157,47 @@ class RefereeProfileUpdateForm(forms.ModelForm):
             'email': 'Email',
             'fkf_number': 'FKF License Number',
             'level': 'Referee Level',
-            'phone_number': 'Phone Number',
             'county': 'County',
             'id_number': 'National ID Number',
             'photo': 'Profile Photo',
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Pre-populate phone_digits if phone_number exists
+        if self.instance and self.instance.phone_number:
+            if self.instance.phone_number.startswith('+254'):
+                self.fields['phone_digits'].initial = self.instance.phone_number[4:]
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        phone_digits = cleaned_data.get('phone_digits', '')
+        
+        # If phone digits provided, validate and create full phone number
+        if phone_digits:
+            # Remove any non-digit characters
+            phone_digits = ''.join(filter(str.isdigit, phone_digits))
+            
+            if len(phone_digits) != 9:
+                raise forms.ValidationError({'phone_digits': 'Please enter exactly 9 digits'})
+            
+            if not phone_digits[0] in ['0', '1', '7']:
+                raise forms.ValidationError({'phone_digits': 'Phone number must start with 0, 1, or 7'})
+            
+            # Create full phone number with +254 prefix
+            cleaned_data['phone_number'] = f'+254{phone_digits}'
+        else:
+            cleaned_data['phone_number'] = ''
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Set the phone_number from cleaned_data
+        instance.phone_number = self.cleaned_data.get('phone_number', '')
+        if commit:
+            instance.save()
+        return instance
 
 
 class MatchOfficialsAppointmentForm(forms.ModelForm):
@@ -390,4 +476,127 @@ class MatchScoreForm(forms.ModelForm):
         widgets = {
             'home_score': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'away_score': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+        }
+
+
+class PreMatchMeetingFormForm(forms.ModelForm):
+    """Form for pre-match meeting - main referee fills this"""
+    class Meta:
+        model = PreMatchMeetingForm
+        exclude = ['match', 'referee', 'status', 'submitted_at', 
+                   'admin_approved_at', 'admin_approved_by', 'admin_rejection_reason',
+                   'manager_approved_at', 'manager_approved_by', 'manager_rejection_reason',
+                   'created_at', 'updated_at', 'is_locked',
+                   # Auto-filled fields
+                   'match_date', 'match_number', 'home_team', 'away_team', 'venue', 'city', 'stadium']
+        
+        widgets = {
+            # Schedule
+            'scheduled_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'actual_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'meeting_end_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            
+            # Match Officials
+            'match_commissioner_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'match_commissioner_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'match_commissioner_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            'centre_referee_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'centre_referee_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'centre_referee_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            'asst1_referee_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'asst1_referee_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'asst1_referee_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            'asst2_referee_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'asst2_referee_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'asst2_referee_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            'fourth_official_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'fourth_official_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'fourth_official_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Team Officials - Home
+            'home_head_coach': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_head_coach_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_head_coach_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_team_manager': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_team_manager_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_team_manager_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_team_doctor': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_team_doctor_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_team_doctor_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Team Officials - Away
+            'away_head_coach': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_head_coach_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_head_coach_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_team_manager': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_team_manager_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_team_manager_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_team_doctor': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_team_doctor_license': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_team_doctor_mobile': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Uniforms - auto-filled, but editable
+            'home_gk_shirt_color': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_gk_shirt_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_gk_short_track': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_gk_stocking': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_reserve_gk_shirt': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_reserve_gk_short_track': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_reserve_gk_stocking': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_official_shirt': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_official_short': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_official_stocking': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_warm_up_kit': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_reserve_track_suit': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            'away_gk_shirt_color': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_gk_shirt_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_gk_short_track': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_gk_stocking': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_reserve_gk_shirt': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_reserve_gk_short_track': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_reserve_gk_stocking': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_official_shirt': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_official_short': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_official_stocking': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_warm_up_kit': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_reserve_track_suit': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Field Captains
+            'home_field_captain_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_field_captain_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_field_captain_arm_band': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_field_captain_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_field_captain_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_field_captain_arm_band': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Management
+            'reporting_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'checking_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'kick_off_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'number_ball_boys': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'shirt_color': forms.TextInput(attrs={'class': 'form-control'}),
+            'or_bib_color': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_balls_available': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'away_balls_available': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'expected_spectators': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            
+            # Medical
+            'quality_personnel': forms.TextInput(attrs={'class': 'form-control'}),
+            'stretcher_how_many': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'booked_hospital': forms.TextInput(attrs={'class': 'form-control'}),
+            'sitting_arrangement': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Security
+            'and_company_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'nearest_police_post': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Notes
+            'attendance_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'home_officials_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'away_officials_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }

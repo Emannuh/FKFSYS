@@ -22,21 +22,24 @@ class TeamRegistrationForm(forms.ModelForm):
         })
     )
     
-    phone_number = forms.CharField(
-        max_length=15,
+    phone_digits = forms.CharField(
+        max_length=9,
+        required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': '712345678',
-            'id': 'phone-input'
+            'id': 'phone-input',
+            'pattern': '[0-9]{9}',
+            'maxlength': '9'
         }),
-        help_text="Enter 9 digits starting with 7 (e.g., 712345678). It will be saved as +254712345678"
+        help_text="Enter 9 digits only (e.g., 712345678). Will be saved as +254XXXXXXXXX"
     )
 
     class Meta:
         model = Team
         fields = [
             'team_name', 'location', 'home_ground', 
-            'map_location', 'contact_person', 'phone_number', 'email',
+            'map_location', 'contact_person', 'email',
             'logo'
         ]
         widgets = {
@@ -50,57 +53,55 @@ class TeamRegistrationForm(forms.ModelForm):
         }
     
     def clean(self):
+        """Validate all fields including phone_digits"""
         cleaned_data = super().clean()
         team_name = cleaned_data.get('team_name')
-        phone_number = cleaned_data.get('phone_number')
         email = cleaned_data.get('email')
+        phone_digits = cleaned_data.get('phone_digits', '')
         
         if team_name and Team.objects.filter(team_name__iexact=team_name).exists():
             raise ValidationError(f'Team "{team_name}" already exists!')
         
-        # Phone validation is done in clean_phone_number
-        
         if email and Team.objects.filter(email=email).exists():
             raise ValidationError('This email is already registered!')
         
+        # Validate and create phone number
+        if phone_digits:
+            # Remove any non-digit characters
+            phone_digits = ''.join(filter(str.isdigit, phone_digits))
+            
+            if len(phone_digits) != 9:
+                raise forms.ValidationError({'phone_digits': 'Please enter exactly 9 digits'})
+            
+            if not phone_digits[0] in ['0', '1', '7']:
+                raise forms.ValidationError({'phone_digits': 'Phone number must start with 0, 1, or 7'})
+            
+            # Create full phone number with +254 prefix
+            full_phone = f'+254{phone_digits}'
+            
+            # Check if already exists (excluding current instance if editing)
+            existing = Team.objects.filter(phone_number=full_phone)
+            if self.instance and self.instance.pk:
+                existing = existing.exclude(pk=self.instance.pk)
+            
+            if existing.exists():
+                raise forms.ValidationError({
+                    'phone_digits': f"This phone number (+254{phone_digits}) is already registered to another team."
+                })
+            
+            cleaned_data['phone_number'] = full_phone
+        else:
+            raise forms.ValidationError({'phone_digits': 'Phone number is required'})
+        
         return cleaned_data
     
-    def clean_phone_number(self):
-        phone = self.cleaned_data.get('phone_number', '')
-        if not phone:
-            raise forms.ValidationError("Phone number is required")
-        
-        # Remove all non-digits
-        phone = ''.join(filter(str.isdigit, phone))
-        
-        # Handle different formats
-        if len(phone) == 9 and phone.startswith('7'):
-            # Format as +254712345678
-            phone = '+254' + phone
-        elif len(phone) == 10 and phone.startswith('07'):
-            # Format 0712345678 -> +254712345678
-            phone = '+254' + phone[1:]
-        elif len(phone) == 12 and phone.startswith('254'):
-            # Format 254712345678 -> +254712345678
-            phone = '+' + phone
-        elif len(phone) == 13 and phone.startswith('+254'):
-            # Already in correct format
-            pass
-        else:
-            raise forms.ValidationError(
-                "Enter valid phone number (9 digits starting with 7, e.g., 712345678). "
-                "It will be saved as +254712345678"
-            )
-        
-        # Final validation - should be exactly +254 followed by 9 digits
-        if not (len(phone) == 13 and phone.startswith('+254') and phone[4:].isdigit() and phone[4] == '7'):
-            raise forms.ValidationError("Invalid phone number format. Must be +254 followed by 9 digits starting with 7")
-        
-        # Check if already exists
-        if Team.objects.filter(phone_number=phone).exists():
-            raise forms.ValidationError("This phone number is already registered!")
-        
-        return phone
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Set the phone_number from cleaned_data
+        instance.phone_number = self.cleaned_data.get('phone_number', '')
+        if commit:
+            instance.save()
+        return instance
 
 class TeamManagerLoginForm(forms.Form):
     team_code = forms.CharField(

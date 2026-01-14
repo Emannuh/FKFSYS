@@ -85,12 +85,48 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             border-radius: 8px;
             margin-top: 8px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        
+        /* Custom scrollbar for dropdown */
+        .dropdown-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .dropdown-menu::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .dropdown-menu::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        
+        .dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        .dropdown-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary-red) !important;
+            padding: 8px 20px 4px 20px;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+        
+        .dropdown-header:first-child {
+            margin-top: 0;
         }
         
         .dropdown-item {
             color: var(--primary-black);
-            padding: 10px 20px;
+            padding: 8px 20px;
             transition: all 0.3s ease;
+            font-size: 0.9rem;
         }
         
         .dropdown-item:hover {
@@ -99,13 +135,49 @@
         }
         
         .dropdown-item i {
-            margin-right: 8px;
+            margin-right: 10px;
             width: 20px;
             text-align: center;
+            color: var(--primary-red);
+            transition: color 0.3s ease;
+        }
+        
+        .dropdown-item:hover i {
+            color: white;
         }
         
         .dropdown-divider {
             border-top: 1px solid rgba(0, 0, 0, 0.1);
+            margin: 8px 0;
+        }
+        
+        /* ========== BREADCRUMB STYLES ========== */
+        .breadcrumb {
+            background-color: #f8f9fa;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .breadcrumb-item a {
+            color: var(--primary-red);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .breadcrumb-item a:hover {
+            color: var(--primary-green);
+            text-decoration: underline;
+        }
+        
+        .breadcrumb-item.active {
+            color: #6c757d;
+            font-weight: 600;
+        }
+        
+        .breadcrumb-item + .breadcrumb-item::before {
+            color: #6c757d;
         }
         
         .navbar-toggler {
@@ -269,28 +341,146 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user-shield"></i> Admin
+                                <i class="fas fa-user-shield"></i> Admin Panel
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown" style="min-width: 280px;">
+                                <!-- MAIN DASHBOARD -->
+                                <li class="dropdown-header" style="font-weight: 600; color: #DC3545;">
+                                    <i class="fas fa-tachometer-alt"></i> DASHBOARDS
+                                </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'admin_dashboard:admin_dashboard' %}">
-                                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                                    <a class="dropdown-item" href="{% url 'dashboard' %}">
+                                        <i class="fas fa-chart-line"></i> Dashboard
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'admin:index' %}">
-                                        <i class="fas fa-cog"></i> Django Admin
+                                    <a class="dropdown-item" href="{% url 'referees:referee_dashboard' %}">
+                                        <i class="fas fa-clipboard-list"></i> Referees Manager Dashboard
                                     </a>
                                 </li>
+                                
                                 <li><hr class="dropdown-divider"></li>
+                                
+                                <!-- LEAGUE MANAGEMENT -->
+                                <li class="dropdown-header" style="font-weight: 600; color: #DC3545;">
+                                    <i class="fas fa-trophy"></i> LEAGUE MANAGEMENT
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'teams:dashboard' %}">
+                                        <i class="fas fa-cogs"></i> League Admin Panel
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_dashboard:approve_registrations' %}">
+                                        <i class="fas fa-user-check"></i> Approve Team Registrations
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_dashboard:assign_zones' %}">
+                                        <i class="fas fa-map-marker-alt"></i> Assign Zones
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_dashboard:manage_transfers' %}">
+                                        <i class="fas fa-exchange-alt"></i> Manage Transfers
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'teams:admin_manage_players' %}">
+                                        <i class="fas fa-users"></i> Manage Players
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'teams:admin_manage_officials' %}">
+                                        <i class="fas fa-id-card"></i> Manage Team Officials
+                                    </a>
+                                </li>
+                                
+                                <li><hr class="dropdown-divider"></li>
+                                
+                                <!-- MATCH MANAGEMENT -->
+                                <li class="dropdown-header" style="font-weight: 600; color: #DC3545;">
+                                    <i class="fas fa-futbol"></i> MATCH MANAGEMENT
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_dashboard:generate_fixtures_admin' %}">
+                                        <i class="fas fa-random"></i> Generate Fixtures
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}">
+                                        <i class="fas fa-calendar-alt"></i> Reschedule Fixtures
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'matches:manage_matches' %}">
+                                        <i class="fas fa-edit"></i> Manage Matches
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'referees:matches_needing_officials' %}">
+                                        <i class="fas fa-user-tie"></i> Appoint Match Officials
+                                    </a>
+                                </li>
+                                
+                                <li><hr class="dropdown-divider"></li>
+                                
+                                <!-- REFEREE MANAGEMENT -->
+                                <li class="dropdown-header" style="font-weight: 600; color: #DC3545;">
+                                    <i class="fas fa-whistle"></i> REFEREE MANAGEMENT
+                                </li>
                                 <li>
                                     <a class="dropdown-item" href="{% url 'referees:pending_referees' %}">
-                                        <i class="fas fa-user-clock"></i> Pending Approvals
+                                        <i class="fas fa-user-clock"></i> Pending Referee Approvals
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" href="{% url 'referees:all_referees' %}">
                                         <i class="fas fa-list"></i> All Referees
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'referees:pending_prematch_forms_admin' %}">
+                                        <i class="fas fa-file-signature"></i> Pre-Match Forms (Admin)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'referees:pending_prematch_forms_manager' %}">
+                                        <i class="fas fa-file-alt"></i> Pre-Match Forms (Manager)
+                                    </a>
+                                </li>
+                                
+                                <li><hr class="dropdown-divider"></li>
+                                
+                                <!-- DISCIPLINE & REPORTS -->
+                                <li class="dropdown-header" style="font-weight: 600; color: #DC3545;">
+                                    <i class="fas fa-gavel"></i> DISCIPLINE & REPORTS
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_dashboard:view_suspensions' %}">
+                                        <i class="fas fa-ban"></i> Manage Suspensions
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'referees:pending_reports' %}">
+                                        <i class="fas fa-clipboard-check"></i> Approve Match Reports
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_dashboard:statistics_dashboard' %}">
+                                        <i class="fas fa-chart-bar"></i> Statistics Dashboard
+                                    </a>
+                                </li>
+                                
+                                <li><hr class="dropdown-divider"></li>
+                                
+                                <!-- SYSTEM ADMIN -->
+                                <li class="dropdown-header" style="font-weight: 600; color: #DC3545;">
+                                    <i class="fas fa-server"></i> SYSTEM ADMIN
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin:index' %}">
+                                        <i class="fas fa-tools"></i> Django Admin Panel
                                     </a>
                                 </li>
                             </ul>
@@ -319,6 +509,27 @@
     
     <!-- Main Content -->
     <main class="container py-4">
+        <!-- Messages -->
+        {% if messages %}
+            <div class="messages-container mb-4">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {% if message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% elif message.tags == 'success' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% elif message.tags == 'info' %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
         {% block content %}{% endblock %}
     </main>
 

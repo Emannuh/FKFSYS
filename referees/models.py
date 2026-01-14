@@ -3,6 +3,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from fkf_league.validators import validate_kenya_phone
+from fkf_league.constants import KENYA_COUNTIES
 from datetime import timedelta
 import random
 import string
@@ -50,7 +52,13 @@ class Referee(models.Model):
     email = models.EmailField(unique=True)
     
     # Optional at registration
-    phone_number = models.CharField(max_length=20, blank=True, verbose_name="Phone Number")
+    phone_number = models.CharField(
+        max_length=13,
+        blank=True,
+        validators=[validate_kenya_phone],
+        verbose_name="Phone Number",
+        help_text="Must be +254 followed by 9 digits (e.g., +254712345678)"
+    )
     photo = models.ImageField(upload_to='referee_photos/', blank=True, null=True)
     
     # Auto-generated after approval
@@ -71,7 +79,13 @@ class Referee(models.Model):
         null=True,
         verbose_name="Referee Level"
     )
-    county = models.CharField(max_length=100, blank=True, null=True)
+    county = models.CharField(
+        max_length=50,
+        choices=KENYA_COUNTIES,
+        blank=True,
+        null=True,
+        verbose_name="County"
+    )
     id_number = models.CharField(
         max_length=20, 
         blank=True, 
@@ -325,13 +339,38 @@ class MatchOfficials(models.Model):
     # Confirmation tracking
     main_confirmed = models.BooleanField(default=False)
     main_confirmed_at = models.DateTimeField(null=True, blank=True)
+    main_rejected = models.BooleanField(default=False)
+    main_rejection_reason = models.TextField(blank=True)
+    main_rejected_at = models.DateTimeField(null=True, blank=True)
+    
     ar1_confirmed = models.BooleanField(default=False)
     ar1_confirmed_at = models.DateTimeField(null=True, blank=True)
+    ar1_rejected = models.BooleanField(default=False)
+    ar1_rejection_reason = models.TextField(blank=True)
+    ar1_rejected_at = models.DateTimeField(null=True, blank=True)
+    
     ar2_confirmed = models.BooleanField(default=False)
     ar2_confirmed_at = models.DateTimeField(null=True, blank=True)
+    ar2_rejected = models.BooleanField(default=False)
+    ar2_rejection_reason = models.TextField(blank=True)
+    ar2_rejected_at = models.DateTimeField(null=True, blank=True)
+    
     reserve_confirmed = models.BooleanField(default=False)
+    reserve_rejected = models.BooleanField(default=False)
+    reserve_rejection_reason = models.TextField(blank=True)
+    
     var_confirmed = models.BooleanField(default=False)
+    var_rejected = models.BooleanField(default=False)
+    var_rejection_reason = models.TextField(blank=True)
+    
     fourth_confirmed = models.BooleanField(default=False)
+    fourth_rejected = models.BooleanField(default=False)
+    fourth_rejection_reason = models.TextField(blank=True)
+    
+    commissioner_confirmed = models.BooleanField(default=False)
+    commissioner_confirmed_at = models.DateTimeField(null=True, blank=True)
+    commissioner_rejected = models.BooleanField(default=False)
+    commissioner_rejection_reason = models.TextField(blank=True)
     
     # Workflow tracking
     appointment_made_at = models.DateTimeField(null=True, blank=True)
@@ -373,22 +412,32 @@ class MatchOfficials(models.Model):
                     f"Appointments can only be made within 4 days of match."
                 )
         
-        # Rule 2: Round sequencing (from Document 2)
-        if self.match and hasattr(self.match, 'round_number'):
+        # Rule 2: Round sequencing - Must complete appointments for previous round first
+        if self.match and hasattr(self.match, 'round_number') and self.match.round_number > 1:
             from matches.models import Match
-            previous_matches = Match.objects.filter(
-                zone=self.match.zone,
-                round_number=self.match.round_number,
-                match_date__lt=self.match.match_date
-            ).exclude(status__in=['completed', 'cancelled', 'postponed'])
+            previous_round = self.match.round_number - 1
             
-            if previous_matches.exists():
-                match_dates = [m.match_date.strftime("%b %d") for m in previous_matches]
-                raise ValidationError(
-                    f"Cannot appoint for this match yet. "
-                    f"Previous matches in round {self.match.round_number} not completed: "
-                    f"{', '.join(match_dates)}"
-                )
+            # Get all matches from previous round in same zone
+            previous_round_matches = Match.objects.filter(
+                zone=self.match.zone,
+                round_number=previous_round
+            ).exclude(status__in=['cancelled', 'postponed'])
+            
+            # Check if all previous round matches have officials appointed
+            if previous_round_matches.exists():
+                unappointed_matches = []
+                for prev_match in previous_round_matches:
+                    if not hasattr(prev_match, 'officials') or prev_match.officials is None:
+                        unappointed_matches.append(prev_match)
+                
+                if unappointed_matches:
+                    match_info = [f"{m.home_team} vs {m.away_team}" for m in unappointed_matches[:3]]
+                    raise ValidationError(
+                        f"Cannot appoint for Round {self.match.round_number} yet. "
+                        f"Complete all appointments for Round {previous_round} first. "
+                        f"Unappointed matches: {', '.join(match_info)}"
+                        f"{' and more...' if len(unappointed_matches) > 3 else ''}"
+                    )
         
         # Rule 3: Check referee approval status (from Document 1)
         officials = [
@@ -739,6 +788,236 @@ class MatchGoal(models.Model):
         return f"{self.minute}' - {self.player} ({self.team})"
 
 
+class PreMatchMeetingForm(models.Model):
+    """Pre-match meeting form - filled by main referee 36 hours before match"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending Submission'),
+        ('submitted', 'Submitted - Awaiting League Admin Approval'),
+        ('admin_approved', 'Admin Approved - Awaiting Referee Manager Approval'),
+        ('approved', 'Fully Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    match = models.OneToOneField('matches.Match', on_delete=models.CASCADE, related_name='pre_match_form')
+    referee = models.ForeignKey(Referee, on_delete=models.CASCADE, related_name='pre_match_forms')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
+    
+    # Match Details (auto-filled)
+    match_date = models.DateField()
+    match_number = models.CharField(max_length=50, blank=True)
+    home_team = models.CharField(max_length=100)
+    away_team = models.CharField(max_length=100)
+    venue = models.CharField(max_length=200)
+    city = models.CharField(max_length=100, blank=True)
+    stadium = models.CharField(max_length=200, blank=True)
+    
+    # Schedule
+    scheduled_time = models.TimeField(null=True, blank=True)
+    actual_time = models.TimeField(null=True, blank=True)
+    meeting_end_time = models.TimeField(null=True, blank=True)
+    
+    # Match Officials (auto-filled from MatchOfficials)
+    match_commissioner_name = models.CharField(max_length=100, blank=True)
+    match_commissioner_license = models.CharField(max_length=50, blank=True)
+    match_commissioner_mobile = models.CharField(max_length=20, blank=True)
+    
+    centre_referee_name = models.CharField(max_length=100, blank=True)
+    centre_referee_license = models.CharField(max_length=50, blank=True)
+    centre_referee_mobile = models.CharField(max_length=20, blank=True)
+    
+    asst1_referee_name = models.CharField(max_length=100, blank=True)
+    asst1_referee_license = models.CharField(max_length=50, blank=True)
+    asst1_referee_mobile = models.CharField(max_length=20, blank=True)
+    
+    asst2_referee_name = models.CharField(max_length=100, blank=True)
+    asst2_referee_license = models.CharField(max_length=50, blank=True)
+    asst2_referee_mobile = models.CharField(max_length=20, blank=True)
+    
+    fourth_official_name = models.CharField(max_length=100, blank=True)
+    fourth_official_license = models.CharField(max_length=50, blank=True)
+    fourth_official_mobile = models.CharField(max_length=20, blank=True)
+    
+    # Home Team Officials
+    home_head_coach = models.CharField(max_length=100, blank=True)
+    home_head_coach_license = models.CharField(max_length=50, blank=True)
+    home_head_coach_mobile = models.CharField(max_length=20, blank=True)
+    
+    home_team_manager = models.CharField(max_length=100, blank=True)
+    home_team_manager_license = models.CharField(max_length=50, blank=True)
+    home_team_manager_mobile = models.CharField(max_length=20, blank=True)
+    
+    home_team_doctor = models.CharField(max_length=100, blank=True)
+    home_team_doctor_license = models.CharField(max_length=50, blank=True)
+    home_team_doctor_mobile = models.CharField(max_length=20, blank=True)
+    
+    # Away Team Officials
+    away_head_coach = models.CharField(max_length=100, blank=True)
+    away_head_coach_license = models.CharField(max_length=50, blank=True)
+    away_head_coach_mobile = models.CharField(max_length=20, blank=True)
+    
+    away_team_manager = models.CharField(max_length=100, blank=True)
+    away_team_manager_license = models.CharField(max_length=50, blank=True)
+    away_team_manager_mobile = models.CharField(max_length=20, blank=True)
+    
+    away_team_doctor = models.CharField(max_length=100, blank=True)
+    away_team_doctor_license = models.CharField(max_length=50, blank=True)
+    away_team_doctor_mobile = models.CharField(max_length=20, blank=True)
+    
+    # Home Team Uniforms (auto-filled from team kit)
+    home_gk_shirt_color = models.CharField(max_length=50, blank=True)
+    home_gk_shirt_number = models.CharField(max_length=10, blank=True)
+    home_gk_short_track = models.CharField(max_length=50, blank=True)
+    home_gk_stocking = models.CharField(max_length=50, blank=True)
+    
+    home_reserve_gk_shirt = models.CharField(max_length=50, blank=True)
+    home_reserve_gk_short_track = models.CharField(max_length=50, blank=True)
+    home_reserve_gk_stocking = models.CharField(max_length=50, blank=True)
+    
+    home_official_shirt = models.CharField(max_length=50, blank=True)
+    home_official_short = models.CharField(max_length=50, blank=True)
+    home_official_stocking = models.CharField(max_length=50, blank=True)
+    
+    home_warm_up_kit = models.CharField(max_length=50, blank=True)
+    home_reserve_track_suit = models.CharField(max_length=50, blank=True)
+    
+    # Away Team Uniforms (auto-filled from team kit)
+    away_gk_shirt_color = models.CharField(max_length=50, blank=True)
+    away_gk_shirt_number = models.CharField(max_length=10, blank=True)
+    away_gk_short_track = models.CharField(max_length=50, blank=True)
+    away_gk_stocking = models.CharField(max_length=50, blank=True)
+    
+    away_reserve_gk_shirt = models.CharField(max_length=50, blank=True)
+    away_reserve_gk_short_track = models.CharField(max_length=50, blank=True)
+    away_reserve_gk_stocking = models.CharField(max_length=50, blank=True)
+    
+    away_official_shirt = models.CharField(max_length=50, blank=True)
+    away_official_short = models.CharField(max_length=50, blank=True)
+    away_official_stocking = models.CharField(max_length=50, blank=True)
+    
+    away_warm_up_kit = models.CharField(max_length=50, blank=True)
+    away_reserve_track_suit = models.CharField(max_length=50, blank=True)
+    
+    # Field Captain
+    home_field_captain_name = models.CharField(max_length=100, blank=True)
+    home_field_captain_number = models.CharField(max_length=10, blank=True)
+    home_field_captain_arm_band = models.CharField(max_length=50, blank=True)
+    
+    away_field_captain_name = models.CharField(max_length=100, blank=True)
+    away_field_captain_number = models.CharField(max_length=10, blank=True)
+    away_field_captain_arm_band = models.CharField(max_length=50, blank=True)
+    
+    # Management of the Match
+    reporting_time = models.TimeField(null=True, blank=True)
+    checking_time = models.TimeField(null=True, blank=True)
+    kick_off_time = models.TimeField(null=True, blank=True)
+    
+    number_ball_boys = models.IntegerField(null=True, blank=True)
+    shirt_color = models.CharField(max_length=50, blank=True)
+    or_bib_color = models.CharField(max_length=50, blank=True)
+    
+    home_balls_available = models.IntegerField(null=True, blank=True)
+    away_balls_available = models.IntegerField(null=True, blank=True)
+    expected_spectators = models.IntegerField(null=True, blank=True)
+    
+    # Medical Ground
+    quality_personnel = models.CharField(max_length=100, blank=True)
+    doctor_available = models.BooleanField(default=False)
+    physiotherapist_available = models.BooleanField(default=False)
+    clinical_officer_first_aid = models.BooleanField(default=False)
+    
+    stretcher_available = models.BooleanField(default=False)
+    stretcher_not_available = models.BooleanField(default=False)
+    stretcher_how_many = models.IntegerField(null=True, blank=True)
+    
+    first_aid_bag = models.BooleanField(default=False)
+    ambulance_available = models.BooleanField(default=False)
+    booked_hospital = models.CharField(max_length=200, blank=True)
+    
+    sitting_arrangement = models.CharField(max_length=100, blank=True)
+    
+    dressing_room_home = models.BooleanField(default=False)
+    dressing_room_away = models.BooleanField(default=False)
+    dressing_room_officials = models.BooleanField(default=False)
+    dressing_room_not_available = models.BooleanField(default=False)
+    
+    # Security
+    security_entrance = models.BooleanField(default=False)
+    security_main_gate = models.BooleanField(default=False)
+    security_other_gate = models.BooleanField(default=False)
+    
+    police_in_uniform = models.BooleanField(default=False)
+    police_plain_clothes = models.BooleanField(default=False)
+    or_guards = models.BooleanField(default=False)
+    and_company_name = models.CharField(max_length=200, blank=True)
+    nearest_police_post = models.CharField(max_length=200, blank=True)
+    
+    # In Attendance (free text for additional personnel)
+    attendance_notes = models.TextField(blank=True)
+    
+    # Officials sections
+    home_officials_notes = models.TextField(blank=True)
+    away_officials_notes = models.TextField(blank=True)
+    
+    # Workflow
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    
+    admin_approved_at = models.DateTimeField(null=True, blank=True)
+    admin_approved_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='admin_approved_prematch_forms'
+    )
+    admin_rejection_reason = models.TextField(blank=True)
+    
+    manager_approved_at = models.DateTimeField(null=True, blank=True)
+    manager_approved_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='manager_approved_prematch_forms'
+    )
+    manager_rejection_reason = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Track if form is locked after match
+    is_locked = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['-match__match_date']
+        permissions = [
+            ('submit_prematch_form', 'Can submit pre-match meeting form'),
+            ('approve_prematch_form_admin', 'Can approve pre-match form as admin'),
+            ('approve_prematch_form_manager', 'Can approve pre-match form as manager'),
+        ]
+    
+    def __str__(self):
+        return f"Pre-Match Form - {self.match} ({self.get_status_display()})"
+    
+    def can_be_filled(self):
+        """Check if form can be filled (36 hours before match)"""
+        if self.is_locked:
+            return False
+        time_until_match = self.match.match_date - timezone.now()
+        return timedelta(hours=0) <= time_until_match <= timedelta(hours=36)
+    
+    def can_be_edited(self):
+        """Check if form can be edited (before match only)"""
+        if self.is_locked:
+            return False
+        return timezone.now() < self.match.match_date
+    
+    def lock_form(self):
+        """Lock form after match"""
+        if timezone.now() >= self.match.match_date:
+            self.is_locked = True
+            self.save()
+
+
 class MatchReport(models.Model):
     """Comprehensive match report"""
     STATUS_CHOICES = [
@@ -783,3 +1062,294 @@ class MatchReport(models.Model):
     
     def __str__(self):
         return f"Report - {self.match} ({self.get_status_display()})"
+
+
+# ========== MATCHDAY SQUAD MANAGEMENT MODELS ==========
+
+class MatchdaySquad(models.Model):
+    """
+    Team's submitted matchday squad (25 players: 11 starting + 14 subs)
+    Submitted 2 hours before kick-off
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending Submission'),
+        ('submitted', 'Submitted - Awaiting Referee Approval'),
+        ('approved', 'Approved by Referee'),
+        ('locked', 'Locked (Match Started)'),
+    ]
+    
+    match = models.ForeignKey('matches.Match', on_delete=models.CASCADE, related_name='matchday_squads')
+    team = models.ForeignKey('teams.Team', on_delete=models.CASCADE)
+    
+    # Status tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Timestamps
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='submitted_squads')
+    
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey('Referee', on_delete=models.SET_NULL, null=True, related_name='approved_squads')
+    
+    locked_at = models.DateTimeField(null=True, blank=True)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['match', 'team']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.team.name} - {self.match} ({self.get_status_display()})"
+    
+    def can_submit(self):
+        """Check if squad can be submitted (4 hours before kick-off)"""
+        if not self.match.match_date or not self.match.kickoff_time:
+            return False
+        
+        try:
+            # Handle kickoff_time as either time object or string
+            if isinstance(self.match.kickoff_time, str):
+                kickoff_time = timezone.datetime.strptime(self.match.kickoff_time, '%H:%M').time()
+            else:
+                kickoff_time = self.match.kickoff_time
+            
+            match_datetime = timezone.make_aware(
+                timezone.datetime.combine(self.match.match_date, kickoff_time)
+            )
+            submission_time = match_datetime - timedelta(hours=4)
+            
+            return timezone.now() >= submission_time and self.status == 'pending'
+        except (ValueError, TypeError, AttributeError):
+            return False
+    
+    def can_edit(self):
+        """Squad can be edited before match starts"""
+        return self.status in ['pending', 'submitted'] and not self.is_locked()
+    
+    def is_locked(self):
+        """Squad is locked at kick-off time"""
+        if self.status == 'locked':
+            return True
+        
+        if not self.match.match_date or not self.match.kickoff_time:
+            return False
+        
+        try:
+            # Handle kickoff_time as either time object or string
+            if isinstance(self.match.kickoff_time, str):
+                kickoff_time = timezone.datetime.strptime(self.match.kickoff_time, '%H:%M').time()
+            else:
+                kickoff_time = self.match.kickoff_time
+            
+            match_datetime = timezone.make_aware(
+                timezone.datetime.combine(self.match.match_date, kickoff_time)
+            )
+            
+            return timezone.now() >= match_datetime
+        except (ValueError, TypeError, AttributeError):
+            return False
+    
+    def lock_squad(self):
+        """Lock squad at kick-off"""
+        if not self.is_locked():
+            self.status = 'locked'
+            self.locked_at = timezone.now()
+            self.save()
+    
+    def get_starting_eleven(self):
+        """Get starting 11 players"""
+        return self.squad_players.filter(is_starting=True).order_by('position_order')
+    
+    def get_substitutes(self):
+        """Get substitute players"""
+        return self.squad_players.filter(is_starting=False).order_by('jersey_number')
+    
+    def validate_squad(self):
+        """Validate squad meets all requirements"""
+        starting = self.squad_players.filter(is_starting=True)
+        subs = self.squad_players.filter(is_starting=False)
+        
+        # Must have 11 starting players
+        if starting.count() != 11:
+            raise ValidationError(f"Must have exactly 11 starting players. Currently have {starting.count()}.")
+        
+        # Must have exactly 14 substitutes
+        if subs.count() != 14:
+            raise ValidationError(f"Must have exactly 14 substitute players. Currently have {subs.count()}.")
+        
+        # Starting 11 must include at least 1 goalkeeper
+        starting_gks = starting.filter(player__position='GK').count()
+        if starting_gks < 1:
+            raise ValidationError("Starting lineup must include at least 1 goalkeeper.")
+        
+        # Substitutes must include at least 1 goalkeeper
+        sub_gks = subs.filter(player__position='GK').count()
+        if sub_gks < 1:
+            raise ValidationError("Substitutes must include at least 1 goalkeeper.")
+        
+        # Check for suspended players
+        suspended = self.squad_players.filter(player__is_suspended=True)
+        if suspended.exists():
+            player_names = ", ".join([sp.player.full_name for sp in suspended])
+            raise ValidationError(f"Cannot include suspended players: {player_names}")
+        
+        return True
+
+
+class SquadPlayer(models.Model):
+    """
+    Individual player in the matchday squad
+    """
+    squad = models.ForeignKey(MatchdaySquad, on_delete=models.CASCADE, related_name='squad_players')
+    player = models.ForeignKey('teams.Player', on_delete=models.CASCADE)
+    
+    # Squad position
+    is_starting = models.BooleanField(default=False, help_text="Is this player in the starting 11?")
+    position_order = models.IntegerField(default=0, help_text="Display order in starting lineup")
+    jersey_number = models.IntegerField()
+    
+    # Approval tracking
+    is_approved = models.BooleanField(default=False)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['squad', 'player']
+        ordering = ['-is_starting', 'position_order', 'jersey_number']
+    
+    def __str__(self):
+        status = "Starting" if self.is_starting else "Substitute"
+        return f"{self.player.full_name} #{self.jersey_number} ({status})"
+    
+    def clean(self):
+        """Validate player selection"""
+        # Check if player is suspended
+        if self.player.is_suspended:
+            raise ValidationError(f"{self.player.full_name} is currently suspended and cannot be selected.")
+        
+        # Check if player belongs to the same team
+        if self.player.team != self.squad.team:
+            raise ValidationError(f"{self.player.full_name} does not belong to {self.squad.team.name}.")
+
+
+class SubstitutionRequest(models.Model):
+    """
+    In-match substitution request from team manager
+    Effected by fourth official/reserve referee
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('completed', 'Completed'),
+    ]
+    
+    SUB_TYPE_CHOICES = [
+        ('normal', 'Normal Substitution'),
+        ('injury', 'Injury Substitution'),
+        ('tactical', 'Tactical Substitution'),
+        ('concussion', 'Concussion Substitution (6th Sub)'),
+    ]
+    
+    match = models.ForeignKey('matches.Match', on_delete=models.CASCADE, related_name='substitution_requests')
+    squad = models.ForeignKey(MatchdaySquad, on_delete=models.CASCADE, related_name='substitution_requests')
+    team = models.ForeignKey('teams.Team', on_delete=models.CASCADE)
+    
+    # Substitution details
+    player_out = models.ForeignKey('teams.Player', on_delete=models.CASCADE, related_name='sub_requests_out')
+    player_in = models.ForeignKey('teams.Player', on_delete=models.CASCADE, related_name='sub_requests_in')
+    
+    minute = models.IntegerField(null=True, blank=True, help_text="Match minute when substitution occurs")
+    sub_type = models.CharField(max_length=20, choices=SUB_TYPE_CHOICES, default='normal')
+    
+    # Status tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Request tracking
+    requested_at = models.DateTimeField(auto_now_add=True)
+    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='sub_requests')
+    
+    # Approval tracking
+    effected_at = models.DateTimeField(null=True, blank=True)
+    effected_by = models.ForeignKey('Referee', on_delete=models.SET_NULL, null=True, related_name='effected_subs')
+    
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['minute', 'requested_at']
+    
+    def __str__(self):
+        return f"{self.minute}' - {self.player_out.full_name} → {self.player_in.full_name}"
+    
+    def clean(self):
+        """Validate substitution request"""
+        # Check player_out is in starting lineup or has been subbed in
+        if not self.squad.squad_players.filter(player=self.player_out).exists():
+            raise ValidationError(f"{self.player_out.full_name} is not in the matchday squad.")
+        
+        # Check player_in is on the bench
+        squad_player_in = self.squad.squad_players.filter(player=self.player_in).first()
+        if not squad_player_in or squad_player_in.is_starting:
+            raise ValidationError(f"{self.player_in.full_name} is not available as a substitute.")
+        
+        # Check substitution limits (max 5 normal subs)
+        if self.sub_type == 'normal':
+            team_subs = SubstitutionRequest.objects.filter(
+                match=self.match,
+                team=self.team,
+                status='completed',
+                sub_type='normal'
+            ).count()
+            
+            if team_subs >= 5:
+                raise ValidationError("Maximum of 5 substitutions already used.")
+        
+        # Concussion sub is independent (6th sub)
+        if self.sub_type == 'concussion':
+            concussion_subs = SubstitutionRequest.objects.filter(
+                match=self.match,
+                team=self.team,
+                status='completed',
+                sub_type='concussion'
+            ).count()
+            
+            if concussion_subs >= 1:
+                raise ValidationError("Concussion substitution already used.")
+
+
+class SubstitutionOpportunity(models.Model):
+    """
+    Track substitution opportunities (max 3 opportunities, excluding halftime)
+    """
+    match = models.ForeignKey('matches.Match', on_delete=models.CASCADE, related_name='sub_opportunities')
+    team = models.ForeignKey('teams.Team', on_delete=models.CASCADE)
+    
+    opportunity_number = models.IntegerField(help_text="1st, 2nd, or 3rd opportunity")
+    minute = models.IntegerField()
+    is_halftime = models.BooleanField(default=False, help_text="Halftime subs don't count toward 3 opportunities")
+    
+    # Track which substitutions were made in this opportunity
+    substitutions = models.ManyToManyField(SubstitutionRequest, related_name='opportunities')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['match', 'team', 'opportunity_number']
+        ordering = ['minute']
+    
+    def __str__(self):
+        return f"{self.team.name} - Opportunity {self.opportunity_number} ({self.minute}')"
+    
+    def clean(self):
+        """Validate opportunity limits"""
+        if not self.is_halftime:
+            opportunities = SubstitutionOpportunity.objects.filter(
+                match=self.match,
+                team=self.team,
+                is_halftime=False
+            ).count()
+            
+            if opportunities >= 3 and not self.pk:
+                raise ValidationError("Maximum of 3 substitution opportunities (excluding halftime) already used.")

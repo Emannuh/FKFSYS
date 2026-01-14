@@ -59,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'referees.middleware.RefereeApprovalCheck',
+    'admin_dashboard.activity_middleware.ActivityLoggingMiddleware',  # Activity logging
 ]
 
 
@@ -172,8 +173,23 @@ THEME_COLORS = {
     'red': '#DC3545',
     'white': '#FFFFFF',
 }
-# Email Backend (for development)
+
+# Email Configuration
+# For development - emails print to console
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# For production, configure SMTP settings accordingly
+
+# For production - configure your SMTP settings
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.your-email-provider.com'   
+# EMAIL_HOST = 'smtp.gmail.com'  # Use your email provider's SMTP server
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'your-email@gmail.com'  # Your email address
+# EMAIL_HOST_PASSWORD = 'your-app-password'  # Your email password or app password
+# DEFAULT_FROM_EMAIL = 'FKF Meru League <your-email@gmail.com>'
+
+# Default email settings
+DEFAULT_FROM_EMAIL = 'FKF Meru League <noreply@fkfmeru.com>'
+ADMIN_EMAIL = 'admin@fkfmeru.com'
+
+# Site URL (for email links)
+SITE_URL = 'http://localhost:8000'  # Change to your production URL   

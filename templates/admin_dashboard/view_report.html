@@ -6,8 +6,8 @@
 <div class="container mt-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'approve_reports' %}">Approve Reports</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard:approve_reports' %}">Approve Reports</a></li>
             <li class="breadcrumb-item active" aria-current="page">Report #{{ report.id }}</li>
         </ol>
     </nav>
@@ -168,13 +168,13 @@
             {% endif %}
             
             <div class="mt-4">
-                <a href="{% url 'approve_reports' %}" class="btn btn-secondary">
+                <a href="{% url 'admin_dashboard:approve_reports' %}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Reports
                 </a>
                 
                 {% if request.user.is_staff and report.status == 'pending' %}
                 <div class="btn-group float-end" role="group">
-                    <form method="POST" action="{% url 'approve_reports' %}" class="d-inline">
+                    <form method="POST" action="{% url 'admin_dashboard:approve_reports' %}" class="d-inline">
                         {% csrf_token %}
                         <input type="hidden" name="report_id" value="{{ report.id }}">
                         <input type="hidden" name="action" value="approve">
@@ -183,7 +183,7 @@
                         </button>
                     </form>
                     
-                    <form method="POST" action="{% url 'approve_reports' %}" class="d-inline">
+                    <form method="POST" action="{% url 'admin_dashboard:approve_reports' %}" class="d-inline">
                         {% csrf_token %}
                         <input type="hidden" name="report_id" value="{{ report.id }}">
                         <input type="hidden" name="action" value="reject">

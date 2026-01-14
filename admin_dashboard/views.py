@@ -3,15 +3,186 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db.models import Sum, Count, Q
+from django.core.mail import send_mail
+from django.conf import settings
 from teams.models import Team, Player, Zone, LeagueSettings, TransferRequest
 from payments.models import Payment
 from matches.models import Match, LeagueTable
 from referees.models import MatchReport, Referee
 
 def admin_required(user):
-    return user.is_staff
+    """Check if user is staff (Super Admin) or in League Admin group (League Manager)"""
+    return user.is_staff or user.groups.filter(name='League Admin').exists()
+
+def superadmin_required(user):
+    """Check if user is superuser - for user management only"""
+    return user.is_superuser
+
+def send_welcome_email(user, password, role):
+    """
+    Send welcome email to newly created user with login credentials
+    """
+    from django.core.mail import EmailMultiAlternatives
+    from django.template.loader import render_to_string
+    
+    subject = f'Welcome to FKF Meru League Management System - {role}'
+    
+    # Plain text version
+    text_content = f"""
+Dear {user.first_name} {user.last_name},
+
+Welcome to the FKF Meru County League Management System!
+
+Your account has been successfully created with the following details:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LOGIN CREDENTIALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Username: {user.username}
+Temporary Password: {password}
+Role: {role}
+
+Login URL: {settings.SITE_URL}/accounts/login/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT: CHANGE YOUR PASSWORD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For security reasons, please change your password immediately after your first login:
+
+1. Log in using the credentials above
+2. Click on your username in the top navigation bar
+3. Select "Change Password" from the dropdown menu
+4. Follow the prompts to set a new secure password
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECURITY TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Create a strong password with at least 8 characters
+✓ Use a mix of uppercase, lowercase, numbers, and symbols
+✓ Never share your password with anyone
+✓ Log out when finished using the system
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEED HELP?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If you have any questions or need assistance, please contact the system administrator.
+
+Best regards,
+FKF Meru County League Administration
+    """
+    
+    # HTML version
+    try:
+        html_content = render_to_string('emails/welcome_email.html', {
+            'user': user,
+            'username': user.username,
+            'password': password,
+            'role': role,
+            'login_url': f'{settings.SITE_URL}/accounts/login/'
+        })
+    except:
+        html_content = None
+    
+    try:
+        email = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email]
+        )
+        if html_content:
+            email.attach_alternative(html_content, "text/html")
+        email.send(fail_silently=False)
+        return True
+    except Exception as e:
+        print(f"Error sending email to {user.email}: {str(e)}")
+        return False
+
+def send_password_reset_email(user, new_password):
+    """
+    Send password reset email to user
+    """
+    from django.core.mail import EmailMultiAlternatives
+    from django.template.loader import render_to_string
+    
+    subject = 'FKF Meru League - Password Reset'
+    
+    # Get user's role(s)
+    roles = ', '.join([group.name for group in user.groups.all()])
+    
+    # Plain text version
+    text_content = f"""
+Dear {user.first_name} {user.last_name},
+
+Your password has been reset by the system administrator.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEW LOGIN CREDENTIALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Username: {user.username}
+New Password: {new_password}
+Role: {roles}
+
+Login URL: {settings.SITE_URL}/accounts/login/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT: CHANGE YOUR PASSWORD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For security reasons, please change your password immediately:
+
+1. Log in using the new credentials above
+2. Click on your username in the top navigation bar
+3. Select "Change Password" from the dropdown menu
+4. Follow the prompts to set a new secure password
+
+If you did not request this password reset, please contact the system administrator immediately.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECURITY REMINDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Never share your password with anyone
+✓ Use a strong, unique password
+✓ Log out when finished using the system
+
+Best regards,
+FKF Meru County League Administration
+    """
+    
+    # HTML version
+    try:
+        html_content = render_to_string('emails/password_reset.html', {
+            'user': user,
+            'username': user.username,
+            'password': new_password,
+            'roles': roles,
+            'login_url': f'{settings.SITE_URL}/accounts/login/'
+        })
+    except:
+        html_content = None
+    
+    try:
+        email = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email]
+        )
+        if html_content:
+            email.attach_alternative(html_content, "text/html")
+        email.send(fail_silently=False)
+        return True
+    except Exception as e:
+        print(f"Error sending password reset email to {user.email}: {str(e)}")
+        return False
 
 @login_required
 @user_passes_test(admin_required)
@@ -369,13 +540,24 @@ def view_report(request, report_id):
 def dashboard(request):
     """
     Main dashboard router - redirects users to appropriate dashboard based on role
+    PRIORITY ORDER:
+    1. Super Admin (superuser) -> Full admin dashboard with user management
+    2. Team Manager -> Team management dashboard
+    3. Referees Manager -> Referee management dashboard
+    4. Referee -> Referee portal
+    5. League Manager (League Admin group) -> League operations dashboard
+    6. Default -> Basic dashboard
     """
     from datetime import datetime, timedelta
     
     user = request.user
     
-    # 1. CHECK IF USER IS TEAM MANAGER
-    if user.groups.filter(name='Team Managers').exists():
+    # 1. SUPER ADMIN - Full access with user management
+    if user.is_superuser:
+        return admin_dashboard(request)  # Redirect to full admin dashboard
+    
+    # 2. TEAM MANAGER
+    elif user.groups.filter(name='Team Managers').exists():
         team = Team.objects.filter(manager=user).first()
         
         if not team:
@@ -399,13 +581,73 @@ def dashboard(request):
         captain = Player.objects.filter(team=team, is_captain=True).first()
         captain_name = captain.full_name if captain else "Not set"
         
-        # Get upcoming matches (next 7 days)
-        today = datetime.now().date()
-        upcoming_matches = Match.objects.filter(
+        # Get upcoming matches with squad info for matchday management
+        from referees.models import MatchdaySquad
+        today = timezone.now()
+        upcoming_matches_qs = Match.objects.filter(
             Q(home_team=team) | Q(away_team=team),
-            match_date__gte=today,
-            match_date__lte=today + timedelta(days=7)
-        ).count()
+            match_date__gte=today.date(),
+            status='scheduled'
+        ).order_by('round_number', 'match_date', 'kickoff_time')[:5]
+        
+        # Find the current active round (most recent match that can be selected)
+        current_round = None
+        active_match = None
+        
+        if upcoming_matches_qs.exists():
+            # Get the first upcoming match's round
+            first_match = upcoming_matches_qs.first()
+            current_round = first_match.round_number
+            
+            # Check if previous round is completed
+            if current_round and current_round > 1:
+                previous_round_matches = Match.objects.filter(
+                    Q(home_team=team) | Q(away_team=team),
+                    round_number=current_round - 1
+                )
+                
+                # If previous round has any unplayed matches, block current round
+                if previous_round_matches.filter(status='scheduled').exists():
+                    current_round = None  # Block squad submission
+                else:
+                    active_match = first_match  # Only the first match in current round
+            else:
+                # First round or no round number, allow first match
+                active_match = first_match
+        
+        # Prepare matches data with squad info
+        matches_data = []
+        for match in upcoming_matches_qs:
+            squad = MatchdaySquad.objects.filter(match=match, team=team).first()
+            
+            # Determine if this match can have squad submitted
+            can_submit = False
+            if active_match and match.id == active_match.id:
+                # Check if within submission window (4 hours before kick-off) and not after kick-off
+                try:
+                    if match.kickoff_time:
+                        match_datetime = timezone.make_aware(
+                            timezone.datetime.combine(match.match_date, match.kickoff_time)
+                        )
+                    else:
+                        # If no kickoff time, assume noon
+                        match_datetime = timezone.make_aware(
+                            timezone.datetime.combine(match.match_date, timezone.datetime.strptime('12:00', '%H:%M').time())
+                        )
+                    time_until_match = match_datetime - today
+                    # Can submit if match hasn't started yet and within 4 hours window
+                    can_submit = time_until_match > timedelta(hours=0) and time_until_match <= timedelta(hours=4)
+                except (ValueError, TypeError):
+                    # If date/time parsing fails, allow submission
+                    can_submit = True
+            
+            matches_data.append({
+                'match': match,
+                'squad': squad,
+                'can_submit': can_submit,
+                'is_active_match': active_match and match.id == active_match.id,
+                'squad_status': squad.get_status_display() if squad else 'Not Submitted'
+            })
         
         # Get league settings for deadlines
         settings = LeagueSettings.get_settings()
@@ -420,32 +662,38 @@ def dashboard(request):
             'team': team,
             'player_count': player_count,
             'captain_name': captain_name,
-            'upcoming_matches': upcoming_matches,
+            'upcoming_matches': matches_data,
+            'current_round': current_round,
             'recent_players': Player.objects.filter(team=team).order_by('-registration_date')[:10],
             'kit_complete': team.kit_colors_set,
             'show_kit_prompt': False,
-            'league_settings': settings,  # Add league settings for deadlines/countdowns
+            'league_settings': settings,
             'player_registration_deadline': settings.player_registration_deadline,
             'player_registration_closed_date': settings.player_registration_closed_date,
             'transfer_window_deadline': settings.transfer_window_deadline,
             'transfer_window_closed_date': settings.transfer_window_closed_date,
             'player_registration_open': settings.player_registration_open,
             'transfer_window_open': settings.transfer_window_open,
-            'incoming_transfers': incoming_transfers,  # Add incoming transfer requests
+            'incoming_transfers': incoming_transfers,
         }
         return render(request, 'dashboard/team_manager.html', context)
     
-    # 2. CHECK IF USER IS REFEREES MANAGER
+    # 3. REFEREES MANAGER
     elif user.groups.filter(name='Referees Manager').exists():
-        if user.has_perm('referees.appoint_referees'):
-            return render(request, 'dashboard/referees_manager.html')
+        # Get pending referees count for dashboard
+        pending_referees_count = Referee.objects.filter(status='pending').count()
+        
+        context = {
+            'pending_referees_count': pending_referees_count,
+        }
+        return render(request, 'dashboard/referees_manager.html', context)
     
-    # 3. CHECK IF USER IS REFEREE
+    # 4. REFEREE
     elif user.groups.filter(name='Referee').exists():
         return redirect('referees:referee_dashboard')
     
-    # 4. CHECK IF USER IS LEAGUE ADMIN OR STAFF
-    elif user.groups.filter(name='League Admin').exists() or user.is_staff:
+    # 5. LEAGUE MANAGER (League Admin group) - Operations without user management
+    elif user.groups.filter(name='League Admin').exists():
         # Get league settings
         settings = LeagueSettings.get_settings()
         
@@ -455,15 +703,14 @@ def dashboard(request):
         
         context = {
             'pending_teams': Team.objects.filter(status='pending'),
-            'pending_referees': Referee.objects.filter(status='pending'),
             'pending_reports': MatchReport.objects.filter(status='draft'),
             'league_settings': settings,
             'pending_transfers': pending_transfers,
             'rejected_transfers': rejected_transfers,
         }
-        return render(request, 'dashboard/league_admin.html', context)
+        return render(request, 'dashboard/league_manager.html', context)
     
-    # 5. DEFAULT DASHBOARD FOR OTHER USERS
+    # 6. DEFAULT DASHBOARD FOR OTHER USERS
     return render(request, 'dashboard/default.html')
 
 
@@ -534,19 +781,19 @@ def update_registration_deadlines(request):
     if team_deadline and team_deadline > now:
         if not settings.team_registration_open:
             settings.team_registration_open = True
-            messages.info(request, "Team registration automatically opened due to future deadline.")
+            # Don't add message here - it will show on unrelated pages
         settings.team_registration_closed_date = None
     
     if player_deadline and player_deadline > now:
         if not settings.player_registration_open:
             settings.player_registration_open = True
-            messages.info(request, "Player registration automatically opened due to future deadline.")
+            # Don't add message here - it will show on unrelated pages
         settings.player_registration_closed_date = None
     
     if transfer_deadline and transfer_deadline > now:
         if not settings.transfer_window_open:
             settings.transfer_window_open = True
-            messages.info(request, "Transfer window automatically opened due to future deadline.")
+            # Don't add message here - it will show on unrelated pages
         settings.transfer_window_closed_date = None
 
     settings.team_registration_deadline = team_deadline
@@ -555,7 +802,7 @@ def update_registration_deadlines(request):
     settings.updated_by = request.user
     settings.save()
 
-    messages.success(request, "Deadlines updated successfully.")
+    messages.success(request, "Registration deadlines updated successfully.")
     return redirect('dashboard')
 
 
@@ -584,11 +831,11 @@ def manage_transfers(request):
 @login_required
 @user_passes_test(admin_required)
 def admin_override_transfer(request, transfer_id):
-    """Super admin overrides rejection and forces approval"""
+    """Super admin overrides rejection or approves pending transfers"""
     transfer = get_object_or_404(TransferRequest, id=transfer_id)
     
-    if transfer.status != 'rejected':
-        messages.error(request, "Only rejected transfers can be overridden")
+    if transfer.status not in ['rejected', 'pending_parent']:
+        messages.error(request, "Only rejected or pending transfers can be approved by admin")
         return redirect('admin_dashboard:manage_transfers')
     
     if request.method == 'POST':
@@ -602,3 +849,234 @@ def admin_override_transfer(request, transfer_id):
     return render(request, 'admin_dashboard/override_transfer.html', {
         'transfer': transfer
     })
+
+
+@login_required
+@user_passes_test(superadmin_required)
+def manage_league_admins(request):
+    """Manage ALL users - create, view, activate/deactivate, assign roles (Super Admin Only)"""
+    from django.contrib.auth.models import User, Group
+    
+    # Get all groups
+    all_groups = Group.objects.all()
+    
+    # Get filter parameters
+    role_filter = request.GET.get('role', 'all')
+    status_filter = request.GET.get('status', 'all')
+    search_query = request.GET.get('search', '')
+    
+    # Base queryset
+    users = User.objects.all().prefetch_related('groups')
+    
+    # Apply role filter
+    if role_filter != 'all':
+        users = users.filter(groups__name=role_filter)
+    
+    # Apply status filter
+    if status_filter == 'active':
+        users = users.filter(is_active=True)
+    elif status_filter == 'inactive':
+        users = users.filter(is_active=False)
+    
+    # Apply search
+    if search_query:
+        users = users.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query)
+        )
+    
+    # Order by date joined (newest first)
+    users = users.distinct().order_by('-date_joined')
+    
+    # Get user counts by role
+    user_stats = {
+        'total': User.objects.count(),
+        'active': User.objects.filter(is_active=True).count(),
+        'inactive': User.objects.filter(is_active=False).count(),
+        'team_managers': User.objects.filter(groups__name='Team Managers').count(),
+        'league_admins': User.objects.filter(groups__name='League Admin').count(),
+        'referees': User.objects.filter(groups__name='Referee').count(),
+        'referee_managers': User.objects.filter(groups__name='Referees Manager').count(),
+    }
+    
+    context = {
+        'users': users,
+        'all_groups': all_groups,
+        'user_stats': user_stats,
+        'role_filter': role_filter,
+        'status_filter': status_filter,
+        'search_query': search_query,
+    }
+    return render(request, 'admin_dashboard/manage_league_admins.html', context)
+
+
+@login_required
+@user_passes_test(superadmin_required)
+def create_league_admin(request):
+    """Create a new user with selected role and send welcome email (Super Admin Only)"""
+    from django.contrib.auth.models import User, Group
+    from django.core.mail import send_mail
+    from django.conf import settings
+    import random
+    import string
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        role = request.POST.get('role')  # Group name
+        
+        # Validation
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f"❌ Username '{username}' already exists.")
+            return redirect('admin_dashboard:manage_league_admins')
+        
+        if User.objects.filter(email=email).exists():
+            messages.error(request, f"❌ Email '{email}' is already registered.")
+            return redirect('admin_dashboard:manage_league_admins')
+        
+        try:
+            # Generate random password
+            password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+            
+            # Create user
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                is_active=True,
+                is_staff=False  # Not Django admin staff
+            )
+            
+            # Add to selected group
+            if role:
+                group, _ = Group.objects.get_or_create(name=role)
+                user.groups.add(group)
+            
+            # Send welcome email with login credentials
+            send_welcome_email(user, password, role)
+            
+            messages.success(request, 
+                f"✅ User created successfully! "
+                f"Role: {role} | Username: {username} | "
+                f"📧 Welcome email sent to {email} with login instructions."
+            )
+            
+        except Exception as e:
+            messages.error(request, f"❌ Error creating user: {str(e)}")
+    
+    return redirect('admin_dashboard:manage_league_admins')
+
+
+@login_required
+@user_passes_test(superadmin_required)
+def toggle_league_admin_status(request, user_id):
+    """Activate or deactivate a user (Super Admin Only)"""
+    from django.contrib.auth.models import User
+    
+    user = get_object_or_404(User, id=user_id)
+    
+    # Prevent deactivating yourself
+    if user == request.user:
+        messages.error(request, "❌ You cannot deactivate your own account!")
+        return redirect('admin_dashboard:manage_league_admins')
+    
+    # Toggle active status
+    user.is_active = not user.is_active
+    user.save()
+    
+    status = "activated" if user.is_active else "deactivated"
+    messages.success(request, f"✅ {user.username} has been {status}.")
+    
+    return redirect('admin_dashboard:manage_league_admins')
+
+
+@login_required
+@user_passes_test(superadmin_required)
+def reset_league_admin_password(request, user_id):
+    """Reset password for any user and send email notification (Super Admin Only)"""
+    from django.contrib.auth.models import User
+    from django.core.mail import send_mail
+    import random
+    import string
+    
+    user = get_object_or_404(User, id=user_id)
+    
+    # Generate new random password
+    new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+    user.set_password(new_password)
+    user.save()
+    
+    # Send password reset email
+    send_password_reset_email(user, new_password)
+    
+    messages.success(request, 
+        f"✅ Password reset for {user.username}! "
+        f"📧 New password sent to {user.email}."
+    )
+    
+    return redirect('admin_dashboard:manage_league_admins')
+
+
+@login_required
+@user_passes_test(superadmin_required)
+def edit_user_roles(request, user_id):
+    """Edit user's group/role assignments (Super Admin Only)"""
+    from django.contrib.auth.models import User, Group
+    
+    user = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        # Get selected groups from form
+        selected_groups = request.POST.getlist('groups')
+        
+        # Clear existing groups
+        user.groups.clear()
+        
+        # Add selected groups
+        for group_name in selected_groups:
+            group = Group.objects.get(name=group_name)
+            user.groups.add(group)
+        
+        messages.success(request, f"✅ Roles updated for {user.username}")
+        return redirect('admin_dashboard:manage_league_admins')
+    
+    all_groups = Group.objects.all()
+    user_groups = user.groups.all()
+    
+    context = {
+        'edit_user': user,
+        'all_groups': all_groups,
+        'user_groups': user_groups,
+    }
+    return render(request, 'admin_dashboard/edit_user_roles.html', context)
+
+
+@login_required
+@user_passes_test(superadmin_required)
+def delete_user(request, user_id):
+    """Delete a user account (Super Admin Only)"""
+    from django.contrib.auth.models import User
+    
+    user = get_object_or_404(User, id=user_id)
+    
+    # Prevent deleting yourself
+    if user == request.user:
+        messages.error(request, "❌ You cannot delete your own account!")
+        return redirect('admin_dashboard:manage_league_admins')
+    
+    # Prevent deleting superusers
+    if user.is_superuser:
+        messages.error(request, "❌ Cannot delete superuser accounts!")
+        return redirect('admin_dashboard:manage_league_admins')
+    
+    username = user.username
+    user.delete()
+    
+    messages.success(request, f"✅ User '{username}' has been deleted.")
+    return redirect('admin_dashboard:manage_league_admins')

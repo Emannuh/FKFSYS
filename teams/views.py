@@ -1,12 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Q
+from django.db import models
+from django.urls import reverse
 from .models import Team, Player, Zone, LeagueSettings, TransferRequest, TeamOfficial
 from .forms import TeamRegistrationForm, PlayerRegistrationForm, TeamKitForm
 from .officials_forms import TeamOfficialForm
 from payments.models import Payment
+
+def admin_or_league_manager_required(user):
+    """Check if user is staff or in League Admin group"""
+    return user.is_staff or user.groups.filter(name='League Admin').exists()
 
 def team_registration(request):
     # Check if team registration is open
@@ -42,7 +49,7 @@ def team_registration(request):
                 # Add success message
                 messages.success(request, 
                     f'✅ Team "{team.team_name}" registered successfully! '
-                    f'Your Team Code: <strong>{team.team_code}</strong>'
+                    f'Your Team Code: {team.team_code}'
                 )
                 
                 # REDIRECT to registration_success page
@@ -171,29 +178,124 @@ def registration_success(request):
     })
 
 def team_dashboard(request, team_id=None):
+    from matches.models import Match
+    from referees.models import MatchdaySquad
+    from django.utils import timezone
+    from datetime import timedelta
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
     # If team_id is provided, show that team's dashboard
     if team_id:
         team = get_object_or_404(Team, id=team_id)
+        logger.info(f"Team dashboard accessed via team_id: {team.team_name}")
     # If user is team manager, show their team's dashboard
     elif request.user.is_authenticated and hasattr(request.user, 'managed_teams'):
         team = request.user.managed_teams.first()
         if not team:
             messages.error(request, "You are not assigned to any team.")
             return redirect('dashboard')
+        logger.info(f"Team dashboard accessed by manager: {request.user.username} for team: {team.team_name}")
     else:
+        logger.warning(f"Team dashboard access attempt by user: {request.user} without team")
         messages.error(request, "Please specify a team.")
         return redirect('teams:all_teams')
     
     players = Player.objects.filter(team=team).order_by('jersey_number')
     payments = Payment.objects.filter(team=team) if hasattr(Payment, 'objects') else []
     
+    # Get upcoming matches for this team
+    today = timezone.now()
+    upcoming_matches = Match.objects.filter(
+        Q(home_team=team) | Q(away_team=team),
+        match_date__gte=today.date(),
+        status='scheduled'
+    ).order_by('round_number', 'match_date', 'kickoff_time')[:5]
+    
+    logger.info(f"Found {upcoming_matches.count()} upcoming matches for team: {team.team_name}")
+    
+    # Find the current active round (most recent match that can be selected)
+    current_round = None
+    active_match = None
+    
+    if upcoming_matches.exists():
+        # Get the first upcoming match's round
+        first_match = upcoming_matches.first()
+        current_round = first_match.round_number
+        
+        # Check if previous round is completed
+        if current_round and current_round > 1:
+            previous_round_matches = Match.objects.filter(
+                Q(home_team=team) | Q(away_team=team),
+                round_number=current_round - 1
+            )
+            
+            # If previous round has any unplayed matches, block current round
+            if previous_round_matches.filter(status='scheduled').exists():
+                current_round = None  # Block squad submission
+            else:
+                active_match = first_match  # Only the first match in current round
+        else:
+            # First round or no round number, allow first match
+            active_match = first_match
+    
+    # Prepare matches data with squad info
+    matches_data = []
+    for match in upcoming_matches:
+        squad = MatchdaySquad.objects.filter(match=match, team=team).first()
+        
+        # Determine if this match can have squad submitted
+        can_submit = False
+        if active_match and match.id == active_match.id:
+            # Check if within submission window (4 hours before kick-off) and not after kick-off
+            try:
+                if match.kickoff_time:
+                    match_datetime = timezone.make_aware(
+                        timezone.datetime.combine(match.match_date, match.kickoff_time)
+                    )
+                else:
+                    # If no kickoff time, assume noon
+                    match_datetime = timezone.make_aware(
+                        timezone.datetime.combine(match.match_date, timezone.datetime.strptime('12:00', '%H:%M').time())
+                    )
+                time_until_match = match_datetime - today
+                # Can submit if match hasn't started yet and within 4 hours window
+                can_submit = time_until_match > timedelta(hours=0) and time_until_match <= timedelta(hours=4)
+            except (ValueError, TypeError):
+                # If date/time parsing fails, allow submission
+                can_submit = True
+        
+        matches_data.append({
+            'match': match,
+            'squad': squad,
+            'can_submit': can_submit,
+            'is_active_match': active_match and match.id == active_match.id,
+            'squad_status': squad.get_status_display() if squad else 'Not Submitted'
+        })
+    
+    logger.info(f"Prepared {len(matches_data)} matches with squad info. Current round: {current_round}")
+    logger.info(f"Active match: {active_match}")
+    
     return render(request, 'teams/dashboard.html', {
         'team': team,
         'players': players,
-        'payments': payments
+        'payments': payments,
+        'upcoming_matches': matches_data,
+        'current_round': current_round,
     })
 
 def all_teams(request):
+    """View all teams - accessible to admins and staff"""
+    # Check if user is staff or admin
+    if not request.user.is_authenticated:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('dashboard')
+    
     teams = Team.objects.all()
     zones = Zone.objects.all()
     
@@ -348,12 +450,22 @@ def select_kit_colors(request):
 @login_required
 def team_manager_dashboard(request):
     """Dashboard for approved team managers"""
+    from matches.models import Match
+    from referees.models import MatchdaySquad
+    from django.utils import timezone
+    from datetime import timedelta
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
     # Get user's approved team
     team = Team.objects.filter(manager=request.user, status='approved').first()
     
     if not team:
         messages.error(request, "You don't have an approved team.")
         return redirect('dashboard')
+    
+    logger.info(f"Team manager dashboard accessed by: {request.user.username} for team: {team.team_name}")
     
     # Check if kit colors are set
     kit_complete = team.kit_colors_set
@@ -373,6 +485,77 @@ def team_manager_dashboard(request):
     # Get league settings for deadlines
     settings = LeagueSettings.get_settings()
     
+    # Get upcoming matches for matchday squad management
+    today = timezone.now()
+    upcoming_matches = Match.objects.filter(
+        Q(home_team=team) | Q(away_team=team),
+        match_date__gte=today.date(),
+        status='scheduled'
+    ).order_by('round_number', 'match_date', 'kickoff_time')[:5]
+    
+    logger.info(f"Found {upcoming_matches.count()} upcoming matches for team: {team.team_name}")
+    
+    # Find the current active round (most recent match that can be selected)
+    current_round = None
+    active_match = None
+    
+    if upcoming_matches.exists():
+        # Get the first upcoming match's round
+        first_match = upcoming_matches.first()
+        current_round = first_match.round_number
+        
+        # Check if previous round is completed
+        if current_round and current_round > 1:
+            previous_round_matches = Match.objects.filter(
+                Q(home_team=team) | Q(away_team=team),
+                round_number=current_round - 1
+            )
+            
+            # If previous round has any unplayed matches, block current round
+            if previous_round_matches.filter(status='scheduled').exists():
+                current_round = None  # Block squad submission
+            else:
+                active_match = first_match  # Only the first match in current round
+        else:
+            # First round or no round number, allow first match
+            active_match = first_match
+    
+    # Prepare matches data with squad info
+    matches_data = []
+    for match in upcoming_matches:
+        squad = MatchdaySquad.objects.filter(match=match, team=team).first()
+        
+        # Determine if this match can have squad submitted
+        can_submit = False
+        if active_match and match.id == active_match.id:
+            # Check if within submission window (4 hours before kick-off) and not after kick-off
+            try:
+                if match.kickoff_time:
+                    match_datetime = timezone.make_aware(
+                        timezone.datetime.combine(match.match_date, match.kickoff_time)
+                    )
+                else:
+                    # If no kickoff time, assume noon
+                    match_datetime = timezone.make_aware(
+                        timezone.datetime.combine(match.match_date, timezone.datetime.strptime('12:00', '%H:%M').time())
+                    )
+                time_until_match = match_datetime - today
+                # Can submit if match hasn't started yet and within 4 hours window
+                can_submit = time_until_match > timedelta(hours=0) and time_until_match <= timedelta(hours=4)
+            except (ValueError, TypeError):
+                # If date/time parsing fails, allow submission
+                can_submit = True
+        
+        matches_data.append({
+            'match': match,
+            'squad': squad,
+            'can_submit': can_submit,
+            'is_active_match': active_match and match.id == active_match.id,
+            'squad_status': squad.get_status_display() if squad else 'Not Submitted'
+        })
+    
+    logger.info(f"Prepared {len(matches_data)} matches with squad info. Current round: {current_round}")
+    
     context = {
         'team': team,
         'players': players,
@@ -388,16 +571,19 @@ def team_manager_dashboard(request):
         'transfer_window_closed_date': settings.transfer_window_closed_date,
         'player_registration_open': settings.player_registration_open,
         'transfer_window_open': settings.transfer_window_open,
+        'upcoming_matches': matches_data,
+        'current_round': current_round,
     }
-    return render(request, 'dashboard/team_manager.html', context)
     return render(request, 'dashboard/team_manager.html', context)
 
 @login_required
 def add_player_action(request):
-    """Handle ONLY the Add Player button"""
+    """Handle ONLY the Add Player button - accessible to team managers and admins"""
     # Check if player registration is open
     settings = LeagueSettings.get_settings()
-    if not settings.player_registration_open:
+    is_admin = request.user.is_staff or request.user.is_superuser
+    
+    if not settings.player_registration_open and not is_admin:
         return render(request, 'teams/registration_closed.html', {
             'title': 'Player Registration Closed',
             'message': 'Player registration is currently closed. Please check back later or contact the league administrator.',
@@ -405,16 +591,22 @@ def add_player_action(request):
             'deadline': settings.player_registration_deadline
         })
     
-    # Get user's approved team
-    team = Team.objects.filter(manager=request.user, status='approved').first()
-    
-    if not team:
-        messages.error(request, "You don't have an approved team.")
-        return redirect('dashboard')
-    
-    if not team.kit_colors_set:
-        messages.error(request, "Please set your team kit colors first!")
-        return redirect('teams:select_kit_colors')
+    # Get team - either from query param (admin) or user's team (manager)
+    if is_admin and request.GET.get('team_id'):
+        team = get_object_or_404(Team, id=request.GET.get('team_id'), status='approved')
+    elif is_admin and request.POST.get('team_id'):
+        team = get_object_or_404(Team, id=request.POST.get('team_id'), status='approved')
+    else:
+        # Get user's approved team (for team managers)
+        team = Team.objects.filter(manager=request.user, status='approved').first()
+        
+        if not team:
+            messages.error(request, "You don't have an approved team.")
+            return redirect('dashboard')
+        
+        if not team.kit_colors_set:
+            messages.error(request, "Please set your team kit colors first!")
+            return redirect('teams:select_kit_colors')
     
     if request.method == 'POST':
         # Get form data
@@ -471,40 +663,65 @@ def add_player_action(request):
             
             messages.success(request, f'✅ Player {player.full_name} added successfully!')
             
-            # ALWAYS redirect back to add players page (Add & Continue)
-            return redirect('teams:add_players_approved')
+            # Redirect back to add players page (Add & Continue)
+            if is_admin:
+                return redirect(f"{reverse('teams:add_players_approved')}?team_id={team.id}")
+            else:
+                return redirect('teams:add_players_approved')
                 
         except Exception as e:
             messages.error(request, f'Error saving player: {str(e)}')
-            return redirect('teams:add_players_approved')
+            if is_admin and team:
+                return redirect(f"{reverse('teams:add_players_approved')}?team_id={team.id}")
+            else:
+                return redirect('teams:add_players_approved')
     
     # If not POST, redirect to add players page
+    if is_admin and request.GET.get('team_id'):
+        return redirect(f"{reverse('teams:add_players_approved')}?team_id={request.GET.get('team_id')}")
     return redirect('teams:add_players_approved')
 
 @login_required
 def add_players_to_approved_team(request):
-    """Just show the form - NO POST handling here"""
+    """Show player management form - accessible to team managers and admins"""
     settings = LeagueSettings.get_settings()
 
     if not settings.player_registration_open:
-        return render(request, 'teams/registration_closed.html', {
-            'title': 'Player Registration Closed',
-            'message': 'Player registration is currently closed. Please check back later or contact the league admin.',
-            'deadline': settings.player_registration_deadline,
-            'back_url': request.META.get('HTTP_REFERER', '/'),
-        })
+        # Allow admins to bypass registration closure
+        if not (request.user.is_staff or request.user.is_superuser):
+            return render(request, 'teams/registration_closed.html', {
+                'title': 'Player Registration Closed',
+                'message': 'Player registration is currently closed. Please check back later or contact the league admin.',
+                'deadline': settings.player_registration_deadline,
+                'back_url': request.META.get('HTTP_REFERER', '/'),
+            })
 
-    # Get user's approved team
-    team = Team.objects.filter(manager=request.user, status='approved').first()
+    # Check if user is admin/staff or team manager
+    is_admin = request.user.is_staff or request.user.is_superuser
     
-    if not team:
-        messages.error(request, "You don't have an approved team.")
-        return redirect('dashboard')
-    
-    # Check if kit colors are set
-    if not team.kit_colors_set:
-        messages.error(request, "Please set your team kit colors first!")
-        return redirect('teams:select_kit_colors')
+    if is_admin:
+        # Admin can select any team
+        team_id = request.GET.get('team_id')
+        if team_id:
+            team = get_object_or_404(Team, id=team_id, status='approved')
+        else:
+            # Show team selection page for admins
+            teams = Team.objects.filter(status='approved').order_by('team_name')
+            return render(request, 'teams/admin_select_team_players.html', {
+                'teams': teams
+            })
+    else:
+        # Get user's approved team (for team managers)
+        team = Team.objects.filter(manager=request.user, status='approved').first()
+        
+        if not team:
+            messages.error(request, "You don't have an approved team.")
+            return redirect('dashboard')
+        
+        # Check if kit colors are set
+        if not team.kit_colors_set:
+            messages.error(request, "Please set your team kit colors first!")
+            return redirect('teams:select_kit_colors')
     
     # GET request only - show the form
     players = Player.objects.filter(team=team).order_by('jersey_number')
@@ -513,7 +730,8 @@ def add_players_to_approved_team(request):
     return render(request, 'teams/add_players_approved.html', {
         'team': team,
         'players': players,
-        'player_count': player_count
+        'player_count': player_count,
+        'is_admin': is_admin
     })
 
 
@@ -609,14 +827,14 @@ def request_transfer(request, player_id):
             requested_by=request.user
         )
         messages.success(request, 
-            f"✅ <strong>Transfer Request Successful!</strong><br>"
-            f"You have successfully requested <strong>{player.full_name}</strong> "
-            f"(#{player.jersey_number}, {player.get_position_display()}) from <strong>{from_team.team_name}</strong>.<br>"
-            f"<small class='text-muted'>The request is now waiting for approval from {from_team.team_name}'s manager. "
-            f"You will be notified once they respond to your request.</small>"
+            f"✅ Transfer Request Successful! "
+            f"You have successfully requested {player.full_name} "
+            f"(#{player.jersey_number}, {player.get_position_display()}) from {from_team.team_name}. "
+            f"The request is now waiting for approval from {from_team.team_name}'s manager. "
+            f"You will be notified once they respond to your request."
         )
     except Exception as e:
-        messages.error(request, f"❌ <strong>Error:</strong> Could not create transfer request. {str(e)}")
+        messages.error(request, f"❌ Error: Could not create transfer request. {str(e)}")
     
     return redirect('teams:my_transfer_requests')
 
@@ -805,3 +1023,299 @@ def delete_official(request, official_id):
     official.delete()
     messages.success(request, f"\u274c {official_name} removed.")
     return redirect('teams:team_officials')
+
+
+# =============================================================================
+# ADMIN PLAYER MANAGEMENT VIEWS
+# =============================================================================
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_manage_players(request):
+    """Admin view to manage all players - list, search, filter"""
+    search_query = request.GET.get('search', '')
+    team_filter = request.GET.get('team', '')
+    position_filter = request.GET.get('position', '')
+    status_filter = request.GET.get('status', '')
+    
+    players = Player.objects.select_related('team').all()
+    
+    # Apply filters
+    if search_query:
+        players = players.filter(
+            models.Q(first_name__icontains=search_query) |
+            models.Q(last_name__icontains=search_query) |
+            models.Q(id_number__icontains=search_query) |
+            models.Q(fkf_license_number__icontains=search_query)
+        )
+    
+    if team_filter:
+        players = players.filter(team_id=team_filter)
+    
+    if position_filter:
+        players = players.filter(position=position_filter)
+    
+    if status_filter == 'suspended':
+        players = players.filter(is_suspended=True)
+    elif status_filter == 'active':
+        players = players.filter(is_suspended=False)
+    
+    players = players.order_by('team__team_name', 'jersey_number')
+    
+    # Get teams and stats
+    teams = Team.objects.filter(status='approved').order_by('team_name')
+    total_players = Player.objects.count()
+    suspended_players = Player.objects.filter(is_suspended=True).count()
+    
+    context = {
+        'players': players,
+        'teams': teams,
+        'search_query': search_query,
+        'team_filter': team_filter,
+        'position_filter': position_filter,
+        'status_filter': status_filter,
+        'position_choices': Player.POSITION_CHOICES,
+        'total_players': total_players,
+        'suspended_players': suspended_players,
+    }
+    
+    return render(request, 'teams/admin_manage_players.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_delete_player(request, player_id):
+    """Admin delete a player with confirmation"""
+    player = get_object_or_404(Player, id=player_id)
+    
+    if request.method == 'POST':
+        team = player.team
+        player_name = player.full_name
+        player.delete()
+        messages.success(request, f'✅ Player {player_name} deleted successfully from {team.team_name}')
+        return redirect('teams:admin_manage_players')
+    
+    context = {'player': player}
+    return render(request, 'teams/admin_delete_player.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_suspend_player(request, player_id):
+    """Admin suspend a player with reason and duration"""
+    player = get_object_or_404(Player, id=player_id)
+    
+    if request.method == 'POST':
+        suspension_matches = request.POST.get('suspension_matches')
+        suspension_reason = request.POST.get('suspension_reason')
+        
+        if not suspension_matches or not suspension_reason:
+            messages.error(request, '❌ Both suspension matches and reason are required')
+            return redirect('teams:admin_suspend_player', player_id=player_id)
+        
+        try:
+            matches = int(suspension_matches)
+            if matches < 1:
+                raise ValueError("Matches must be positive")
+            
+            player.is_suspended = True
+            player.suspension_reason = suspension_reason
+            # Store suspension matches count in suspension_end field temporarily
+            # You may want to add a separate field for this
+            player.suspension_matches = matches
+            player.save()
+            
+            messages.success(request, f'✅ {player.full_name} suspended for {matches} match(es): {suspension_reason}')
+            return redirect('teams:admin_manage_players')
+            
+        except ValueError:
+            messages.error(request, '❌ Invalid number of matches')
+            return redirect('teams:admin_suspend_player', player_id=player_id)
+    
+    context = {'player': player}
+    return render(request, 'teams/admin_suspend_player.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_unsuspend_player(request, player_id):
+    """Admin unsuspend a player"""
+    player = get_object_or_404(Player, id=player_id)
+    
+    if request.method == 'POST':
+        player.is_suspended = False
+        player.suspension_reason = ''
+        player.suspension_end = None
+        if hasattr(player, 'suspension_matches'):
+            player.suspension_matches = 0
+        player.save()
+        
+        messages.success(request, f'✅ {player.full_name} unsuspended successfully')
+        return redirect('teams:admin_manage_players')
+    
+    context = {'player': player}
+    return render(request, 'teams/admin_unsuspend_player.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_add_team_official(request):
+    """Admin add team official with team selection"""
+    if request.method == 'POST':
+        team_id = request.POST.get('team_id')
+        full_name = request.POST.get('full_name')
+        position = request.POST.get('position')
+        phone_number = request.POST.get('phone_number')
+        email = request.POST.get('email', '')
+        
+        try:
+            team = Team.objects.get(id=team_id, status='approved')
+            
+            official = TeamOfficial.objects.create(
+                team=team,
+                full_name=full_name,
+                position=position,
+                phone_number=phone_number,
+                email=email
+            )
+            
+            messages.success(request, f'✅ Official {full_name} added to {team.team_name}')
+            return redirect('teams:admin_manage_officials')
+            
+        except Team.DoesNotExist:
+            messages.error(request, '❌ Invalid team selected')
+        except Exception as e:
+            messages.error(request, f'❌ Error adding official: {str(e)}')
+    
+    teams = Team.objects.filter(status='approved').order_by('team_name')
+    positions = TeamOfficial.POSITION_CHOICES
+    
+    context = {
+        'teams': teams,
+        'positions': positions
+    }
+    
+    return render(request, 'teams/admin_add_official.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_manage_officials(request):
+    """Admin view to manage all team officials"""
+    search_query = request.GET.get('search', '')
+    team_filter = request.GET.get('team', '')
+    position_filter = request.GET.get('position', '')
+    status_filter = request.GET.get('status', '')
+    
+    officials = TeamOfficial.objects.select_related('team').all()
+    
+    # Apply filters
+    if search_query:
+        officials = officials.filter(
+            models.Q(full_name__icontains=search_query) |
+            models.Q(phone_number__icontains=search_query) |
+            models.Q(email__icontains=search_query)
+        )
+    
+    if team_filter:
+        officials = officials.filter(team_id=team_filter)
+    
+    if position_filter:
+        officials = officials.filter(position=position_filter)
+    
+    if status_filter:
+        if status_filter == 'suspended':
+            officials = officials.filter(is_suspended=True)
+        elif status_filter == 'active':
+            officials = officials.filter(is_suspended=False)
+    
+    officials = officials.order_by('team__team_name', 'position')
+    
+    # Get teams for filter
+    teams = Team.objects.filter(status='approved').order_by('team_name')
+    
+    # Stats
+    total_officials = TeamOfficial.objects.count()
+    suspended_officials = TeamOfficial.objects.filter(is_suspended=True).count()
+    active_officials = total_officials - suspended_officials
+    
+    context = {
+        'officials': officials,
+        'teams': teams,
+        'search_query': search_query,
+        'team_filter': team_filter,
+        'position_filter': position_filter,
+        'status_filter': status_filter,
+        'position_choices': TeamOfficial.POSITION_CHOICES,
+        'total_officials': total_officials,
+        'suspended_officials': suspended_officials,
+        'active_officials': active_officials,
+    }
+    
+    return render(request, 'teams/admin_manage_officials.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_suspend_official(request, official_id):
+    """Admin suspend a team official"""
+    official = get_object_or_404(TeamOfficial, id=official_id)
+    
+    if request.method == 'POST':
+        suspension_matches = request.POST.get('suspension_matches', 0)
+        suspension_reason = request.POST.get('suspension_reason', '')
+        
+        try:
+            official.is_suspended = True
+            official.suspension_matches = int(suspension_matches)
+            official.suspension_reason = suspension_reason
+            official.save()
+            
+            messages.success(request, f'✅ Official {official.full_name} suspended for {suspension_matches} matches')
+            return redirect('teams:admin_manage_officials')
+        except Exception as e:
+            messages.error(request, f'❌ Error suspending official: {str(e)}')
+    
+    context = {
+        'official': official,
+    }
+    return render(request, 'teams/admin_suspend_official.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_unsuspend_official(request, official_id):
+    """Admin unsuspend a team official"""
+    official = get_object_or_404(TeamOfficial, id=official_id)
+    
+    if request.method == 'POST':
+        official.is_suspended = False
+        official.suspension_matches = 0
+        official.suspension_reason = ''
+        official.suspension_end = None
+        official.save()
+        
+        messages.success(request, f'✅ Official {official.full_name} suspension lifted')
+        return redirect('teams:admin_manage_officials')
+    
+    context = {
+        'official': official,
+    }
+    return render(request, 'teams/admin_unsuspend_official.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_delete_official(request, official_id):
+    """Admin delete a team official"""
+    official = get_object_or_404(TeamOfficial, id=official_id)
+    
+    if request.method == 'POST':
+        team = official.team
+        official_name = official.full_name
+        official.delete()
+        messages.success(request, f'✅ Official {official_name} removed from {team.team_name}')
+        return redirect('teams:admin_manage_officials')
+    
+    context = {'official': official}
+    return render(request, 'teams/admin_delete_official.html', context)

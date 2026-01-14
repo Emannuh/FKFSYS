@@ -1,6 +1,13 @@
 {% extends 'base.html' %}
 {% block title %}Reschedule Fixtures - Admin Dashboard{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Reschedule Fixtures</li>
+    </ol>
+</nav>
+
 <div class="container mt-4">
     <h2 class="mb-4 text-primary">Reschedule Fixtures</h2>
     <div class="card">
@@ -40,7 +47,7 @@
         </div>
     </div>
     <div class="mt-4">
-        <a href="{% url 'admin_dashboard:admin_dashboard' %}" class="btn btn-secondary">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Dashboard
         </a>
     </div>

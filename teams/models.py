@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from fkf_league.validators import validate_kenya_phone
 import uuid
 
 class Zone(models.Model):
@@ -48,7 +49,12 @@ class Team(models.Model):
     
     # Contact Information
     contact_person = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=20, unique=True)
+    phone_number = models.CharField(
+        max_length=13,
+        unique=True,
+        validators=[validate_kenya_phone],
+        help_text="Must be +254 followed by 9 digits (e.g., +254712345678)"
+    )
     email = models.EmailField(blank=True, unique=True)
     
     # League Details
@@ -169,11 +175,13 @@ class Player(models.Model):
     red_cards = models.IntegerField(default=0)
     goals_scored = models.IntegerField(default=0)
     matches_played = models.IntegerField(default=0)
+    clean_sheets = models.IntegerField(default=0, help_text="Number of clean sheets (for goalkeepers)")
     
     # Suspension
     is_suspended = models.BooleanField(default=False)
     suspension_end = models.DateField(blank=True, null=True)
     suspension_reason = models.TextField(blank=True)
+    suspension_matches = models.IntegerField(default=0, help_text="Number of matches suspended")
     
     # Timestamps
     registration_date = models.DateTimeField(auto_now_add=True)
@@ -413,6 +421,12 @@ class TeamOfficial(models.Model):
     
     registration_date = models.DateTimeField(auto_now_add=True)
     
+    # Suspension fields
+    is_suspended = models.BooleanField(default=False)
+    suspension_reason = models.TextField(blank=True, help_text="Reason for suspension")
+    suspension_matches = models.IntegerField(default=0, help_text="Number of matches suspended")
+    suspension_end = models.DateField(null=True, blank=True)
+    
     class Meta:
         ordering = ['team', 'position']
         unique_together = ['team', 'position']
@@ -562,6 +576,31 @@ class TransferRequest(models.Model):
     def execute_transfer(self):
         """Execute the actual player transfer"""
         if self.status == 'approved':
+            # Check if jersey number is already taken on destination team
+            existing_player = Player.objects.filter(
+                team=self.to_team, 
+                jersey_number=self.player.jersey_number
+            ).exclude(id=self.player.id).first()
+            
+            if existing_player:
+                # Find next available jersey number
+                taken_numbers = set(
+                    Player.objects.filter(team=self.to_team)
+                    .values_list('jersey_number', flat=True)
+                )
+                # Find first available number from 1-99
+                new_number = None
+                for num in range(1, 100):
+                    if num not in taken_numbers:
+                        new_number = num
+                        break
+                
+                if new_number:
+                    self.player.jersey_number = new_number
+                else:
+                    # Fallback: use a high number if 1-99 are all taken
+                    self.player.jersey_number = max(taken_numbers) + 1
+            
             # Transfer the player
             self.player.team = self.to_team
             self.player.save()

@@ -5,6 +5,99 @@
     <h1>League Admin Dashboard</h1>
     <p>Welcome, {{ user.username }}!</p>
     
+    <!-- Management Quick Links -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-users"></i> Team Management</h5>
+                    <p class="text-muted small">Manage teams and approvals</p>
+                    <a href="{% url 'teams:dashboard' %}" class="btn btn-primary w-100">Manage Teams</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-user-friends"></i> Player Management</h5>
+                    <p class="text-muted small">Manage player registrations</p>
+                    <a href="{% url 'teams:admin_manage_players' %}" class="btn btn-success w-100">Manage Players</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-user-tie"></i> Officials Management</h5>
+                    <p class="text-muted small">Manage team officials</p>
+                    <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-info w-100">Manage Officials</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-futbol"></i> Match Management</h5>
+                    <p class="text-muted small">Manage fixtures & matches</p>
+                    <a href="{% url 'matches:manage_matches' %}" class="btn btn-warning w-100">Manage Matches</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Management (Super Admin Only) -->
+    {% if user.is_staff or user.is_superuser %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-user-shield"></i> User Management</h5>
+                    <p class="text-muted">Create and manage League Admin accounts</p>
+                    <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-danger">
+                        <i class="fas fa-users-cog"></i> Manage League Admins
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Transfer Management Quick Links -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-exchange-alt"></i> Pending Transfers
+                        {% if pending_transfers > 0 %}
+                        <span class="badge bg-warning">{{ pending_transfers }}</span>
+                        {% endif %}
+                    </h5>
+                    <p class="text-muted">Transfer requests awaiting parent club decision</p>
+                    <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-warning">
+                        View Transfers
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-times-circle"></i> Rejected Transfers
+                        {% if rejected_transfers > 0 %}
+                        <span class="badge bg-danger">{{ rejected_transfers }}</span>
+                        {% endif %}
+                    </h5>
+                    <p class="text-muted">Transfers that may need admin review/override</p>
+                    <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-danger">
+                        Review Rejections
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Registration Window Controls -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -124,69 +217,6 @@
                     <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Deadlines</button>
                 </div>
             </form>
-        </div>
-    </div>
-    
-    <!-- Transfer Management Quick Links -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-exchange-alt"></i> Pending Transfers
-                        {% if pending_transfers > 0 %}
-                        <span class="badge bg-warning">{{ pending_transfers }}</span>
-                        {% endif %}
-                    </h5>
-                    <p class="text-muted">Transfer requests awaiting parent club decision</p>
-                    <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-warning">
-                        View Transfers
-                    </a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-times-circle"></i> Rejected Transfers
-                        {% if rejected_transfers > 0 %}
-                        <span class="badge bg-danger">{{ rejected_transfers }}</span>
-                        {% endif %}
-                    </h5>
-                    <p class="text-muted">Transfers that may need admin review/override</p>
-                    <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-danger">
-                        Review Rejections
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Referee Management</h5>
-                    <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-primary">Go to Referees</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Team Management</h5>
-                    <a href="{% url 'teams:dashboard' %}" class="btn btn-primary">Manage Teams</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Match Management</h5>
-                    <a href="#" class="btn btn-primary">Manage Matches</a>
-                </div>
-            </div>
         </div>
     </div>
 </div>

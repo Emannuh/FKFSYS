@@ -1,86 +1,79 @@
 <!-- templates/referees/admin_dashboard.html -->
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Referee Management Dashboard - FKF Meru League{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid">
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <h1 class="h3 mb-2">
-                <i class="fas fa-user-shield me-2"></i>Referee Management Dashboard
-            </h1>
-            <p class="text-muted">Manage referee registrations and approvals</p>
+            <h2 class="text-success"><i class="fas fa-whistle"></i> Referee Management Dashboard</h2>
+            <p class="lead">Manage referee registrations, approvals, and match reports</p>
         </div>
     </div>
 
     <!-- Quick Stats -->
     <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-danger text-white shadow">
                 <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Pending Approvals
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_count }}</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-1">Pending Approvals</h6>
+                            <h2 class="mb-0">{{ pending_count }}</h2>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-clock fa-2x text-gray-300"></i>
+                        <div>
+                            <i class="fas fa-user-clock fa-3x opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-success text-white shadow">
                 <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Approved Referees
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ approved_count }}</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-1">Approved Referees</h6>
+                            <h2 class="mb-0">{{ approved_count }}</h2>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                        <div>
+                            <i class="fas fa-user-check fa-3x opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-info text-white shadow">
                 <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Total Referees
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_count }}</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-1">Total Referees</h6>
+                            <h2 class="mb-0">{{ total_count }}</h2>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <div>
+                            <i class="fas fa-users fa-3x opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-warning text-dark shadow">
                 <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                Rejected Applications
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ rejected_count }}</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Rejected Applications</h6>
+                            <h2 class="mb-0">{{ rejected_count }}</h2>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-times fa-2x text-gray-300"></i>
+                        <div>
+                            <i class="fas fa-user-times fa-3x opacity-50"></i>
                         </div>
                     </div>
                 </div>
@@ -93,24 +86,17 @@
         <!-- Pending Referees -->
         <div class="col-lg-8">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-user-clock me-1"></i>Pending Referee Approvals
-                    </h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" 
-                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                <div class="card-header bg-success text-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-clock me-2"></i>Pending Referee Approvals
+                    </h5>
+                    <div class="btn-group">
+                        <a href="{% url 'referees:all_referees' %}" class="btn btn-sm btn-light">
+                            <i class="fas fa-list me-1"></i> All Referees
                         </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" 
-                             aria-labelledby="dropdownMenuLink">
-                            <a class="dropdown-item" href="{% url 'referees:all_referees' %}">
-                                <i class="fas fa-list me-1"></i> View All Referees
-                            </a>
-                            <a class="dropdown-item" href="/admin/referees/referee/">
-                                <i class="fas fa-cog me-1"></i> Admin Panel
-                            </a>
-                        </div>
+                        <a href="/admin/referees/referee/" class="btn btn-sm btn-light">
+                            <i class="fas fa-cog me-1"></i> Admin Panel
+                        </a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -190,16 +176,30 @@
                         </a>
                         <a href="/admin/referees/referee/" class="btn btn-secondary btn-block">
                             <i class="fas fa-cog me-1"></i> Django Admin Panel
+                        </a>bg-success text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'referees:pending_referees' %}" class="btn btn-danger btn-lg">
+                            <i class="fas fa-user-clock me-2"></i> Pending Approvals
+                            {% if pending_count > 0 %}
+                            <span class="badge bg-white text-danger">{{ pending_count }}</span>
+                            {% endif %}
                         </a>
-                        <a href="/admin/referees/matchreport/" class="btn btn-warning btn-block">
-                            <i class="fas fa-file-alt me-1"></i> View Match Reports
+                        <a href="{% url 'referees:all_referees' %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-list me-2"></i> All Referees
                         </a>
-                        <a href="{% url 'referees:pending_reports' %}" class="btn btn-info btn-block">
-                            <i class="fas fa-check-circle me-1"></i> Approve Reports
+                        <a href="{% url 'referees:pending_reports' %}" class="btn btn-info btn-lg">
+                            <i class="fas fa-check-circle me-2"></i> Approve Reports
                         </a>
-                        <!-- Cancel Appointment Button -->
-                        <a href="{% url 'referees:cancel_appointment' match_id=example_match_id %}" class="btn btn-danger btn-block">
-                            <i class="fas fa-ban me-1"></i> Cancel Match Appointment
+                        <a href="/admin/referees/matchreport/" class="btn btn-warning btn-lg">
+                            <i class="fas fa-file-alt me-2"></i> Match Reports
+                        </a>
+                        <a href="/admin/referees/referee/" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-cog me-2"></i> Admin Panel
                         </a>
                     </div>
                 </div>
@@ -207,10 +207,10 @@
 
             <!-- Status Distribution -->
             <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-chart-pie me-1"></i>Referee Status Distribution
-                    </h6>
+                <div class="card-header bg-info text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Status Distribution
+                    </h5>
                 </div>
                 <div class="card-body">
                     <canvas id="statusChart" width="100%" height="200"></canvas>
@@ -221,12 +221,13 @@
         <!-- Pending Match Reports -->
         <div class="col-lg-8">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-info">
-                        <i class="fas fa-file-check me-1"></i>Pending Match Reports ({{ pending_report_count }})
-                    </h6>
-                    <a href="{% url 'referees:pending_reports' %}" class="btn btn-sm btn-info">
-                        <i class="fas fa-arrow-right"></i> View All
+                <div class="card-header bg-info text-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-check me-2"></i>Pending Match Reports
+                        <span class="badge bg-white text-info ms-2">{{ pending_report_count }}</span>
+                    </h5>
+                    <a href="{% url 'referees:pending_reports' %}" class="btn btn-sm btn-light">
+                        <i class="fas fa-arrow-right me-1"></i> View All
                     </a>
                 </div>
                 <div class="card-body">

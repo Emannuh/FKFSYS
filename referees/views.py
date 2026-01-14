@@ -1,9 +1,14 @@
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from matches.models import Match
 from .models import MatchOfficials, MatchReport
+
+def referees_manager_required(user):
+    """Check if user is in Referees Manager group or is staff"""
+    return user.groups.filter(name='Referees Manager').exists() or user.is_staff
 
 @login_required
 @permission_required('referees.appoint_referees', raise_exception=True)
@@ -17,8 +22,106 @@ def cancel_appointment(request, match_id):
         return redirect('matches:match_details', match_id=match.id)
 
     if request.method == 'POST':
+        # Collect all appointed referees before deletion
+        appointed_referees = []
+        
+        if officials.main_referee:
+            appointed_referees.append({'referee': officials.main_referee, 'role': 'Referee'})
+        if officials.assistant_1:
+            appointed_referees.append({'referee': officials.assistant_1, 'role': 'Assistant Referee 1'})
+        if officials.assistant_2:
+            appointed_referees.append({'referee': officials.assistant_2, 'role': 'Assistant Referee 2'})
+        if officials.fourth_official:
+            appointed_referees.append({'referee': officials.fourth_official, 'role': 'Fourth Official'})
+        if officials.reserve_referee:
+            appointed_referees.append({'referee': officials.reserve_referee, 'role': 'Reserve Referee'})
+        if officials.reserve_assistant:
+            appointed_referees.append({'referee': officials.reserve_assistant, 'role': 'Reserve Assistant'})
+        if officials.var:
+            appointed_referees.append({'referee': officials.var, 'role': 'VAR'})
+        if officials.avar1:
+            appointed_referees.append({'referee': officials.avar1, 'role': 'AVAR1'})
+        if officials.match_commissioner:
+            appointed_referees.append({'referee': officials.match_commissioner, 'role': 'Match Commissioner'})
+        
+        # Delete the appointments
         officials.delete()
-        messages.success(request, f"All appointments for {match} have been cancelled.")
+        
+        # Send notifications to all affected referees
+        for ref_data in appointed_referees:
+            referee = ref_data['referee']
+            role = ref_data['role']
+            
+            # Send Email Notification
+            try:
+                from django.core.mail import EmailMultiAlternatives
+                from django.conf import settings
+                
+                subject = f'Match Appointment Cancelled - {match.home_team} vs {match.away_team}'
+                
+                text_content = f"""
+Dear {referee.full_name},
+
+Your appointment for the following match has been CANCELLED by the Referees Manager:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MATCH DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Match: {match.home_team} vs {match.away_team}
+Date: {match.match_date.strftime('%A, %B %d, %Y')}
+Time: {match.kickoff_time if match.kickoff_time else 'TBD'}
+Venue: {match.venue if match.venue else 'TBA'}
+Your Role: {role}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This appointment has been removed from your schedule. You are no longer required to attend this match.
+
+If you have any questions or concerns, please contact the Referees Manager.
+
+Best regards,
+FKF Meru County League - Referees Management
+"""
+                
+                email = EmailMultiAlternatives(
+                    subject,
+                    text_content,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [referee.email]
+                )
+                email.send(fail_silently=True)
+                
+            except Exception as e:
+                # Log error but don't stop the process
+                print(f"Failed to send email to {referee.email}: {str(e)}")
+            
+            # Send SMS Notification (if phone number available)
+            if referee.phone_number:
+                try:
+                    sms_message = (
+                        f"FKF MERU: Your appointment as {role} for "
+                        f"{match.home_team} vs {match.away_team} on "
+                        f"{match.match_date.strftime('%d/%m/%Y')} has been CANCELLED. "
+                        f"Contact Referees Manager for details."
+                    )
+                    
+                    # TODO: Integrate with SMS service (e.g., Africa's Talking)
+                    # For now, we'll log it
+                    print(f"SMS to {referee.phone_number}: {sms_message}")
+                    
+                    # Uncomment when SMS service is configured:
+                    # from your_sms_service import send_sms
+                    # send_sms(referee.phone_number, sms_message)
+                    
+                except Exception as e:
+                    print(f"Failed to send SMS to {referee.phone_number}: {str(e)}")
+        
+        messages.success(
+            request, 
+            f"All appointments for {match} have been cancelled. "
+            f"Notifications sent to {len(appointed_referees)} referee(s)."
+        )
         return redirect('matches:match_details', match_id=match.id)
 
     context = {
@@ -55,7 +158,8 @@ from matches.models import Match
 from .models import (
     Referee, MatchReport, MatchOfficials, TeamOfficial, PlayingKit,
     MatchVenueDetails, StartingLineup, ReservePlayer, 
-    Substitution, Caution, Expulsion, MatchGoal, RefereeAvailability
+    Substitution, Caution, Expulsion, MatchGoal, RefereeAvailability,
+    MatchdaySquad
 )
 
 from .forms import (
@@ -126,9 +230,10 @@ def login_instructions(request):
     return render(request, 'referees/login_instructions.html', context)
 
 # ========== ADMIN: PENDING REFEREES ==========
-@staff_member_required
+@login_required
+@user_passes_test(referees_manager_required)
 def pending_referees(request):
-    """View pending referee registrations (admin only)"""
+    """View pending referee registrations (Referees Manager or Admin)"""
     pending_referees_list = Referee.objects.filter(status='pending').order_by('-date_joined')
     
     context = {
@@ -140,9 +245,10 @@ def pending_referees(request):
     return render(request, 'referees/admin/pending_referees.html', context)
 
 # ========== ADMIN: APPROVE REFEREE ==========
-@staff_member_required
+@login_required
+@user_passes_test(referees_manager_required)
 def approve_referee(request, referee_id):
-    """Approve a referee and create their account"""
+    """Approve a referee and create their account (Referees Manager or Admin)"""
     referee = get_object_or_404(Referee, id=referee_id)
     
     if request.method == 'POST':
@@ -167,9 +273,10 @@ def approve_referee(request, referee_id):
     return render(request, 'referees/admin/approve_referee.html', context)
 
 # ========== ADMIN: REJECT REFEREE ==========
-@staff_member_required
+@login_required
+@user_passes_test(referees_manager_required)
 def reject_referee(request, referee_id):
-    """Reject a referee registration"""
+    """Reject a referee registration (Referees Manager or Admin)"""
     referee = get_object_or_404(Referee, id=referee_id)
     
     if request.method == 'POST':
@@ -211,12 +318,17 @@ def referee_dashboard(request):
             Q(assistant_2=referee) | Q(fourth_official=referee) |
             Q(reserve_referee=referee) | Q(reserve_assistant=referee) |
             Q(var=referee) | Q(avar1=referee) | Q(match_commissioner=referee)
-        ).select_related('match').order_by('match__match_date')
+        ).select_related('match', 'match__home_team', 'match__away_team', 'match__zone').order_by('match__match_date')
+        
+        # Debug: Log the number of appointments found
+        print(f"DEBUG: Found {appointments.count()} appointments for referee {referee.full_name}")
         
         # Categorize appointments
         upcoming_matches = []
         pending_confirmation = []
         completed_matches = []
+        
+        today = timezone.now().date()
         
         for appointment in appointments:
             match = appointment.match
@@ -243,23 +355,35 @@ def referee_dashboard(request):
             elif appointment.var == referee:
                 role = "VAR"
                 confirmed = appointment.var_confirmed
+            elif appointment.avar1 == referee:
+                role = "AVAR1"
+                confirmed = False  # Add confirmation field if needed
+            elif appointment.match_commissioner == referee:
+                role = "COMMISSIONER"
+                confirmed = appointment.commissioner_confirmed
             
             match_info = {
                 'match': match,
                 'role': role,
                 'confirmed': confirmed,
                 'appointment': appointment,
-                'match_date': match.match_date.date(),
-                'can_confirm': match.match_date.date() >= timezone.now().date() and not confirmed
+                'match_date': match.match_date.date() if hasattr(match.match_date, 'date') else match.match_date,
+                'can_confirm': match.match_date.date() >= today and not confirmed if hasattr(match.match_date, 'date') else match.match_date >= today and not confirmed
             }
             
-            if match.match_date.date() > timezone.now().date():
+            # Categorize by date
+            match_date = match.match_date.date() if hasattr(match.match_date, 'date') else match.match_date
+            
+            if match_date >= today:
                 if not confirmed:
                     pending_confirmation.append(match_info)
                 else:
                     upcoming_matches.append(match_info)
             else:
                 completed_matches.append(match_info)
+        
+        # Debug: Log categorization
+        print(f"DEBUG: Pending: {len(pending_confirmation)}, Upcoming: {len(upcoming_matches)}, Completed: {len(completed_matches)}")
         
         # Get reports
         pending_reports = MatchReport.objects.filter(
@@ -277,6 +401,10 @@ def referee_dashboard(request):
             status='draft'
         )
         
+        # Check suspension status
+        is_suspended = referee.status == 'suspended'
+        suspension_reason = referee.suspension_reason if is_suspended else None
+        
         context = {
             'referee': referee,
             'upcoming_matches': upcoming_matches,
@@ -287,10 +415,14 @@ def referee_dashboard(request):
             'draft_reports': draft_reports,
             'can_confirm': request.user.has_perm('referees.confirm_appointment'),
             'can_submit_report': request.user.has_perm('referees.submit_match_report'),
+            'is_suspended': is_suspended,
+            'suspension_reason': suspension_reason,
+            'total_appointments': appointments.count(),
         }
         return render(request, 'referees/dashboard.html', context)
     
-    except AttributeError:
+    except AttributeError as e:
+        print(f"DEBUG: AttributeError in referee_dashboard: {str(e)}")
         messages.error(request, "You need to register as a referee first.")
         return redirect('referees:referee_registration')
 
@@ -380,7 +512,7 @@ def confirm_appointment(request, match_id):
     elif officials.match_commissioner == referee:
         role = 'COMMISSIONER'
         is_appointed = True
-        already_confirmed = False
+        already_confirmed = officials.commissioner_confirmed
     
     if not is_appointed:
         messages.error(request, "You are not appointed to this match.")
@@ -409,6 +541,10 @@ def confirm_appointment(request, match_id):
         elif role == 'VAR':
             officials.var_confirmed = True
             messages.success(request, "VAR appointment confirmed!")
+        elif role == 'COMMISSIONER':
+            officials.commissioner_confirmed = True
+            officials.commissioner_confirmed_at = timezone.now()
+            messages.success(request, "Match Commissioner appointment confirmed!")
         
         # Update status if all required officials confirmed
         if officials.all_required_confirmed:
@@ -428,6 +564,136 @@ def confirm_appointment(request, match_id):
     }
     
     return render(request, 'referees/confirm_appointment.html', context)
+
+
+# ========== REFEREE: DECLINE APPOINTMENT ==========
+@login_required
+@permission_required('referees.confirm_appointment', raise_exception=True)
+def decline_appointment(request, match_id):
+    """Referee declines their appointment with a reason"""
+    try:
+        referee = request.user.referee_profile
+        
+        if not referee.can_be_appointed():
+            messages.error(request, "Your account is not approved or active.")
+            return redirect('referees:referee_dashboard')
+            
+    except AttributeError:
+        messages.error(request, "You need a referee profile to reject appointments.")
+        return redirect('referees:referee_registration')
+    
+    match = get_object_or_404(Match, id=match_id)
+    
+    # Check if match has officials
+    if not hasattr(match, 'officials'):
+        messages.error(request, "No officials appointed for this match.")
+        return redirect('referees:referee_dashboard')
+    
+    officials = match.officials
+    
+    # Determine referee's role in this match
+    role = None
+    is_appointed = False
+    
+    if officials.main_referee == referee:
+        role = 'REFEREE'
+        is_appointed = True
+        already_rejected = officials.main_rejected
+    elif officials.assistant_1 == referee:
+        role = 'AR1'
+        is_appointed = True
+        already_rejected = officials.ar1_rejected
+    elif officials.assistant_2 == referee:
+        role = 'AR2'
+        is_appointed = True
+        already_rejected = officials.ar2_rejected
+    elif officials.fourth_official == referee:
+        role = 'FOURTH'
+        is_appointed = True
+        already_rejected = officials.fourth_rejected
+    elif officials.reserve_referee == referee:
+        role = 'RESERVE'
+        is_appointed = True
+        already_rejected = officials.reserve_rejected
+    elif officials.var == referee:
+        role = 'VAR'
+        is_appointed = True
+        already_rejected = officials.var_rejected
+    elif officials.match_commissioner == referee:
+        role = 'COMMISSIONER'
+        is_appointed = True
+        already_rejected = officials.commissioner_rejected
+    
+    if not is_appointed:
+        messages.error(request, "You are not appointed to this match.")
+        return redirect('referees:referee_dashboard')
+    
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+        
+        if not reason:
+            messages.error(request, "Please provide a reason for declining this appointment.")
+            return render(request, 'referees/decline_appointment.html', {
+                'match': match,
+                'officials': officials,
+                'role': role,
+                'role_display': dict(officials.OFFICIAL_ROLES).get(role, role),
+            })
+        
+        # Update rejection based on role
+        if role == 'REFEREE':
+            officials.main_rejected = True
+            officials.main_rejection_reason = reason
+            officials.main_rejected_at = timezone.now()
+            messages.success(request, "Referee appointment declined. Referees Manager will be notified.")
+        elif role == 'AR1':
+            officials.ar1_rejected = True
+            officials.ar1_rejection_reason = reason
+            officials.ar1_rejected_at = timezone.now()
+            messages.success(request, "Assistant Referee 1 appointment declined. Referees Manager will be notified.")
+        elif role == 'AR2':
+            officials.ar2_rejected = True
+            officials.ar2_rejection_reason = reason
+            officials.ar2_rejected_at = timezone.now()
+            messages.success(request, "Assistant Referee 2 appointment declined. Referees Manager will be notified.")
+        elif role == 'FOURTH':
+            officials.fourth_rejected = True
+            officials.fourth_rejection_reason = reason
+            messages.success(request, "Fourth Official appointment declined. Referees Manager will be notified.")
+        elif role == 'RESERVE':
+            officials.reserve_rejected = True
+            officials.reserve_rejection_reason = reason
+            messages.success(request, "Reserve Referee appointment declined. Referees Manager will be notified.")
+        elif role == 'VAR':
+            officials.var_rejected = True
+            officials.var_rejection_reason = reason
+            messages.success(request, "VAR appointment declined. Referees Manager will be notified.")
+        elif role == 'COMMISSIONER':
+            officials.commissioner_rejected = True
+            officials.commissioner_rejection_reason = reason
+            messages.success(request, "Match Commissioner appointment declined. Referees Manager will be notified.")
+        
+        # Update status to REJECTED if any official rejected
+        if any([officials.main_rejected, officials.ar1_rejected, officials.ar2_rejected,
+                officials.fourth_rejected, officials.reserve_rejected, officials.var_rejected,
+                officials.commissioner_rejected]):
+            officials.status = 'REJECTED'
+        
+        officials.save()
+        return redirect('referees:referee_dashboard')
+    
+    context = {
+        'match': match,
+        'officials': officials,
+        'role': role,
+        'already_rejected': already_rejected,
+        'role_display': dict(officials.OFFICIAL_ROLES).get(role, role),
+        'match_date': match.match_date.date(),
+        'today': timezone.now().date(),
+    }
+    
+    return render(request, 'referees/decline_appointment.html', context)
+
 
 # ========== APPOINT MATCH OFFICIALS ==========
 @login_required
@@ -630,25 +896,101 @@ def matches_needing_officials(request):
         match_date__lte=four_days_from_now,
         match_date__gte=timezone.now(),
         status='scheduled'
-    ).order_by('match_date')
+    ).select_related('home_team', 'away_team', 'zone').prefetch_related('officials').order_by('round_number', 'match_date')
     
-    # Categorize matches
+    # Categorize matches by appointment status
     needs_officials = []
+    appointed_matches = []
     pending_confirmation = []
     confirmed_matches = []
+    declined_appointments = []
     
     for match in matches:
-        if not hasattr(match, 'officials'):
+        if not hasattr(match, 'officials') or match.officials is None:
+            match.has_declined = False
             needs_officials.append(match)
-        elif match.officials.status == 'APPOINTED':
-            pending_confirmation.append(match)
-        elif match.officials.status == 'CONFIRMED':
-            confirmed_matches.append(match)
+        else:
+            # Check if any officials have declined
+            has_declined = any([
+                match.officials.main_rejected,
+                match.officials.ar1_rejected,
+                match.officials.ar2_rejected,
+                match.officials.fourth_rejected,
+                match.officials.reserve_rejected,
+                match.officials.var_rejected,
+                match.officials.commissioner_rejected
+            ])
+            
+            if has_declined:
+                # Add declined reasons to match object for display
+                match.has_declined = True
+                match.declined_roles = []
+                if match.officials.main_rejected:
+                    match.declined_roles.append({
+                        'role': 'Main Referee',
+                        'referee': match.officials.main_referee,
+                        'reason': match.officials.main_rejection_reason,
+                        'declined_at': match.officials.main_rejected_at
+                    })
+                if match.officials.ar1_rejected:
+                    match.declined_roles.append({
+                        'role': 'Assistant Referee 1',
+                        'referee': match.officials.assistant_1,
+                        'reason': match.officials.ar1_rejection_reason,
+                        'declined_at': match.officials.ar1_rejected_at
+                    })
+                if match.officials.ar2_rejected:
+                    match.declined_roles.append({
+                        'role': 'Assistant Referee 2',
+                        'referee': match.officials.assistant_2,
+                        'reason': match.officials.ar2_rejection_reason,
+                        'declined_at': match.officials.ar2_rejected_at
+                    })
+                if match.officials.fourth_rejected:
+                    match.declined_roles.append({
+                        'role': 'Fourth Official',
+                        'referee': match.officials.fourth_official,
+                        'reason': match.officials.fourth_rejection_reason,
+                        'declined_at': getattr(match.officials, 'fourth_rejected_at', None)
+                    })
+                if match.officials.reserve_rejected:
+                    match.declined_roles.append({
+                        'role': 'Reserve Referee',
+                        'referee': match.officials.reserve_referee,
+                        'reason': match.officials.reserve_rejection_reason,
+                        'declined_at': getattr(match.officials, 'reserve_rejected_at', None)
+                    })
+                if match.officials.var_rejected:
+                    match.declined_roles.append({
+                        'role': 'VAR',
+                        'referee': match.officials.var,
+                        'reason': match.officials.var_rejection_reason,
+                        'declined_at': getattr(match.officials, 'var_rejected_at', None)
+                    })
+                if match.officials.commissioner_rejected:
+                    match.declined_roles.append({
+                        'role': 'Match Commissioner',
+                        'referee': match.officials.match_commissioner,
+                        'reason': match.officials.commissioner_rejection_reason,
+                        'declined_at': getattr(match.officials, 'commissioner_rejected_at', None)
+                    })
+                declined_appointments.append(match)
+                # Also add to needs_officials list at the top for urgent attention
+                needs_officials.insert(0, match)
+            elif match.officials.status == 'APPOINTED':
+                appointed_matches.append(match)
+                pending_confirmation.append(match)
+            elif match.officials.status == 'CONFIRMED':
+                appointed_matches.append(match)
+                confirmed_matches.append(match)
     
     context = {
         'needs_officials': needs_officials,
+        'appointed_matches': appointed_matches,
         'pending_confirmation': pending_confirmation,
         'confirmed_matches': confirmed_matches,
+        'declined_appointments': declined_appointments,
+        'declined_count': len(declined_appointments),
         'today': timezone.now().date(),
         'four_days_later': four_days_from_now.date(),
         'OFFICIAL_ROLES': MatchOfficials.OFFICIAL_ROLES,
@@ -713,7 +1055,8 @@ def referee_availability(request):
     return render(request, 'referees/availability.html', context)
 
 # ========== ADMIN: VIEW ALL REFEREES ==========
-@staff_member_required
+@login_required
+@user_passes_test(referees_manager_required)
 def all_referees(request):
     """View all referees with filtering"""
     status_filter = request.GET.get('status', '')
@@ -743,7 +1086,8 @@ def all_referees(request):
     return render(request, 'referees/admin/all_referees.html', context)
 
 # ========== SUSPEND REFEREE (ADMIN) ==========
-@staff_member_required
+@login_required
+@user_passes_test(referees_manager_required)
 def suspend_referee(request, referee_id):
     """Suspend an active referee (admin only)"""
     referee = get_object_or_404(Referee, id=referee_id)
@@ -759,7 +1103,8 @@ def suspend_referee(request, referee_id):
     return render(request, 'referees/admin/suspend_referee.html', context)
 
 # ========== REACTIVATE REFEREE (ADMIN) ==========
-@staff_member_required
+@login_required
+@user_passes_test(referees_manager_required)
 def reactivate_referee(request, referee_id):
     """Reactivate a suspended referee (admin only)"""
     referee = get_object_or_404(Referee, id=referee_id)
@@ -774,7 +1119,8 @@ def reactivate_referee(request, referee_id):
     return render(request, 'referees/admin/reactivate_referee.html', context)
 
 # ========== ADMIN REFEREE DASHBOARD ==========
-@staff_member_required
+@login_required
+@user_passes_test(referees_manager_required)
 def admin_referee_dashboard(request):
     """Admin dashboard for referee management"""
     context = {
@@ -805,18 +1151,21 @@ def admin_referee_dashboard(request):
 def api_urgent_matches(request):
     """API: Get urgent matches needing officials"""
     from django.utils.dateformat import format
+    from datetime import datetime
     
-    four_days_from_now = timezone.now() + timedelta(days=4)
+    today = timezone.localdate()
+    four_days_from_now = today + timedelta(days=4)
     
     matches = Match.objects.filter(
-        match_date__lte=four_days_from_now,
-        match_date__gte=timezone.now(),
+        match_date__date__lte=four_days_from_now,
+        match_date__date__gte=today,
         status='scheduled'
     ).exclude(officials__status='CONFIRMED').order_by('match_date')[:10]
     
     matches_data = []
     for match in matches:
-        days_until = (match.match_date.date() - timezone.now().date()).days
+        match_date = match.match_date.date() if hasattr(match.match_date, 'date') else match.match_date
+        days_until = (match_date - today).days
         
         matches_data.append({
             'id': match.id,
@@ -981,14 +1330,18 @@ def submit_comprehensive_report(request, match_id):
     # If not center referee, allow view-only on GET, block POST submissions
     can_edit = bool(is_center_ref)
     
-    match_report, created = MatchReport.objects.get_or_create(
-        match=match,
-        referee=referee,
-        defaults={
-            'status': 'draft',
-            'submitted_at': None
-        }
-    )
+    # Get or create match report - match_id is unique so only use match
+    try:
+        match_report = MatchReport.objects.get(match=match)
+        created = False
+    except MatchReport.DoesNotExist:
+        match_report = MatchReport.objects.create(
+            match=match,
+            referee=referee,
+            status='draft',
+            submitted_at=None
+        )
+        created = True
 
     result_form = MatchReportForm(instance=match_report)
     score_form = MatchScoreForm(instance=match)
@@ -996,18 +1349,77 @@ def submit_comprehensive_report(request, match_id):
     CardFormSetCls = inlineformset_factory(Match, Caution, form=CautionForm, extra=1, fk_name='match')
     StartingLineupFormSetCls = inlineformset_factory(
         Match, StartingLineup,
-        extra=2,
+        extra=0,
         can_delete=True,
         fk_name='match',
         fields=['player', 'jersey_number', 'position', 'team']
     )
     ReserveFormSetCls = inlineformset_factory(
         Match, ReservePlayer,
-        extra=2,
+        extra=0,
         can_delete=True,
         fk_name='match',
         fields=['player', 'jersey_number', 'team']
     )
+    
+    # Auto-populate from approved matchday squads if not already populated
+    existing_starting = StartingLineup.objects.filter(match=match).count()
+    
+    if existing_starting == 0:  # Only auto-populate if empty
+        # Get approved squads
+        home_squad = MatchdaySquad.objects.filter(
+            match=match, 
+            team=match.home_team, 
+            status='approved'
+        ).first()
+        away_squad = MatchdaySquad.objects.filter(
+            match=match, 
+            team=match.away_team, 
+            status='approved'
+        ).first()
+        
+        # Populate starting lineup and reserves from approved squads
+        if home_squad:
+            for squad_player in home_squad.squad_players.filter(is_starting=True):
+                StartingLineup.objects.get_or_create(
+                    match=match,
+                    team=home_squad.team,
+                    player=squad_player.player,
+                    defaults={
+                        'jersey_number': squad_player.player.jersey_number,
+                        'position': squad_player.player.get_position_display()
+                    }
+                )
+            for squad_player in home_squad.squad_players.filter(is_starting=False):
+                ReservePlayer.objects.get_or_create(
+                    match=match,
+                    team=home_squad.team,
+                    player=squad_player.player,
+                    defaults={
+                        'jersey_number': squad_player.player.jersey_number
+                    }
+                )
+        
+        if away_squad:
+            for squad_player in away_squad.squad_players.filter(is_starting=True):
+                StartingLineup.objects.get_or_create(
+                    match=match,
+                    team=away_squad.team,
+                    player=squad_player.player,
+                    defaults={
+                        'jersey_number': squad_player.player.jersey_number,
+                        'position': squad_player.player.get_position_display()
+                    }
+                )
+            for squad_player in away_squad.squad_players.filter(is_starting=False):
+                ReservePlayer.objects.get_or_create(
+                    match=match,
+                    team=away_squad.team,
+                    player=squad_player.player,
+                    defaults={
+                        'jersey_number': squad_player.player.jersey_number
+                    }
+                )
     
     goal_formset = GoalFormSetCls(instance=match, form_kwargs={'match': match}, prefix='goal')
     card_formset = CardFormSetCls(instance=match, form_kwargs={'match': match}, prefix='card')
@@ -1156,6 +1568,312 @@ def submit_comprehensive_report(request, match_id):
         'away_players': match.away_team.players.all(),
     }
     return render(request, 'referees/match_report_comprehensive.html', context)
+
+
+# ========== PRE-MATCH MEETING FORM ==========
+@login_required
+def submit_prematch_form(request, match_id):
+    """Submit pre-match meeting form - main referee only, 36 hours before match"""
+    from .models import PreMatchMeetingForm
+    from .forms import PreMatchMeetingFormForm
+    from teams.models import Team
+    
+    match = get_object_or_404(Match, id=match_id)
+    
+    # Check if user is the main referee for this match
+    try:
+        referee = request.user.referee_profile
+        officials = match.officials
+        
+        if officials.main_referee != referee:
+            messages.error(request, "Only the main referee can submit the pre-match meeting form.")
+            return redirect('referees:referee_dashboard')
+            
+    except AttributeError:
+        messages.error(request, "You don't have a referee profile.")
+        return redirect('referees:referee_dashboard')
+    except MatchOfficials.DoesNotExist:
+        messages.error(request, "No officials have been appointed for this match yet.")
+        return redirect('referees:referee_dashboard')
+    
+    # Check if match is within 36 hours
+    time_until_match = match.match_date - timezone.now()
+    if time_until_match > timedelta(hours=36):
+        hours_remaining = int(time_until_match.total_seconds() / 3600)
+        messages.warning(request, f"Pre-match form can only be filled within 36 hours of the match. {hours_remaining} hours remaining.")
+        return redirect('referees:referee_dashboard')
+    
+    # Check if match has already occurred
+    if timezone.now() >= match.match_date:
+        messages.error(request, "Cannot fill pre-match form after the match has started.")
+        return redirect('referees:referee_dashboard')
+    
+    # Get or create pre-match form
+    prematch_form, created = PreMatchMeetingForm.objects.get_or_create(
+        match=match,
+        defaults={
+            'referee': referee,
+            'match_date': match.match_date.date() if hasattr(match.match_date, 'date') else match.match_date,
+            'match_number': f"{match.id}",
+            'home_team': match.home_team.team_name,
+            'away_team': match.away_team.team_name,
+            'venue': match.venue or '',
+        }
+    )
+    
+    # Check if form is locked
+    if prematch_form.is_locked:
+        messages.error(request, "This form is locked and cannot be edited.")
+        return redirect('referees:view_prematch_form', form_id=prematch_form.id)
+    
+    if request.method == 'POST':
+        form = PreMatchMeetingFormForm(request.POST, instance=prematch_form)
+        
+        if form.is_valid():
+            prematch = form.save(commit=False)
+            
+            # Auto-fill match details
+            prematch.match_date = match.match_date.date() if hasattr(match.match_date, 'date') else match.match_date
+            prematch.home_team = match.home_team.team_name
+            prematch.away_team = match.away_team.team_name
+            prematch.venue = match.venue or ''
+            
+            # Auto-fill officials from MatchOfficials
+            if hasattr(match, 'officials'):
+                offs = match.officials
+                if offs.match_commissioner:
+                    prematch.match_commissioner_name = offs.match_commissioner.full_name
+                    prematch.match_commissioner_license = offs.match_commissioner.fkf_number
+                    prematch.match_commissioner_mobile = offs.match_commissioner.phone_number
+                if offs.main_referee:
+                    prematch.centre_referee_name = offs.main_referee.full_name
+                    prematch.centre_referee_license = offs.main_referee.fkf_number
+                    prematch.centre_referee_mobile = offs.main_referee.phone_number
+                if offs.assistant_1:
+                    prematch.asst1_referee_name = offs.assistant_1.full_name
+                    prematch.asst1_referee_license = offs.assistant_1.fkf_number
+                    prematch.asst1_referee_mobile = offs.assistant_1.phone_number
+                if offs.assistant_2:
+                    prematch.asst2_referee_name = offs.assistant_2.full_name
+                    prematch.asst2_referee_license = offs.assistant_2.fkf_number
+                    prematch.asst2_referee_mobile = offs.assistant_2.phone_number
+                if offs.fourth_official:
+                    prematch.fourth_official_name = offs.fourth_official.full_name
+                    prematch.fourth_official_license = offs.fourth_official.fkf_number
+                    prematch.fourth_official_mobile = offs.fourth_official.phone_number
+            
+            # Auto-fill kit colors from team
+            home_team_obj = Team.objects.get(id=match.home_team.id)
+            away_team_obj = Team.objects.get(id=match.away_team.id)
+            
+            # Home team kits (using home colors)
+            prematch.home_gk_shirt_color = home_team_obj.gk_home_jersey_color
+            prematch.home_official_shirt = home_team_obj.home_jersey_color
+            
+            # Away team kits (using away colors)
+            prematch.away_gk_shirt_color = away_team_obj.gk_away_jersey_color
+            prematch.away_official_shirt = away_team_obj.away_jersey_color
+            
+            # Submit or save as draft
+            if 'submit' in request.POST:
+                prematch.status = 'submitted'
+                prematch.submitted_at = timezone.now()
+                messages.success(request, "✅ Pre-Match Meeting Form completed and submitted successfully! Awaiting admin approval.")
+            else:
+                prematch.status = 'pending'
+                messages.success(request, "💾 Pre-Match Form saved as draft.")
+            
+            prematch.save()
+            return redirect('referees:referee_dashboard')
+    else:
+        # Auto-fill form on GET
+        if created or not prematch_form.submitted_at:
+            # Auto-fill officials
+            if hasattr(match, 'officials'):
+                offs = match.officials
+                if offs.match_commissioner:
+                    prematch_form.match_commissioner_name = offs.match_commissioner.full_name
+                    prematch_form.match_commissioner_license = offs.match_commissioner.fkf_number
+                    prematch_form.match_commissioner_mobile = offs.match_commissioner.phone_number
+                if offs.main_referee:
+                    prematch_form.centre_referee_name = offs.main_referee.full_name
+                    prematch_form.centre_referee_license = offs.main_referee.fkf_number
+                    prematch_form.centre_referee_mobile = offs.main_referee.phone_number
+                if offs.assistant_1:
+                    prematch_form.asst1_referee_name = offs.assistant_1.full_name
+                    prematch_form.asst1_referee_license = offs.assistant_1.fkf_number
+                    prematch_form.asst1_referee_mobile = offs.assistant_1.phone_number
+                if offs.assistant_2:
+                    prematch_form.asst2_referee_name = offs.assistant_2.full_name
+                    prematch_form.asst2_referee_license = offs.assistant_2.fkf_number
+                    prematch_form.asst2_referee_mobile = offs.assistant_2.phone_number
+                if offs.fourth_official:
+                    prematch_form.fourth_official_name = offs.fourth_official.full_name
+                    prematch_form.fourth_official_license = offs.fourth_official.fkf_number
+                    prematch_form.fourth_official_mobile = offs.fourth_official.phone_number
+            
+            # Auto-fill kit colors
+            home_team_obj = Team.objects.get(id=match.home_team.id)
+            away_team_obj = Team.objects.get(id=match.away_team.id)
+            
+            prematch_form.home_gk_shirt_color = home_team_obj.gk_home_jersey_color
+            prematch_form.home_official_shirt = home_team_obj.home_jersey_color
+            
+            prematch_form.away_gk_shirt_color = away_team_obj.gk_away_jersey_color
+            prematch_form.away_official_shirt = away_team_obj.away_jersey_color
+        
+        form = PreMatchMeetingFormForm(instance=prematch_form)
+    
+    context = {
+        'form': form,
+        'match': match,
+        'prematch_form': prematch_form,
+        'is_locked': prematch_form.is_locked,
+    }
+    return render(request, 'referees/submit_prematch_form.html', context)
+
+
+@login_required
+def view_prematch_form(request, form_id):
+    """View submitted pre-match meeting form"""
+    from .models import PreMatchMeetingForm
+    
+    prematch_form = get_object_or_404(PreMatchMeetingForm, id=form_id)
+    
+    # Check access permissions
+    is_main_referee = False
+    is_manager = request.user.is_staff or request.user.groups.filter(name='Referees Manager').exists()
+    is_admin = request.user.is_staff
+    
+    try:
+        referee = request.user.referee_profile
+        if prematch_form.match.officials.main_referee == referee:
+            is_main_referee = True
+    except:
+        pass
+    
+    if not (is_main_referee or is_manager or is_admin):
+        messages.error(request, "You don't have permission to view this form.")
+        return redirect('referees:referee_dashboard')
+    
+    context = {
+        'prematch_form': prematch_form,
+        'match': prematch_form.match,
+        'is_main_referee': is_main_referee,
+        'is_manager': is_manager,
+        'is_admin': is_admin,
+    }
+    return render(request, 'referees/view_prematch_form.html', context)
+
+
+@login_required
+@permission_required('referees.approve_prematch_form_admin', raise_exception=True)
+def admin_approve_prematch_form(request, form_id):
+    """Admin approves pre-match meeting form"""
+    from .models import PreMatchMeetingForm
+    
+    prematch_form = get_object_or_404(PreMatchMeetingForm, id=form_id)
+    
+    if prematch_form.status != 'submitted':
+        messages.error(request, "This form is not awaiting admin approval.")
+        return redirect('referees:view_prematch_form', form_id=form_id)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'approve':
+            prematch_form.status = 'admin_approved'
+            prematch_form.admin_approved_at = timezone.now()
+            prematch_form.admin_approved_by = request.user
+            prematch_form.save()
+            messages.success(request, "Pre-match form approved by admin. Awaiting referee manager approval.")
+        
+        elif action == 'reject':
+            reason = request.POST.get('rejection_reason', '')
+            prematch_form.status = 'rejected'
+            prematch_form.admin_rejection_reason = reason
+            prematch_form.save()
+            messages.success(request, "Pre-match form rejected.")
+        
+        return redirect('referees:view_prematch_form', form_id=form_id)
+    
+    context = {
+        'prematch_form': prematch_form,
+        'match': prematch_form.match,
+    }
+    return render(request, 'referees/admin_approve_prematch_form.html', context)
+
+
+@login_required
+@permission_required('referees.approve_prematch_form_manager', raise_exception=True)
+def manager_approve_prematch_form(request, form_id):
+    """Referee Manager approves pre-match meeting form"""
+    from .models import PreMatchMeetingForm
+    
+    prematch_form = get_object_or_404(PreMatchMeetingForm, id=form_id)
+    
+    if prematch_form.status != 'admin_approved':
+        messages.error(request, "This form is not awaiting manager approval.")
+        return redirect('referees:view_prematch_form', form_id=form_id)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'approve':
+            prematch_form.status = 'approved'
+            prematch_form.manager_approved_at = timezone.now()
+            prematch_form.manager_approved_by = request.user
+            prematch_form.save()
+            messages.success(request, "Pre-match form fully approved.")
+        
+        elif action == 'reject':
+            reason = request.POST.get('rejection_reason', '')
+            prematch_form.status = 'rejected'
+            prematch_form.manager_rejection_reason = reason
+            prematch_form.save()
+            messages.success(request, "Pre-match form rejected.")
+        
+        return redirect('referees:view_prematch_form', form_id=form_id)
+    
+    context = {
+        'prematch_form': prematch_form,
+        'match': prematch_form.match,
+    }
+    return render(request, 'referees/manager_approve_prematch_form.html', context)
+
+
+@login_required
+def pending_prematch_forms_admin(request):
+    """List of pre-match forms pending admin approval"""
+    from .models import PreMatchMeetingForm
+    
+    if not request.user.is_staff:
+        messages.error(request, "Access denied.")
+        return redirect('referees:referee_dashboard')
+    
+    forms = PreMatchMeetingForm.objects.filter(status='submitted').order_by('-match__match_date')
+    
+    context = {
+        'forms': forms,
+    }
+    return render(request, 'referees/pending_prematch_forms_admin.html', context)
+
+
+@login_required
+def pending_prematch_forms_manager(request):
+    """List of pre-match forms pending manager approval"""
+    from .models import PreMatchMeetingForm
+    
+    if not (request.user.is_staff or request.user.groups.filter(name='Referees Manager').exists()):
+        messages.error(request, "Access denied.")
+        return redirect('referees:referee_dashboard')
+    
+    forms = PreMatchMeetingForm.objects.filter(status='admin_approved').order_by('-match__match_date')
+    
+    context = {
+        'forms': forms,
+    }
+    return render(request, 'referees/pending_prematch_forms_manager.html', context)
 
 
 # ========== MANAGER: APPROVE/REJECT REPORTS ==========
@@ -1331,35 +2049,46 @@ def submit_match_report(request, match_id):
 
     # Prepare forms and formsets for flash report
     result_form = MatchReportForm(instance=match_report)
-    goal_formset = inlineformset_factory(MatchReport, MatchGoal, form=MatchGoalForm, extra=1)(instance=match_report)
-    card_formset = inlineformset_factory(MatchReport, Caution, form=CautionForm, extra=1)(instance=match_report)
+    score_form = MatchScoreForm(instance=match)
+    
+    GoalFormSet = inlineformset_factory(Match, MatchGoal, form=MatchGoalForm, extra=1, fk_name='match')
+    goal_formset = GoalFormSet(instance=match, prefix='matchgoal_set', form_kwargs={'match': match})
+    
+    CardFormSet = inlineformset_factory(Match, Caution, form=CautionForm, extra=1, fk_name='match')
+    card_formset = CardFormSet(instance=match, prefix='caution_set', form_kwargs={'match': match})
+    
     goalkeeper_form = None  # Add if you have a GoalkeeperForm
     topscorer_form = None   # Add if you have a TopScorerForm
 
     if request.method == 'POST':
         result_form = MatchReportForm(request.POST, instance=match_report)
-        goal_formset = inlineformset_factory(MatchReport, MatchGoal, form=MatchGoalForm, extra=1)(request.POST, instance=match_report)
-        card_formset = inlineformset_factory(MatchReport, Caution, form=CautionForm, extra=1)(request.POST, instance=match_report)
+        score_form = MatchScoreForm(request.POST, instance=match)
+        goal_formset = GoalFormSet(request.POST, instance=match, prefix='matchgoal_set', form_kwargs={'match': match})
+        card_formset = CardFormSet(request.POST, instance=match, prefix='caution_set', form_kwargs={'match': match})
         # Add goalkeeper_form and topscorer_form POST handling if present
-        if result_form.is_valid() and goal_formset.is_valid() and card_formset.is_valid():
+        if result_form.is_valid() and score_form.is_valid() and goal_formset.is_valid() and card_formset.is_valid():
             result_form.save()
+            score_form.save()
             goal_formset.save()
             card_formset.save()
-            messages.success(request, f"Flash report submitted for {match.home_team} vs {match.away_team}")
+            messages.success(request, f"✅ Flash Report submitted successfully for {match.home_team} vs {match.away_team}!")
             return redirect('referees:referee_dashboard')
+        else:
+            messages.error(request, "❌ Please correct the errors in the form before submitting.")
 
     context = {
         'match': match,
         'referee': referee,
         'officials': officials,
         'result_form': result_form,
+        'score_form': score_form,
         'goal_formset': goal_formset,
         'card_formset': card_formset,
         'goalkeeper_form': goalkeeper_form,
         'topscorer_form': topscorer_form,
         'title': 'Submit Flash Match Report',
-        'home_players': match.home_team.player_set.all(),
-        'away_players': match.away_team.player_set.all(),
+        'home_players': match.home_team.players.all(),
+        'away_players': match.away_team.players.all(),
     }
     return render(request, 'referees/flash_report.html', context)
 

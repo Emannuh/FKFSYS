@@ -10,6 +10,20 @@ urlpatterns = [
     path('<int:match_id>/', 
          RedirectView.as_view(pattern_name='matches:match_details', permanent=True)),
     
+    # Admin match management
+    path('admin/manage/', 
+         __import__('matches.admin_views').admin_views.manage_matches,
+         name='manage_matches'),
+    path('admin/create/', 
+         __import__('matches.admin_views').admin_views.create_match,
+         name='create_match'),
+    path('admin/<int:match_id>/edit/', 
+         __import__('matches.admin_views').admin_views.edit_match,
+         name='edit_match'),
+    path('admin/<int:match_id>/delete/', 
+         __import__('matches.admin_views').admin_views.delete_match,
+         name='delete_match'),
+    
     # All other match-related URLs
     path('tables/', views.league_tables, name='league_tables'),
     path('fixtures/', views.fixtures, name='fixtures'),

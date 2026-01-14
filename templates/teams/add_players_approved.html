@@ -4,6 +4,16 @@
 
 {% block content %}
 <div class="container">
+    {% if is_admin %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'teams:add_players_approved' %}">Select Team</a></li>
+            <li class="breadcrumb-item active">{{ team.team_name }}</li>
+        </ol>
+    </nav>
+    {% endif %}
+    
     <div class="row">
         <div class="col-md-8">
             <div class="card">
@@ -24,8 +34,11 @@
                     {% endif %}
                     
                     <!-- FORM 1: Add Player -->
-                    <form method="POST" action="/teams/add-player-action/" enctype="multipart/form-data" id="addPlayerForm">
+                    <form method="POST" action="/teams/add-player-action/{% if is_admin %}?team_id={{ team.id }}{% endif %}" enctype="multipart/form-data" id="addPlayerForm">
                         {% csrf_token %}
+                        {% if is_admin %}
+                        <input type="hidden" name="team_id" value="{{ team.id }}">
+                        {% endif %}
                         
                         <h5 class="text-primary mb-3"><i class="fas fa-id-card"></i> Player Information</h5>
                         
@@ -158,11 +171,12 @@
                                         <th>Name</th>
                                         <th>Position</th>
                                         <th>Age</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for player in players %}
-                                    <tr>
+                                    <tr {% if player.is_suspended %}class="table-danger"{% endif %}>
                                         <td>
                                             {{ player.jersey_number }}
                                             {% if player.is_captain %}
@@ -172,11 +186,39 @@
                                         <td>{{ player.full_name }}</td>
                                         <td>{{ player.get_position_display }}</td>
                                         <td>{{ player.age }}</td>
+                                        <td>
+                                            {% if player.is_suspended %}
+                                                <span class="badge bg-danger" title="{{ player.suspension_reason }}">
+                                                    <i class="fas fa-ban"></i> Suspended ({{ player.suspension_matches }} matches)
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-success"><i class="fas fa-check"></i> Active</span>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Suspended Players Alert -->
+                        {% regroup players by is_suspended as player_groups %}
+                        {% for group in player_groups %}
+                            {% if group.grouper %}
+                                <div class="alert alert-danger mt-3">
+                                    <h6><i class="fas fa-exclamation-triangle"></i> Suspended Players:</h6>
+                                    <ul class="mb-0">
+                                        {% for player in group.list %}
+                                            <li>
+                                                <strong>{{ player.full_name }}</strong> - 
+                                                Suspended for {{ player.suspension_matches }} match(es)
+                                                <br><small>Reason: {{ player.suspension_reason }}</small>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
                     {% else %}
                         <p class="text-muted text-center">No players added yet.</p>
                     {% endif %}

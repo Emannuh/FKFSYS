@@ -1,9 +1,15 @@
 # teams/admin_dashboard.py
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render
 from .models import Team, Player, Zone
 
-@staff_member_required  # Only staff/admin can access this
+def admin_or_league_manager_required(user):
+    """Check if user is staff or in League Admin group"""
+    return user.is_staff or user.groups.filter(name='League Admin').exists()
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
 def admin_dashboard(request):
     # Collect statistics
     stats = {

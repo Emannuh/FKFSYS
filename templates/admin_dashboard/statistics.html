@@ -4,6 +4,13 @@
 {% block title %}Statistics - Admin Dashboard{% endblock %}
 
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Statistics Dashboard</li>
+    </ol>
+</nav>
+
 <div class="row mb-4">
     <div class="col-12">
         <h2 class="text-primary">Statistics Dashboard</h2>
@@ -174,7 +181,7 @@
 </div>
 
 <div class="mt-4">
-    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 </div>

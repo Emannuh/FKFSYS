@@ -42,82 +42,163 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
+    // Store all players data for filtering
+    const allPlayers = {
+        {% for player in home_players %}
+        {{ player.id }}: {
+            name: "{{ player.full_name|escapejs }}",
+            team: {{ match.home_team.id }},
+            jersey: {{ player.jersey_number }},
+            teamName: "{{ match.home_team.team_name|escapejs }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        {% if home_players and away_players %},{% endif %}
+        {% for player in away_players %}
+        {{ player.id }}: {
+            name: "{{ player.full_name|escapejs }}",
+            team: {{ match.away_team.id }},
+            jersey: {{ player.jersey_number }},
+            teamName: "{{ match.away_team.team_name|escapejs }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+    
+    // Function to update player dropdown based on selected team
+    function updatePlayerDropdown(teamSelect) {
+        const selectedTeamId = parseInt($(teamSelect).val());
+        const $form = $(teamSelect).closest('.formset-form');
+        const $playerSelect = $form.find('select[id*="player"]').not('[id*="assist"]');
+        const $assistSelect = $form.find('select[id*="assist"]');
+        
+        if (!selectedTeamId) return;
+        
+        // Update main player dropdown
+        const currentPlayerId = $playerSelect.val();
+        $playerSelect.empty().append('<option value="">---------</option>');
+        
+        $.each(allPlayers, function(playerId, player) {
+            if (player.team === selectedTeamId) {
+                const option = $('<option></option>')
+                    .val(playerId)
+                    .text(player.name + ' (#' + player.jersey + ')');
+                if (playerId == currentPlayerId) {
+                    option.prop('selected', true);
+                }
+                $playerSelect.append(option);
+            }
+        });
+        
+        // Update assist dropdown if exists
+        if ($assistSelect.length > 0) {
+            const currentAssistId = $assistSelect.val();
+            $assistSelect.empty().append('<option value="">---------</option>');
+            
+            $.each(allPlayers, function(playerId, player) {
+                if (player.team === selectedTeamId) {
+                    const option = $('<option></option>')
+                        .val(playerId)
+                        .text(player.name + ' (#' + player.jersey + ')');
+                    if (playerId == currentAssistId) {
+                        option.prop('selected', true);
+                    }
+                    $assistSelect.append(option);
+                }
+            });
+        }
+    }
+    
+    // Bind change event to existing and future team dropdowns
+    $(document).on('change', 'select[id*="team"]', function() {
+        updatePlayerDropdown(this);
+    });
+    
+    // Initialize player dropdowns on page load for existing forms
+    $('select[id*="team"]').each(function() {
+        if ($(this).val()) {
+            updatePlayerDropdown(this);
+        }
+    });
+    
     // Add goal form
-    $('#add-goal-form').click(function() {
-        let formIdx = $('#id_goals-TOTAL_FORMS').val();
-        let newForm = `
-        <div class="formset-form new-form" id="goal-form-${formIdx}">
-            <div class="row">
-                <div class="col-md-4">
-                    <select name="goals-${formIdx}-scorer" class="select form-control" id="id_goals-${formIdx}-scorer">
-                        {% for player in home_players %}
-                        <option value="{{ player.id }}">{{ player.full_name }} ({{ player.team.team_name }})</option>
-                        {% endfor %}
-                        {% for player in away_players %}
-                        <option value="{{ player.id }}">{{ player.full_name }} ({{ player.team.team_name }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <input type="number" name="goals-${formIdx}-minute" class="form-control" id="id_goals-${formIdx}-minute" min="0" max="120">
-                </div>
-                <div class="col-md-2">
-                    <input type="checkbox" name="goals-${formIdx}-is_penalty" class="form-check-input" id="id_goals-${formIdx}-is_penalty">
-                    <label class="form-check-label" for="id_goals-${formIdx}-is_penalty">Penalty</label>
-                </div>
-                <div class="col-md-2">
-                    <input type="checkbox" name="goals-${formIdx}-is_own_goal" class="form-check-input" id="id_goals-${formIdx}-is_own_goal">
-                    <label class="form-check-label" for="id_goals-${formIdx}-is_own_goal">Own Goal</label>
-                </div>
-                <div class="col-md-2">
-                    <button type="button" class="btn btn-danger remove-form">Remove</button>
-                </div>
-            </div>
-            <input type="hidden" name="goals-${formIdx}-id" id="id_goals-${formIdx}-id">
-        </div>`;
-        $('#goal-formset').append(newForm);
-        $('#id_goals-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+    $('#add-goal-form').click(function(e) {
+        e.preventDefault();
+        console.log('Add goal button clicked');
+        
+        let formIdx = parseInt($('#id_matchgoal_set-TOTAL_FORMS').val());
+        console.log('Current form index:', formIdx);
+        
+        // Clone the empty form template
+        let $emptyFormHtml = $('#empty-goal .formset-form').clone();
+        
+        // Replace __prefix__ with the actual form index
+        let newFormHtml = $emptyFormHtml.prop('outerHTML').replace(/__prefix__/g, formIdx);
+        
+        // Append to the formset container with fade-in animation
+        let $newForm = $(newFormHtml).hide();
+        $('#goal-formset').append($newForm);
+        $newForm.slideDown(300);
+        
+        // Increment the form count
+        $('#id_matchgoal_set-TOTAL_FORMS').val(formIdx + 1);
+        
+        // Scroll to the new form
+        $('html, body').animate({
+            scrollTop: $newForm.offset().top - 100
+        }, 300);
+        
+        console.log('Goal form added, new total:', formIdx + 1);
     });
+    
     // Add card form
-    $('#add-card-form').click(function() {
-        let formIdx = $('#id_cards-TOTAL_FORMS').val();
-        let newForm = `
-        <div class="formset-form new-form" id="card-form-${formIdx}">
-            <div class="row">
-                <div class="col-md-4">
-                    <select name="cards-${formIdx}-player" class="select form-control" id="id_cards-${formIdx}-player">
-                        {% for player in home_players %}
-                        <option value="{{ player.id }}">{{ player.full_name }} ({{ player.team.team_name }})</option>
-                        {% endfor %}
-                        {% for player in away_players %}
-                        <option value="{{ player.id }}">{{ player.full_name }} ({{ player.team.team_name }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select name="cards-${formIdx}-card_type" class="form-control" id="id_cards-${formIdx}-card_type">
-                        <option value="yellow">Yellow Card</option>
-                        <option value="red">Red Card</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <input type="number" name="cards-${formIdx}-minute" class="form-control" id="id_cards-${formIdx}-minute" min="0" max="120">
-                </div>
-                <div class="col-md-4">
-                    <textarea name="cards-${formIdx}-reason" class="form-control" id="id_cards-${formIdx}-reason" rows="2" placeholder="Reason"></textarea>
-                </div>
-                <div class="col-md-2">
-                    <button type="button" class="btn btn-danger remove-form">Remove</button>
-                </div>
-            </div>
-            <input type="hidden" name="cards-${formIdx}-id" id="id_cards-${formIdx}-id">
-        </div>`;
-        $('#card-formset').append(newForm);
-        $('#id_cards-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+    $('#add-card-form').click(function(e) {
+        e.preventDefault();
+        console.log('Add card button clicked');
+        
+        let formIdx = parseInt($('#id_caution_set-TOTAL_FORMS').val());
+        console.log('Current form index:', formIdx);
+        
+        // Clone the empty form template
+        let $emptyFormHtml = $('#empty-card .formset-form').clone();
+        
+        // Replace __prefix__ with the actual form index
+        let newFormHtml = $emptyFormHtml.prop('outerHTML').replace(/__prefix__/g, formIdx);
+        
+        // Append to the formset container with fade-in animation
+        let $newForm = $(newFormHtml).hide();
+        $('#card-formset').append($newForm);
+        $newForm.slideDown(300);
+        
+        // Increment the form count
+        $('#id_caution_set-TOTAL_FORMS').val(formIdx + 1);
+        
+        // Scroll to the new form
+        $('html, body').animate({
+            scrollTop: $newForm.offset().top - 100
+        }, 300);
+        
+        console.log('Card form added, new total:', formIdx + 1);
     });
-    // Remove form
-    $(document).on('click', '.remove-form', function() {
-        $(this).closest('.formset-form').remove();
+    
+    // Remove goal form
+    $(document).on('click', '.remove-goal-form', function(e) {
+        e.preventDefault();
+        let $form = $(this).closest('.formset-form');
+        if (confirm('Remove this goal entry?')) {
+            $form.slideUp(300, function() {
+                $(this).remove();
+            });
+        }
+    });
+    
+    // Remove card form
+    $(document).on('click', '.remove-card-form', function(e) {
+        e.preventDefault();
+        let $form = $(this).closest('.formset-form');
+        if (confirm('Remove this card entry?')) {
+            $form.slideUp(300, function() {
+                $(this).remove();
+            });
+        }
     });
 });
 </script>

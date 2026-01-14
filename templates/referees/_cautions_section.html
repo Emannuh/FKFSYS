@@ -10,7 +10,7 @@
     <div class="card-body" id="card-formset">
         {{ card_formset.management_form }}
         {% for form in card_formset %}
-        <div class="formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %}" id="card-form-{{ forloop.counter0 }}">
+        <div class="formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %} border-bottom pb-3 mb-3" id="card-form-{{ forloop.counter0 }}">
             <div class="row g-3">
                 <div class="col-md-3">{{ form.team|as_crispy_field }}</div>
                 <div class="col-md-3">{{ form.player|as_crispy_field }}</div>
@@ -33,7 +33,7 @@
     {# Template for adding new caution forms dynamically #}
     <div id="empty-card" class="d-none">
         {% with form=card_formset.empty_form %}
-        <div class="formset-form new-form" id="card-form-__prefix__">
+        <div class="formset-form new-form border-bottom pb-3 mb-3" id="card-form-__prefix__">
             <div class="row g-3">
                 <div class="col-md-3">{{ form.team|as_crispy_field }}</div>
                 <div class="col-md-3">{{ form.player|as_crispy_field }}</div>

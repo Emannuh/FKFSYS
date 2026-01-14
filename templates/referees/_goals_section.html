@@ -10,7 +10,7 @@
     <div class="card-body" id="goal-formset">
         {{ goal_formset.management_form }}
         {% for form in goal_formset %}
-        <div class="formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %}" id="goal-form-{{ forloop.counter0 }}">
+        <div class="formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %} border-bottom pb-3 mb-3" id="goal-form-{{ forloop.counter0 }}">
             <div class="row g-3">
                 <div class="col-md-3">{{ form.team|as_crispy_field }}</div>
                 <div class="col-md-3">{{ form.player|as_crispy_field }}</div>
@@ -40,7 +40,7 @@
     {# Template for adding new goal forms dynamically #}
     <div id="empty-goal" class="d-none">
         {% with form=goal_formset.empty_form %}
-        <div class="formset-form new-form" id="goal-form-__prefix__">
+        <div class="formset-form new-form border-bottom pb-3 mb-3" id="goal-form-__prefix__">
             <div class="row g-3">
                 <div class="col-md-3">{{ form.team|as_crispy_field }}</div>
                 <div class="col-md-3">{{ form.player|as_crispy_field }}</div>

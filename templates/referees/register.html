@@ -148,9 +148,15 @@
                             <div class="row g-4">
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label class="form-label fw-bold">Phone Number</label>
-                                        {{ form.phone_number|as_crispy_field }}
-                                        <small class="form-text text-muted">For match communications</small>
+                                        <label for="id_phone_digits" class="form-label fw-bold">Phone Number</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text fw-bold bg-primary text-white">+254</span>
+                                            {{ form.phone_digits }}
+                                        </div>
+                                        <small class="form-text text-muted">Enter 9 digits only (e.g., 712345678)</small>
+                                        {% if form.phone_digits.errors %}
+                                            <div class="text-danger small mt-2">{{ form.phone_digits.errors }}</div>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 <div class="col-md-6">

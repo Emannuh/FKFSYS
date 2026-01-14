@@ -1,0 +1,281 @@
+# referees/matchday_squad_models.py
+"""
+Matchday Squad Management System
+Handles squad submission, referee approval, and in-match substitutions
+"""
+
+from django.db import models
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from datetime import timedelta
+
+
+class MatchdaySquad(models.Model):
+    """
+    Team's submitted matchday squad (25 players: 11 starting + 14 subs)
+    Submitted 2 hours before kick-off
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending Submission'),
+        ('submitted', 'Submitted - Awaiting Referee Approval'),
+        ('approved', 'Approved by Referee'),
+        ('locked', 'Locked (Match Started)'),
+    ]
+    
+    match = models.ForeignKey('matches.Match', on_delete=models.CASCADE, related_name='matchday_squads')
+    team = models.ForeignKey('teams.Team', on_delete=models.CASCADE)
+    
+    # Status tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Timestamps
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    submitted_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, related_name='submitted_squads')
+    
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey('Referee', on_delete=models.SET_NULL, null=True, related_name='approved_squads')
+    
+    locked_at = models.DateTimeField(null=True, blank=True)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['match', 'team']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.team.name} - {self.match} ({self.get_status_display()})"
+    
+    def can_submit(self):
+        """Check if squad can be submitted (2 hours before kick-off)"""
+        if not self.match.match_date or not self.match.kickoff_time:
+            return False
+        
+        match_datetime = timezone.make_aware(
+            timezone.datetime.combine(self.match.match_date, self.match.kickoff_time)
+        )
+        submission_time = match_datetime - timedelta(hours=2)
+        
+        return timezone.now() >= submission_time and self.status == 'pending'
+    
+    def can_edit(self):
+        """Squad can be edited before match starts"""
+        return self.status in ['pending', 'submitted'] and not self.is_locked()
+    
+    def is_locked(self):
+        """Squad is locked at kick-off time"""
+        if self.status == 'locked':
+            return True
+        
+        if not self.match.match_date or not self.match.kickoff_time:
+            return False
+        
+        match_datetime = timezone.make_aware(
+            timezone.datetime.combine(self.match.match_date, self.match.kickoff_time)
+        )
+        
+        return timezone.now() >= match_datetime
+    
+    def lock_squad(self):
+        """Lock squad at kick-off"""
+        if not self.is_locked():
+            self.status = 'locked'
+            self.locked_at = timezone.now()
+            self.save()
+    
+    def get_starting_eleven(self):
+        """Get starting 11 players"""
+        return self.squad_players.filter(is_starting=True).order_by('position_order')
+    
+    def get_substitutes(self):
+        """Get substitute players"""
+        return self.squad_players.filter(is_starting=False).order_by('jersey_number')
+    
+    def validate_squad(self):
+        """Validate squad meets all requirements"""
+        starting = self.squad_players.filter(is_starting=True)
+        subs = self.squad_players.filter(is_starting=False)
+        
+        # Must have 11 starting players
+        if starting.count() != 11:
+            raise ValidationError(f"Must have exactly 11 starting players. Currently have {starting.count()}.")
+        
+        # Must have exactly 14 substitutes
+        if subs.count() != 14:
+            raise ValidationError(f"Must have exactly 14 substitute players. Currently have {subs.count()}.")
+        
+        # Starting 11 must include at least 1 goalkeeper
+        starting_gks = starting.filter(player__position='GK').count()
+        if starting_gks < 1:
+            raise ValidationError("Starting lineup must include at least 1 goalkeeper.")
+        
+        # Substitutes must include at least 1 goalkeeper
+        sub_gks = subs.filter(player__position='GK').count()
+        if sub_gks < 1:
+            raise ValidationError("Substitutes must include at least 1 goalkeeper.")
+        
+        # Check for suspended players
+        suspended = self.squad_players.filter(player__is_suspended=True)
+        if suspended.exists():
+            player_names = ", ".join([sp.player.full_name for sp in suspended])
+            raise ValidationError(f"Cannot include suspended players: {player_names}")
+        
+        return True
+
+
+class SquadPlayer(models.Model):
+    """
+    Individual player in the matchday squad
+    """
+    squad = models.ForeignKey(MatchdaySquad, on_delete=models.CASCADE, related_name='squad_players')
+    player = models.ForeignKey('teams.Player', on_delete=models.CASCADE)
+    
+    # Squad position
+    is_starting = models.BooleanField(default=False, help_text="Is this player in the starting 11?")
+    position_order = models.IntegerField(default=0, help_text="Display order in starting lineup")
+    jersey_number = models.IntegerField()
+    
+    # Approval tracking
+    is_approved = models.BooleanField(default=False)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['squad', 'player']
+        ordering = ['-is_starting', 'position_order', 'jersey_number']
+    
+    def __str__(self):
+        status = "Starting" if self.is_starting else "Substitute"
+        return f"{self.player.full_name} #{self.jersey_number} ({status})"
+    
+    def clean(self):
+        """Validate player selection"""
+        # Check if player is suspended
+        if self.player.is_suspended:
+            raise ValidationError(f"{self.player.full_name} is currently suspended and cannot be selected.")
+        
+        # Check if player belongs to the same team
+        if self.player.team != self.squad.team:
+            raise ValidationError(f"{self.player.full_name} does not belong to {self.squad.team.name}.")
+
+
+class SubstitutionRequest(models.Model):
+    """
+    In-match substitution request from team manager
+    Effected by fourth official/reserve referee
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('completed', 'Completed'),
+    ]
+    
+    SUB_TYPE_CHOICES = [
+        ('normal', 'Normal Substitution'),
+        ('injury', 'Injury Substitution'),
+        ('tactical', 'Tactical Substitution'),
+        ('concussion', 'Concussion Substitution (6th Sub)'),
+    ]
+    
+    match = models.ForeignKey('matches.Match', on_delete=models.CASCADE, related_name='substitution_requests')
+    squad = models.ForeignKey(MatchdaySquad, on_delete=models.CASCADE, related_name='substitution_requests')
+    team = models.ForeignKey('teams.Team', on_delete=models.CASCADE)
+    
+    # Substitution details
+    player_out = models.ForeignKey('teams.Player', on_delete=models.CASCADE, related_name='sub_requests_out')
+    player_in = models.ForeignKey('teams.Player', on_delete=models.CASCADE, related_name='sub_requests_in')
+    
+    minute = models.IntegerField(null=True, blank=True, help_text="Match minute when substitution occurs")
+    sub_type = models.CharField(max_length=20, choices=SUB_TYPE_CHOICES, default='normal')
+    
+    # Status tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Request tracking
+    requested_at = models.DateTimeField(auto_now_add=True)
+    requested_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, related_name='sub_requests')
+    
+    # Approval tracking
+    effected_at = models.DateTimeField(null=True, blank=True)
+    effected_by = models.ForeignKey('Referee', on_delete=models.SET_NULL, null=True, related_name='effected_subs')
+    
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['minute', 'requested_at']
+    
+    def __str__(self):
+        return f"{self.minute}' - {self.player_out.full_name} → {self.player_in.full_name}"
+    
+    def clean(self):
+        """Validate substitution request"""
+        # Check player_out is in starting lineup or has been subbed in
+        if not self.squad.squad_players.filter(player=self.player_out).exists():
+            raise ValidationError(f"{self.player_out.full_name} is not in the matchday squad.")
+        
+        # Check player_in is on the bench
+        squad_player_in = self.squad.squad_players.filter(player=self.player_in).first()
+        if not squad_player_in or squad_player_in.is_starting:
+            raise ValidationError(f"{self.player_in.full_name} is not available as a substitute.")
+        
+        # Check substitution limits (max 5 normal subs)
+        if self.sub_type == 'normal':
+            team_subs = SubstitutionRequest.objects.filter(
+                match=self.match,
+                team=self.team,
+                status='completed',
+                sub_type='normal'
+            ).count()
+            
+            if team_subs >= 5:
+                raise ValidationError("Maximum of 5 substitutions already used.")
+        
+        # Concussion sub is independent (6th sub)
+        if self.sub_type == 'concussion':
+            concussion_subs = SubstitutionRequest.objects.filter(
+                match=self.match,
+                team=self.team,
+                status='completed',
+                sub_type='concussion'
+            ).count()
+            
+            if concussion_subs >= 1:
+                raise ValidationError("Concussion substitution already used.")
+
+
+class SubstitutionOpportunity(models.Model):
+    """
+    Track substitution opportunities (max 3 opportunities, excluding halftime)
+    """
+    match = models.ForeignKey('matches.Match', on_delete=models.CASCADE, related_name='sub_opportunities')
+    team = models.ForeignKey('teams.Team', on_delete=models.CASCADE)
+    
+    opportunity_number = models.IntegerField(help_text="1st, 2nd, or 3rd opportunity")
+    minute = models.IntegerField()
+    is_halftime = models.BooleanField(default=False, help_text="Halftime subs don't count toward 3 opportunities")
+    
+    # Track which substitutions were made in this opportunity
+    substitutions = models.ManyToManyField(SubstitutionRequest, related_name='opportunities')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['match', 'team', 'opportunity_number']
+        ordering = ['minute']
+    
+    def __str__(self):
+        return f"{self.team.name} - Opportunity {self.opportunity_number} ({self.minute}')"
+    
+    def clean(self):
+        """Validate opportunity limits"""
+        if not self.is_halftime:
+            opportunities = SubstitutionOpportunity.objects.filter(
+                match=self.match,
+                team=self.team,
+                is_halftime=False
+            ).count()
+            
+            if opportunities >= 3 and not self.pk:
+                raise ValidationError("Maximum of 3 substitution opportunities (excluding halftime) already used.")
