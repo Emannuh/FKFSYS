@@ -256,10 +256,10 @@
                                 <td>
                                     <i class="fas fa-calendar me-1"></i>{{ match_data.match.match_date|date:"M d, Y" }}
                                     <br>
-                                    <small class="text-muted">
+                                    <strong class="text-primary">
                                         <i class="fas fa-clock me-1"></i>
-                                        {{ match_data.match.kickoff_time|time:"H:i"|default:"TBD" }}
-                                    </small>
+                                        {{ match_data.match.kickoff_time|default:"TBD" }} EAT
+                                    </strong>
                                 </td>
                                 <td>
                                     {% if match_data.squad %}
@@ -283,9 +283,17 @@
                                             <i class="fas fa-lock me-1"></i>Locked
                                         </button>
                                         {% elif match_data.squad and match_data.squad.status == 'approved' %}
-                                        <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info">
-                                            <i class="fas fa-eye me-1"></i>View Squad
-                                        </a>
+                                        <div class="btn-group-vertical" role="group">
+                                            <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye me-1"></i>View Squad
+                                            </a>
+                                            <!-- Check if match has started (after kickoff) -->
+                                            {% if match_data.match_started %}
+                                                <a href="{% url 'referees:team_request_substitution' match_data.match.id %}" class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-exchange-alt me-1"></i>Request Substitution
+                                                </a>
+                                            {% endif %}
+                                        </div>
                                         {% else %}
                                         <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-primary">
                                             <i class="fas fa-edit me-1"></i>
@@ -293,7 +301,19 @@
                                         </a>
                                         {% endif %}
                                     {% else %}
-                                        {% if not match_data.is_active_match %}
+                                        {% if match_data.squad and match_data.squad.status == 'approved' %}
+                                        <div class="btn-group-vertical" role="group">
+                                            <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye me-1"></i>View Squad
+                                            </a>
+                                            <!-- Check if match has started (after kickoff) -->
+                                            {% if match_data.match_started %}
+                                                <a href="{% url 'referees:team_request_substitution' match_data.match.id %}" class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-exchange-alt me-1"></i>Request Substitution
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                        {% elif not match_data.is_active_match %}
                                         <button class="btn btn-sm btn-secondary" disabled>
                                             <i class="fas fa-ban me-1"></i>Not Available
                                         </button>

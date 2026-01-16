@@ -622,18 +622,42 @@ def dashboard(request):
             
             # Determine if this match can have squad submitted
             can_submit = False
-            if active_match and match.id == active_match.id:
+            match_started = False
+            match_datetime = None
+            
+            # Always check if match has started (for substitution requests)
+            try:
+                if match.kickoff_time:
+                    # Parse kickoff_time if it's a string
+                    kickoff_time = match.kickoff_time
+                    if isinstance(kickoff_time, str):
+                        try:
+                            kickoff_time = datetime.strptime(kickoff_time, '%H:%M:%S').time()
+                        except ValueError:
+                            try:
+                                kickoff_time = datetime.strptime(kickoff_time, '%H:%M').time()
+                            except ValueError:
+                                kickoff_time = None
+                    
+                    if kickoff_time:
+                        match_datetime = timezone.make_aware(
+                            timezone.datetime.combine(match.match_date, kickoff_time)
+                        )
+                        # Check if match has started (for substitution requests)
+                        match_started = match_datetime <= today
+                else:
+                    # If no kickoff time, assume noon
+                    match_datetime = timezone.make_aware(
+                        timezone.datetime.combine(match.match_date, timezone.datetime.strptime('12:00', '%H:%M').time())
+                    )
+                    match_started = match_datetime <= today
+            except (ValueError, TypeError):
+                match_started = False
+                match_datetime = None
+            
+            if active_match and match.id == active_match.id and match_datetime:
                 # Check if within submission window (4 hours before kick-off) and not after kick-off
                 try:
-                    if match.kickoff_time:
-                        match_datetime = timezone.make_aware(
-                            timezone.datetime.combine(match.match_date, match.kickoff_time)
-                        )
-                    else:
-                        # If no kickoff time, assume noon
-                        match_datetime = timezone.make_aware(
-                            timezone.datetime.combine(match.match_date, timezone.datetime.strptime('12:00', '%H:%M').time())
-                        )
                     time_until_match = match_datetime - today
                     # Can submit if match hasn't started yet and within 4 hours window
                     can_submit = time_until_match > timedelta(hours=0) and time_until_match <= timedelta(hours=4)
@@ -646,7 +670,8 @@ def dashboard(request):
                 'squad': squad,
                 'can_submit': can_submit,
                 'is_active_match': active_match and match.id == active_match.id,
-                'squad_status': squad.get_status_display() if squad else 'Not Submitted'
+                'squad_status': squad.get_status_display() if squad else 'Not Submitted',
+                'match_started': match_started
             })
         
         # Get league settings for deadlines

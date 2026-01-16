@@ -5,8 +5,8 @@ from django.shortcuts import render
 from .models import Team, Player, Zone
 
 def admin_or_league_manager_required(user):
-    """Check if user is staff or in League Admin group"""
-    return user.is_staff or user.groups.filter(name='League Admin').exists()
+    """Check if user is staff or in League Admin or League Manager group"""
+    return user.is_staff or user.groups.filter(name__in=['League Admin', 'League Manager']).exists()
 
 @login_required
 @user_passes_test(admin_or_league_manager_required)

@@ -16,7 +16,7 @@ from matches.models import Match
 from teams.models import Team, Player
 from .models import (
     MatchdaySquad, SquadPlayer, SubstitutionRequest, 
-    SubstitutionOpportunity, Referee, MatchOfficials
+    Referee, MatchOfficials
 )
 
 
@@ -118,7 +118,7 @@ def submit_matchday_squad(request, match_id):
     # Check if team is playing in this match
     if team not in [match.home_team, match.away_team]:
         messages.error(request, "Your team is not playing in this match.")
-        return redirect('teams:dashboard')
+        return redirect('teams:team_manager_dashboard')
     
     # Get or create squad
     squad, created = MatchdaySquad.objects.get_or_create(
@@ -486,12 +486,25 @@ def fourth_official_substitutions(request, match_id):
     away_squad = MatchdaySquad.objects.filter(match=match, team=match.away_team).first()
     
     # Get substitution requests
-    home_requests = SubstitutionRequest.objects.filter(match=match, team=match.home_team).order_by('-requested_at')
-    away_requests = SubstitutionRequest.objects.filter(match=match, team=match.away_team).order_by('-requested_at')
+    home_requests = SubstitutionRequest.objects.filter(match=match, team=match.home_team, status='pending').order_by('-requested_at')
+    away_requests = SubstitutionRequest.objects.filter(match=match, team=match.away_team, status='pending').order_by('-requested_at')
     
-    # Get substitution opportunities
-    home_opportunities = SubstitutionOpportunity.objects.filter(match=match, team=match.home_team)
-    away_opportunities = SubstitutionOpportunity.objects.filter(match=match, team=match.away_team)
+    # Calculate used opportunities (count completed substitutions, excluding halftime)
+    home_opportunities_used = SubstitutionRequest.objects.filter(
+        match=match, 
+        team=match.home_team, 
+        status='completed'
+    ).exclude(minute__gte=45, minute__lte=60).count()  # Exclude halftime
+    
+    away_opportunities_used = SubstitutionRequest.objects.filter(
+        match=match, 
+        team=match.away_team, 
+        status='completed'
+    ).exclude(minute__gte=45, minute__lte=60).count()  # Exclude halftime
+    
+    # Calculate progress percentages
+    home_progress_percentage = min(home_opportunities_used * 33.33, 100)
+    away_progress_percentage = min(away_opportunities_used * 33.33, 100)
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -526,6 +539,10 @@ def fourth_official_substitutions(request, match_id):
         'away_requests': away_requests,
         'home_opportunities': home_opportunities,
         'away_opportunities': away_opportunities,
+        'home_opportunities_used': home_opportunities_used,
+        'away_opportunities_used': away_opportunities_used,
+        'home_progress_percentage': home_progress_percentage,
+        'away_progress_percentage': away_progress_percentage,
     }
     return render(request, 'referees/matchday/fourth_official_subs.html', context)
 
@@ -598,7 +615,7 @@ def team_request_substitution(request, match_id):
     # Check if team is playing in this match
     if team not in [match.home_team, match.away_team]:
         messages.error(request, "Your team is not playing in this match.")
-        return redirect('teams:dashboard')
+        return redirect('teams:team_manager_dashboard')
     
     # Get squad
     squad = get_object_or_404(MatchdaySquad, match=match, team=team, status='approved')
@@ -615,7 +632,7 @@ def team_request_substitution(request, match_id):
                     kickoff_time = datetime.strptime(kickoff_time, '%H:%M').time()
                 except (ValueError, AttributeError):
                     messages.error(request, "Invalid kickoff time format.")
-                    return redirect('teams:dashboard')
+                    return redirect('teams:team_manager_dashboard')
         
         match_datetime = timezone.make_aware(
             timezone.datetime.combine(match.match_date, kickoff_time)

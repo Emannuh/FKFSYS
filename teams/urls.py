@@ -3,6 +3,7 @@
 from django.urls import path
 from . import admin_dashboard   
 from . import views
+from .edit_team_info_view import edit_team_info
 
 app_name = 'teams'
 
@@ -19,6 +20,9 @@ urlpatterns = [
     path('update-kits/<int:team_id>/', views.update_team_kits, name='update_kits'),
     path('add-players-approved/', views.add_players_to_approved_team, name='add_players_approved'),
     path('add-player-action/', views.add_player_action, name='add_player_action'),
+
+    # Edit team info (League Admin/Manager)
+    path('edit-info/<int:team_id>/', edit_team_info, name='edit_team_info'),
     
     # Transfer System
     path('search-players/', views.search_players, name='search_players'),

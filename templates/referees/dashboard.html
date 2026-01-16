@@ -117,6 +117,25 @@
         </div>
         
         <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-danger text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-1">Today's Matches</h6>
+                            <h2 class="mb-0">{{ current_matches|length }}</h2>
+                            <p class="mb-0 mt-2">
+                                <small>{% if current_matches %}<a href="#current-section" class="text-white text-decoration-underline">Manage Now →</a>{% else %}No matches today{% endif %}</small>
+                            </p>
+                        </div>
+                        <div>
+                            <i class="fas fa-play-circle fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
             <div class="card bg-success text-white shadow">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -290,6 +309,115 @@
             {% endif %}
 
 
+            <!-- Current Matches (Today) -->
+            {% if current_matches %}
+            <div class="card shadow mb-4" id="current-section">
+                <div class="card-header bg-warning text-dark py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-play-circle me-2"></i>Today's Matches
+                    </h5>
+                    <span class="badge bg-white text-warning fs-6">{{ current_matches|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Match Details</th>
+                                    <th>Venue</th>
+                                    <th>Your Role</th>
+                                    <th>Fellow Officials</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in current_matches %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ appointment.match.kickoff_time|time:"H:i" }}</div>
+                                        <small class="text-muted">Today</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ appointment.match.home_team }} vs {{ appointment.match.away_team }}</div>
+                                        <div class="small text-muted">
+                                            {{ appointment.match.zone.name }}
+                                            {% if appointment.match.round_number %}
+                                             • Round {{ appointment.match.round_number }}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>{{ appointment.match.venue|default:"TBA" }}</td>
+                                    <td>
+                                        <span class="badge {% if appointment.role == 'REFEREE' %}bg-primary{% else %}bg-info{% endif %}">
+                                            {{ appointment.role|title }}
+                                        </span>
+                                        {% if appointment.confirmed %}
+                                        <span class="badge bg-success ms-1">✓</span>
+                                        {% else %}
+                                        <span class="badge bg-warning ms-1">?</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if appointment.officials_data.main_referee %}
+                                            <span class="badge bg-primary" title="Main Referee"><i class="fas fa-user-tie"></i> {{ appointment.officials_data.main_referee }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.assistant_1 %}
+                                            <span class="badge bg-info" title="Assistant Referee 1"><i class="fas fa-flag"></i> {{ appointment.officials_data.assistant_1 }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.assistant_2 %}
+                                            <span class="badge bg-info" title="Assistant Referee 2"><i class="fas fa-flag"></i> {{ appointment.officials_data.assistant_2 }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.fourth_official %}
+                                            <span class="badge bg-success" title="Fourth Official"><i class="fas fa-clipboard"></i> {{ appointment.officials_data.fourth_official }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.reserve_referee %}
+                                            <span class="badge bg-secondary" title="Reserve Referee"><i class="fas fa-user-plus"></i> {{ appointment.officials_data.reserve_referee }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.var %}
+                                            <span class="badge bg-danger" title="VAR"><i class="fas fa-video"></i> {{ appointment.officials_data.var }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.avar1 %}
+                                            <span class="badge bg-warning text-dark" title="AVAR"><i class="fas fa-video"></i> {{ appointment.officials_data.avar1 }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.match_commissioner %}
+                                            <span class="badge bg-dark" title="Match Commissioner"><i class="fas fa-user-shield"></i> {{ appointment.officials_data.match_commissioner }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'matches:match_details' appointment.match.id %}" 
+                                               class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            {% if appointment.role == 'REFEREE' or appointment.role == 'FOURTH_OFFICIAL' or appointment.role == 'RESERVE_REFEREE' %}
+                                            <a href="{% url 'referees:fourth_official_substitutions' appointment.match.id %}" 
+                                               class="btn btn-outline-info" title="Manage Substitutions">
+                                                <i class="fas fa-exchange-alt"></i> Subs
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'referees:submit_comprehensive_report' appointment.match.id %}" 
+                                               class="btn btn-outline-success">
+                                                <i class="fas fa-clipboard-list"></i> Report
+                                            </a>
+                                            <a href="{% url 'referees:submit_match_report' appointment.match.id %}" 
+                                               class="btn btn-outline-info" title="Quick Report">
+                                                <i class="fas fa-clipboard"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+
             <!-- Upcoming Matches -->
             <div class="card shadow mb-4" id="upcoming-section">
                 <div class="card-header bg-success text-white py-3 d-flex justify-content-between align-items-center">
@@ -378,7 +506,7 @@
                                                 <i class="fas fa-file-alt"></i> Pre-Match
                                             </a>
                                             {% endif %}
-                                            {% if appointment.role == 'FOURTH_OFFICIAL' or appointment.role == 'RESERVE_REFEREE' %}
+                                            {% if appointment.role == 'FOURTH_OFFICIAL' or appointment.role == 'RESERVE_REFEREE' or appointment.role == 'REFEREE' or appointment.role == 'RESERVE' %}
                                             <a href="{% url 'referees:fourth_official_substitutions' appointment.match.id %}" 
                                                class="btn btn-outline-info" title="Manage Substitutions">
                                                 <i class="fas fa-exchange-alt"></i> Subs

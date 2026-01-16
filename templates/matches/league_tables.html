@@ -105,6 +105,22 @@
                                              class="team-logo me-2">
                                         {% endif %}
                                         <strong>{{ entry.team.team_name }}</strong>
+                                        {% if request.user.is_superuser %}
+                                            <a href="{% url 'matches:admin_edit_league_table' entry.id %}" class="btn btn-sm btn-outline-primary ms-2" title="Edit League Table">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        {% else %}
+                                            {% with show_edit_button=False %}
+                                                {% for group in request.user.groups.all %}
+                                                    {% if group.name == 'League Admin' and not show_edit_button %}
+                                                        <a href="{% url 'matches:admin_edit_league_table' entry.id %}" class="btn btn-sm btn-outline-primary ms-2" title="Edit League Table">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        {% with show_edit_button=True %}{% endwith %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endwith %}
+                                        {% endif %}
                                     </div>
                                 </td>
                                 <td>{{ entry.matches_played }}</td>

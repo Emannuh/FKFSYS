@@ -328,7 +328,10 @@ def referee_dashboard(request):
         # Categorize appointments
         upcoming_matches = []
         pending_confirmation = []
+        current_matches = []
         completed_matches = []
+        
+        today = timezone.now().date()
         
         today = timezone.now().date()
         
@@ -349,7 +352,7 @@ def referee_dashboard(request):
                 role = "AR2"
                 confirmed = appointment.ar2_confirmed
             elif appointment.fourth_official == referee:
-                role = "FOURTH"
+                role = "RESERVE"
                 confirmed = appointment.fourth_confirmed
             elif appointment.reserve_referee == referee:
                 role = "RESERVE"
@@ -377,8 +380,7 @@ def referee_dashboard(request):
                 'main_referee': get_official_display_name(appointment.main_referee),
                 'assistant_1': get_official_display_name(appointment.assistant_1),
                 'assistant_2': get_official_display_name(appointment.assistant_2),
-                'fourth_official': get_official_display_name(appointment.fourth_official),
-                'reserve_referee': get_official_display_name(appointment.reserve_referee),
+                'reserve_referee': get_official_display_name(appointment.fourth_official or appointment.reserve_referee),
                 'var': get_official_display_name(appointment.var),
                 'avar1': get_official_display_name(appointment.avar1),
                 'match_commissioner': get_official_display_name(appointment.match_commissioner),
@@ -397,7 +399,10 @@ def referee_dashboard(request):
             # Categorize by date
             match_date = match.match_date.date() if hasattr(match.match_date, 'date') else match.match_date
             
-            if match_date >= today:
+            if match_date == today:
+                # Today's matches - show in current matches regardless of confirmation status
+                current_matches.append(match_info)
+            elif match_date > today:
                 if not confirmed:
                     pending_confirmation.append(match_info)
                 else:
@@ -406,7 +411,7 @@ def referee_dashboard(request):
                 completed_matches.append(match_info)
         
         # Debug: Log categorization
-        print(f"DEBUG: Pending: {len(pending_confirmation)}, Upcoming: {len(upcoming_matches)}, Completed: {len(completed_matches)}")
+        print(f"DEBUG: Pending: {len(pending_confirmation)}, Current: {len(current_matches)}, Upcoming: {len(upcoming_matches)}, Completed: {len(completed_matches)}")
         
         # Get reports
         pending_reports = MatchReport.objects.filter(
@@ -430,6 +435,7 @@ def referee_dashboard(request):
         
         context = {
             'referee': referee,
+            'current_matches': current_matches,
             'upcoming_matches': upcoming_matches,
             'pending_confirmation': pending_confirmation,
             'completed_matches': completed_matches,

@@ -10,7 +10,7 @@ Can be appointed as:
 - Main Referee
 - Reserve Referee
 - VAR (Video Assistant Referee)
-- AR2 (Assistant Referee 2) - if needed
+- AVAR2 (Assistant Referee 2) - if needed
 
 ### 2. **ASSISTANT REFEREE**
 Can be appointed as:
@@ -27,7 +27,7 @@ Can only be appointed as:
 ## Special Rules
 
 ### AR2 Flexibility
-AR2 position can be filled by either:
+AVAR2 position can be filled by either:
 - Referees (REFEREE specialization)
 - Assistant Referees (ASSISTANT_REFEREE specialization)
 

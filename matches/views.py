@@ -1,3 +1,79 @@
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import redirect
+from django.contrib import messages
+
+def match_results(request):
+    """Public view: List all completed match results"""
+    matches = Match.objects.filter(status='completed').order_by('-match_date')
+    context = {'matches': matches}
+    return render(request, 'matches/match_results.html', context)
+
+def league_admin_required(user):
+    return user.is_superuser or user.groups.filter(name='League Admin').exists()
+
+@login_required
+@user_passes_test(league_admin_required)
+def admin_edit_match_result(request, match_id):
+    match = get_object_or_404(Match, id=match_id)
+    if request.method == 'POST':
+        try:
+            match.home_score = int(request.POST.get('home_score', match.home_score))
+            match.away_score = int(request.POST.get('away_score', match.away_score))
+            match.status = 'completed'
+            match.save()
+            messages.success(request, '✅ Match result updated.')
+            return redirect('matches:match_results')
+        except Exception as e:
+            messages.error(request, f'❌ Error: {str(e)}')
+    context = {'match': match}
+    return render(request, 'admin_dashboard/edit_match_result.html', context)
+
+@login_required
+@user_passes_test(league_admin_required)
+def admin_edit_league_table(request, table_id):
+    table = get_object_or_404(LeagueTable, id=table_id)
+    if request.method == 'POST':
+        try:
+            table.matches_played = int(request.POST.get('matches_played', table.matches_played))
+            table.wins = int(request.POST.get('wins', table.wins))
+            table.draws = int(request.POST.get('draws', table.draws))
+            table.losses = int(request.POST.get('losses', table.losses))
+            table.goals_for = int(request.POST.get('goals_for', table.goals_for))
+            table.goals_against = int(request.POST.get('goals_against', table.goals_against))
+            table.goal_difference = int(request.POST.get('goal_difference', table.goal_difference))
+            table.points = int(request.POST.get('points', table.points))
+            table.save()
+            messages.success(request, '✅ League table updated.')
+            return redirect('matches:league_tables')
+        except Exception as e:
+            messages.error(request, f'❌ Error: {str(e)}')
+    context = {'table': table}
+    return render(request, 'admin_dashboard/edit_league_table.html', context)
+
+def league_manager_required(user):
+    return user.groups.filter(name='League Manager').exists() or user.is_superuser
+
+@login_required
+@user_passes_test(league_manager_required)
+def league_manager_reschedule(request, match_id):
+    match = get_object_or_404(Match, id=match_id)
+    if not (request.user.is_superuser or request.user.groups.filter(name='League Admin').exists()):
+        messages.error(request, 'Only superusers or league admins can reschedule fixtures.')
+        return redirect('matches:match_details', match_id=match_id)
+    if request.method == 'POST':
+        new_date = request.POST.get('new_date')
+        new_kickoff_time = request.POST.get('new_kickoff_time')
+        try:
+            match.match_date = timezone.make_aware(datetime.strptime(new_date, '%Y-%m-%d'))
+            match.kickoff_time = new_kickoff_time
+            match.status = 'scheduled'
+            match.save()
+            messages.success(request, '✅ Match rescheduled.')
+            return redirect('matches:match_details', match_id=match_id)
+        except Exception as e:
+            messages.error(request, f'❌ Error: {str(e)}')
+    context = {'match': match}
+    return render(request, 'admin_dashboard/league_manager_reschedule.html', context)
 # matches/views.py - UPDATE YOUR FILE
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q

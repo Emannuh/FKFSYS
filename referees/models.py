@@ -230,7 +230,7 @@ class Referee(models.Model):
         
         role_mapping = {
             'REFEREE': ['REFEREE', 'RESERVE', 'VAR'],
-            'ASSISTANT_REFEREE': ['AR1', 'AR2', 'FOURTH', 'AVAR1', 'RESERVE_AR'],
+            'ASSISTANT_REFEREE': ['AR1', 'AR2', 'RESERVE', 'AVAR1', 'RESERVE_AR'],
             'MATCH_COMMISSIONER': ['COMMISSIONER'],
         }
         
@@ -277,7 +277,6 @@ class MatchOfficials(models.Model):
         ('VAR', 'Video Assistant Referee'),
         ('AVAR1', 'Assistant VAR 1'),
         ('AVAR2', 'Assistant VAR 2'),
-        ('FOURTH', 'Fourth Official'),
         ('COMMISSIONER', 'Match Commissioner'),
     ]
     
@@ -499,7 +498,7 @@ class MatchOfficials(models.Model):
             (self.var, 'VAR'),
             (self.avar1, 'AVAR 1'),
             (self.avar2, 'AVAR 2'),
-            (self.fourth_official, 'Fourth Official'),
+            (self.fourth_official, 'Reserve Referee'),
             (self.match_commissioner, 'Match Commissioner'),
         ]
         
@@ -601,7 +600,7 @@ class MatchOfficials(models.Model):
             'reserve_assistant': ('RESERVE_AR', 'Reserve Assistant Referee', False),
             'var': ('VAR', 'Video Assistant Referee', self.var_confirmed),
             'avar1': ('AVAR1', 'Assistant VAR 1', False),
-            'fourth_official': ('FOURTH', 'Fourth Official', self.fourth_confirmed),
+            'fourth_official': ('RESERVE', 'Reserve Referee', self.fourth_confirmed),
             'match_commissioner': ('COMMISSIONER', 'Match Commissioner', False),
         }
         
@@ -626,7 +625,7 @@ class MatchOfficials(models.Model):
         elif self.assistant_2 == referee:
             return 'AR2'
         elif self.fourth_official == referee:
-            return 'FOURTH'
+            return 'RESERVE'
         elif self.reserve_referee == referee:
             return 'RESERVE'
         elif self.var == referee:

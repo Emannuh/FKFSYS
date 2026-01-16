@@ -12,8 +12,8 @@ from .officials_forms import TeamOfficialForm
 from payments.models import Payment
 
 def admin_or_league_manager_required(user):
-    """Check if user is staff or in League Admin group"""
-    return user.is_staff or user.groups.filter(name='League Admin').exists()
+    """Check if user is staff or in League Admin or League Manager group"""
+    return user.is_staff or user.groups.filter(name__in=['League Admin', 'League Manager']).exists()
 
 def team_registration(request):
     # Check if team registration is open
@@ -287,19 +287,18 @@ def team_dashboard(request, team_id=None):
     })
 
 def all_teams(request):
-    """View all teams - accessible to admins and staff"""
-    # Check if user is staff or admin
+    """View all teams - accessible to staff, superuser, League Admin, and League Manager"""
     if not request.user.is_authenticated:
         messages.error(request, "Please log in to access this page.")
         return redirect('login')
-    
-    if not (request.user.is_staff or request.user.is_superuser):
+
+    if not (request.user.is_staff or request.user.is_superuser or request.user.groups.filter(name__in=['League Admin', 'League Manager']).exists()):
         messages.error(request, "You don't have permission to access this page.")
         return redirect('dashboard')
-    
+
     teams = Team.objects.all()
     zones = Zone.objects.all()
-    
+
     return render(request, 'teams/all_teams.html', {
         'teams': teams,
         'zones': zones

@@ -36,6 +36,9 @@
                                 {% else %}
                                 <span class="badge bg-danger ms-1">Unpaid</span>
                                 {% endif %}
+                    {% if request.user.is_staff or request.user.is_superuser or 'League Admin' in request.user.groups.all|join:' ' or 'League Manager' in request.user.groups.all|join:' ' %}
+                        <a href="{% url 'teams:edit_team_info' team.id %}" class="btn btn-warning mb-3">Edit Team Info</a>
+                    {% endif %}
                             </div>
                         </div>
                     </div>

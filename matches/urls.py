@@ -2,6 +2,10 @@
 from django.urls import path
 from django.views.generic.base import RedirectView
 from . import views
+# matches/urls.py
+from django.urls import path
+from django.views.generic.base import RedirectView
+from . import views
 
 app_name = 'matches'
 
@@ -9,6 +13,12 @@ urlpatterns = [
     # Redirect /matches/105/ to /matches/match/105/ (MUST BE FIRST!)
     path('<int:match_id>/', 
          RedirectView.as_view(pattern_name='matches:match_details', permanent=True)),
+
+     # New views for results, admin edit, league table edit, league manager reschedule
+     path('results/', views.match_results, name='match_results'),
+     path('admin/match/<int:match_id>/edit-result/', views.admin_edit_match_result, name='admin_edit_match_result'),
+     path('admin/league-table/<int:table_id>/edit/', views.admin_edit_league_table, name='admin_edit_league_table'),
+     path('manager/match/<int:match_id>/reschedule/', views.league_manager_reschedule, name='league_manager_reschedule'),
     
     # Admin match management
     path('admin/manage/', 
