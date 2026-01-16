@@ -139,22 +139,9 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm w-100">
-                                    {% if match.has_declined %}
-                                        <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-danger flex-fill">
-                                            <i class="fas fa-user-plus me-1"></i>Replace Officials
-                                        </a>
-                                    {% elif match.officials %}
-                                        <button class="btn btn-success flex-fill" disabled>
-                                            <i class="fas fa-check-circle me-1"></i>Appointed
-                                        </button>
-                                        <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-outline-primary flex-fill">
-                                            <i class="fas fa-eye me-1"></i>View Officials
-                                        </a>
-                                    {% else %}
-                                        <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-warning flex-fill">
-                                            <i class="fas fa-user-plus me-1"></i>Appoint Officials
-                                        </a>
-                                    {% endif %}
+                                    <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-warning flex-fill">
+                                        <i class="fas fa-user-plus me-1"></i>Appoint Officials
+                                    </a>
                                     <a href="{% url 'matches:match_details' match.id %}" class="btn btn-outline-secondary">
                                         <i class="fas fa-eye"></i>
                                     </a>
@@ -274,27 +261,30 @@
     </div>
     {% endif %}
 
-    <!-- Appointed Matches -->
+    <!-- All Appointed Matches -->
     {% if appointed_matches %}
     <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center bg-success">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center bg-primary">
             <h6 class="m-0 font-weight-bold text-white">
-                <i class="fas fa-check-circle me-2"></i>
-                Appointed Matches ({{ appointed_matches|length }})
+                <i class="fas fa-users-cog me-2"></i>
+                All Appointments ({{ appointed_matches|length }})
             </h6>
-            <span class="badge bg-white text-success">OFFICIALS ASSIGNED</span>
+            <span class="badge bg-white text-primary">OFFICIALS ASSIGNED</span>
         </div>
         <div class="card-body p-0">
+            <div class="alert alert-info m-3 mb-2">
+                <i class="fas fa-info-circle me-2"></i>
+                These matches have officials appointed. Use <strong>View</strong> to see details, <strong>Replace</strong> to change specific officials, or <strong>Cancel</strong> to remove all appointments.
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <thead class="table-success">
+                    <thead class="table-primary">
                         <tr>
                             <th width="120">Match Date</th>
                             <th>Match Details</th>
-                            <th>Main Referee</th>
-                            <th>Assistant Referees</th>
+                            <th>All Appointed Officials</th>
                             <th>Status</th>
-                            <th width="150">Actions</th>
+                            <th width="200">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -302,7 +292,7 @@
                         <tr>
                             <td class="fw-bold">
                                 {{ match.match_date|date:"d/m/Y" }}<br>
-                                <small>{{ match.kickoff_time|default:"TBD" }}</small>
+                                <small class="text-muted">{{ match.kickoff_time|default:"TBD" }}</small>
                             </td>
                             <td>
                                 <div class="fw-bold">{{ match.home_team }} vs {{ match.away_team }}</div>
@@ -312,47 +302,101 @@
                                 </div>
                             </td>
                             <td>
-                                {% if match.officials.main_referee %}
-                                    <i class="fas fa-user-check text-success me-1"></i>{{ match.officials.main_referee.full_name }}
-                                {% else %}
-                                    <span class="text-muted">Not assigned</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <small>
+                                {% if match.officials %}
+                                <div class="small">
+                                    {% if match.officials.main_referee %}
+                                    <div class="mb-1">
+                                        <strong>Referee:</strong> 
+                                        <i class="fas fa-user-check text-success me-1"></i>
+                                        {{ match.officials.main_referee.full_name }}
+                                        {% if match.officials.main_confirmed %}
+                                        <span class="badge bg-success ms-1" title="Confirmed">✓</span>
+                                        {% elif match.officials.main_rejected %}
+                                        <span class="badge bg-danger ms-1" title="Declined">✗</span>
+                                        {% else %}
+                                        <span class="badge bg-warning ms-1" title="Pending">⏳</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                    
                                     {% if match.officials.assistant_1 %}
-                                        <div><i class="fas fa-flag text-info me-1"></i>AR1: {{ match.officials.assistant_1.full_name }}</div>
+                                    <div class="mb-1">
+                                        <strong>AR1:</strong> 
+                                        <i class="fas fa-flag text-info me-1"></i>
+                                        {{ match.officials.assistant_1.full_name }}
+                                        {% if match.officials.ar1_confirmed %}
+                                        <span class="badge bg-success ms-1" title="Confirmed">✓</span>
+                                        {% elif match.officials.ar1_rejected %}
+                                        <span class="badge bg-danger ms-1" title="Declined">✗</span>
+                                        {% else %}
+                                        <span class="badge bg-warning ms-1" title="Pending">⏳</span>
+                                        {% endif %}
+                                    </div>
                                     {% endif %}
+                                    
                                     {% if match.officials.assistant_2 %}
-                                        <div><i class="fas fa-flag text-info me-1"></i>AR2: {{ match.officials.assistant_2.full_name }}</div>
+                                    <div class="mb-1">
+                                        <strong>AR2:</strong> 
+                                        <i class="fas fa-flag text-info me-1"></i>
+                                        {{ match.officials.assistant_2.full_name }}
+                                        {% if match.officials.ar2_confirmed %}
+                                        <span class="badge bg-success ms-1" title="Confirmed">✓</span>
+                                        {% elif match.officials.ar2_rejected %}
+                                        <span class="badge bg-danger ms-1" title="Declined">✗</span>
+                                        {% else %}
+                                        <span class="badge bg-warning ms-1" title="Pending">⏳</span>
+                                        {% endif %}
+                                    </div>
                                     {% endif %}
-                                    {% if not match.officials.assistant_1 and not match.officials.assistant_2 %}
-                                        <span class="text-muted">Not assigned</span>
+                                    
+                                    {% if match.officials.fourth_official %}
+                                    <div class="mb-1"><strong>4th:</strong> {{ match.officials.fourth_official.full_name }}</div>
                                     {% endif %}
-                                </small>
+                                    
+                                    {% if match.officials.var %}
+                                    <div class="mb-1"><strong>VAR:</strong> {{ match.officials.var.full_name }}</div>
+                                    {% endif %}
+                                    
+                                    {% if match.officials.match_commissioner %}
+                                    <div class="mb-1"><strong>Commissioner:</strong> {{ match.officials.match_commissioner.full_name }}</div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">No officials</span>
+                                {% endif %}
                             </td>
                             <td>
                                 {% if match.officials.status == 'CONFIRMED' %}
-                                    <span class="badge bg-success"><i class="fas fa-check"></i> Confirmed</span>
+                                    <span class="badge bg-success"><i class="fas fa-check-circle"></i> Confirmed</span>
                                 {% else %}
-                                    <span class="badge bg-warning"><i class="fas fa-clock"></i> Pending</span>
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pending Confirmation</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="btn-group btn-group-sm w-100">
-                                    <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-outline-primary">
-                                        <i class="fas fa-eye me-1"></i>View
-                                    </a>
-                                    <a href="{% url 'matches:match_details' match.id %}" class="btn btn-outline-secondary">
-                                        <i class="fas fa-info-circle"></i>
-                                    </a>
-                                    {% if match.officials %}
-                                    <a href="{% url 'referees:cancel_appointment' match.id %}" 
-                                       class="btn btn-danger"
-                                       title="Cancel all appointments">
-                                        <i class="fas fa-ban"></i>
-                                    </a>
-                                    {% endif %}
+                                <div class="d-grid gap-1">
+                                    <!-- First Row: Appoint (Disabled) and View -->
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-secondary" disabled title="Already appointed - Cannot appoint again">
+                                            <i class="fas fa-ban me-1"></i>Appoint
+                                        </button>
+                                        <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-info" title="View appointment details">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                    </div>
+                                    <!-- Second Row: Replace and Cancel -->
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'referees:replace_referee' match.id 'main_referee' %}" 
+                                           class="btn btn-warning"
+                                           title="Replace specific officials">
+                                            <i class="fas fa-exchange-alt me-1"></i>Replace
+                                        </a>
+                                        <a href="{% url 'referees:cancel_appointment' match.id %}" 
+                                           class="btn btn-danger"
+                                           onclick="return confirm('Are you sure you want to cancel ALL appointments for this match?')"
+                                           title="Cancel all appointments">
+                                            <i class="fas fa-times-circle me-1"></i>Cancel
+                                        </a>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -360,6 +404,15 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Appointed Matches -->
+    <div class="card shadow mb-4">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No Appointments Yet</h4>
+            <p class="text-muted">No matches have officials appointed yet. Start by appointing officials to matches above.</p>
         </div>
     </div>
     {% endif %}

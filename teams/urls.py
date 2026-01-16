@@ -37,6 +37,7 @@ urlpatterns = [
     
     # Admin Player Management
     path('admin/players/', views.admin_manage_players, name='admin_manage_players'),
+    path('admin/player/<int:player_id>/edit/', views.admin_edit_player, name='admin_edit_player'),
     path('admin/player/<int:player_id>/delete/', views.admin_delete_player, name='admin_delete_player'),
     path('admin/player/<int:player_id>/suspend/', views.admin_suspend_player, name='admin_suspend_player'),
     path('admin/player/<int:player_id>/unsuspend/', views.admin_unsuspend_player, name='admin_unsuspend_player'),

@@ -66,6 +66,7 @@ urlpatterns = [
     
     # API Endpoints for Referees Manager Dashboard
     path('api/urgent-matches/', views.api_urgent_matches, name='api_urgent_matches'),
+    path('api/appointed-matches/', views.api_appointed_matches, name='api_appointed_matches'),
     path('api/recent-appointments/', views.api_recent_appointments, name='api_recent_appointments'),
     path('api/available-referees-today/', views.api_available_referees_today, name='api_available_referees_today'),
     path('api/manager-stats/', views.api_manager_stats, name='api_manager_stats'),
@@ -73,4 +74,8 @@ urlpatterns = [
     
     # HTML Display for Weekly Report
     path('weekly-report-display/', views.weekly_report_display, name='weekly_report_display'),
+    
+    # Export Endpoints
+    path('export/excel/', views.export_appointments_excel, name='export_appointments_excel'),
+    path('export/pdf/', views.export_appointments_pdf, name='export_appointments_pdf'),
 ]

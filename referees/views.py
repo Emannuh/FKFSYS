@@ -3,6 +3,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.http import JsonResponse, HttpResponse
+from datetime import timedelta
 from matches.models import Match
 from .models import MatchOfficials, MatchReport
 
@@ -119,10 +121,10 @@ FKF Meru County League - Referees Management
         
         messages.success(
             request, 
-            f"All appointments for {match} have been cancelled. "
+            f"Referee appointments cancelled. All appointments for {match} have been cancelled. "
             f"Notifications sent to {len(appointed_referees)} referee(s)."
         )
-        return redirect('matches:match_details', match_id=match.id)
+        return redirect('dashboard')  # Redirect to referees manager dashboard
 
     context = {
         'match': match,
@@ -362,11 +364,32 @@ def referee_dashboard(request):
                 role = "COMMISSIONER"
                 confirmed = appointment.commissioner_confirmed
             
+            # Helper function to get official name safely
+            def get_official_display_name(official):
+                if not official:
+                    return None
+                if hasattr(official, 'user') and official.user:
+                    return official.user.get_full_name() or f"{official.first_name} {official.last_name}"
+                return f"{official.first_name} {official.last_name}"
+            
+            # Get all officials for this match
+            officials_data = {
+                'main_referee': get_official_display_name(appointment.main_referee),
+                'assistant_1': get_official_display_name(appointment.assistant_1),
+                'assistant_2': get_official_display_name(appointment.assistant_2),
+                'fourth_official': get_official_display_name(appointment.fourth_official),
+                'reserve_referee': get_official_display_name(appointment.reserve_referee),
+                'var': get_official_display_name(appointment.var),
+                'avar1': get_official_display_name(appointment.avar1),
+                'match_commissioner': get_official_display_name(appointment.match_commissioner),
+            }
+            
             match_info = {
                 'match': match,
                 'role': role,
                 'confirmed': confirmed,
                 'appointment': appointment,
+                'officials_data': officials_data,
                 'match_date': match.match_date.date() if hasattr(match.match_date, 'date') else match.match_date,
                 'can_confirm': match.match_date.date() >= today and not confirmed if hasattr(match.match_date, 'date') else match.match_date >= today and not confirmed
             }
@@ -798,7 +821,7 @@ def replace_referee(request, match_id, role):
     
     if role not in role_mapping:
         messages.error(request, "Invalid role specified.")
-        return redirect('referees:appoint_officials', match_id=match.id)
+        return redirect('referees:appoint_match_officials', match_id=match.id)
     
     role_info = role_mapping[role]
     current_referee = getattr(officials, role_info['field'])
@@ -907,6 +930,7 @@ def matches_needing_officials(request):
     
     for match in matches:
         if not hasattr(match, 'officials') or match.officials is None:
+            # Only add to needs_officials if no appointment exists
             match.has_declined = False
             needs_officials.append(match)
         else:
@@ -975,8 +999,7 @@ def matches_needing_officials(request):
                         'declined_at': getattr(match.officials, 'commissioner_rejected_at', None)
                     })
                 declined_appointments.append(match)
-                # Also add to needs_officials list at the top for urgent attention
-                needs_officials.insert(0, match)
+                # DO NOT add to needs_officials - keep them separate
             elif match.officials.status == 'APPOINTED':
                 appointed_matches.append(match)
                 pending_confirmation.append(match)
@@ -1061,6 +1084,7 @@ def all_referees(request):
     """View all referees with filtering"""
     status_filter = request.GET.get('status', '')
     active_filter = request.GET.get('active', '')
+    specialization_filter = request.GET.get('specialization', '')
     
     referees = Referee.objects.all()
     
@@ -1071,6 +1095,9 @@ def all_referees(request):
         referees = referees.filter(is_active=True)
     elif active_filter == 'inactive':
         referees = referees.filter(is_active=False)
+    
+    if specialization_filter:
+        referees = referees.filter(specialization=specialization_filter)
     
     referees = referees.order_by('-date_joined')
     
@@ -1149,18 +1176,29 @@ def admin_referee_dashboard(request):
 @permission_required('referees.appoint_referees', raise_exception=True)
 @require_GET
 def api_urgent_matches(request):
-    """API: Get urgent matches needing officials"""
+    """API: Get urgent matches needing officials (without appointments)"""
     from django.utils.dateformat import format
     from datetime import datetime
     
     today = timezone.localdate()
     four_days_from_now = today + timedelta(days=4)
     
-    matches = Match.objects.filter(
+    # Get matches that don't have ANY officials appointed yet
+    from matches.models import Match
+    all_matches = Match.objects.filter(
         match_date__date__lte=four_days_from_now,
         match_date__date__gte=today,
         status='scheduled'
-    ).exclude(officials__status='CONFIRMED').order_by('match_date')[:10]
+    ).prefetch_related('officials').order_by('match_date')
+    
+    # Filter to only include matches without appointments
+    matches_needing_officials = []
+    for match in all_matches:
+        if not hasattr(match, 'officials') or match.officials is None:
+            matches_needing_officials.append(match)
+    
+    # Limit to 10
+    matches = matches_needing_officials[:10]
     
     matches_data = []
     for match in matches:
@@ -1176,7 +1214,53 @@ def api_urgent_matches(request):
             'venue': match.venue,
             'zone': match.zone.name,
             'days_until_match': days_until,
-            'status': 'Needs Officials' if not hasattr(match, 'officials') else 'Pending Confirmation',
+            'status': 'Needs Officials',
+        })
+    
+    return JsonResponse({'matches': matches_data})
+
+@login_required
+@permission_required('referees.appoint_referees', raise_exception=True)
+@require_GET
+def api_appointed_matches(request):
+    """API: Get all matches with officials appointed"""
+    from django.utils.dateformat import format
+    from datetime import datetime
+    
+    today = timezone.localdate()
+    four_days_from_now = today + timedelta(days=4)
+    
+    # Get all matches within 4 days that have appointments
+    from matches.models import Match
+    all_matches = Match.objects.filter(
+        match_date__date__lte=four_days_from_now,
+        match_date__date__gte=today,
+        status='scheduled'
+    ).prefetch_related('officials').order_by('match_date')
+    
+    # Filter to only include matches WITH appointments
+    appointed_matches = []
+    for match in all_matches:
+        if hasattr(match, 'officials') and match.officials is not None:
+            appointed_matches.append(match)
+    
+    matches_data = []
+    for match in appointed_matches[:15]:  # Limit to 15 most recent
+        officials = match.officials
+        
+        matches_data.append({
+            'id': match.id,
+            'date': match.match_date.strftime('%d/%m/%Y'),
+            'time': match.kickoff_time or 'TBD',
+            'home_team': match.home_team.team_name,
+            'away_team': match.away_team.team_name,
+            'zone': match.zone.name,
+            'round': match.round_number,
+            'referee': officials.main_referee.full_name if officials.main_referee else None,
+            'ar1': officials.assistant_1.full_name if officials.assistant_1 else None,
+            'ar2': officials.assistant_2.full_name if officials.assistant_2 else None,
+            'status': officials.status,
+            'status_display': 'Confirmed' if officials.status == 'CONFIRMED' else 'Pending Confirmation',
         })
     
     return JsonResponse({'matches': matches_data})
@@ -2116,12 +2200,14 @@ def generate_weekly_report(request):
         
         if start_date_str and end_date_str:
             # Use provided dates
-            start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            end_date = timezone.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            from datetime import datetime
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         elif data.get('period') == 'dec_22_31_2025':
             # Specific: Dec 22-31, 2025
-            start_date = timezone.datetime(2025, 12, 22).date()
-            end_date = timezone.datetime(2025, 12, 31).date()
+            from datetime import date
+            start_date = date(2025, 12, 22)
+            end_date = date(2025, 12, 31)
         else:
             # Default: Last 30 days
             end_date = timezone.now().date()
@@ -2141,10 +2227,15 @@ def generate_weekly_report(request):
         # Check if user has a referee profile
         has_referee_profile = hasattr(request.user, 'referee_profile')
         
+        # Convert dates to timezone-aware datetime objects for filtering
+        from datetime import datetime as dt, time
+        start_datetime = timezone.make_aware(dt.combine(start_date, time.min))
+        end_datetime = timezone.make_aware(dt.combine(end_date, time.max))
+        
         # Get matches in date range
         matches = Match.objects.filter(
-            match_date__gte=start_date,
-            match_date__lte=end_date
+            match_date__gte=start_datetime,
+            match_date__lte=end_datetime
         ).select_related(
             'home_team', 'away_team', 'zone',
             'referee', 'assistant_referee_1', 'assistant_referee_2'
@@ -2435,8 +2526,230 @@ def generate_weekly_report(request):
         return JsonResponse(error_response, status=400)
 @login_required
 def weekly_report_display(request):
-    """HTML display for weekly report"""
-    return render(request, 'referees/weekly_report_display.html')
+    """HTML display for weekly report - Modern version"""
+    return render(request, 'referees/weekly_report_modern.html')
+
+
+@login_required
+def export_appointments_excel(request):
+    """Export appointments to Excel"""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from django.http import HttpResponse
+    from datetime import datetime as dt, time
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if start_date_str and end_date_str:
+        start_date = dt.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = dt.strptime(end_date_str, '%Y-%m-%d').date()
+    else:
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(days=30)
+    
+    # Convert to timezone-aware datetime
+    start_datetime = timezone.make_aware(dt.combine(start_date, time.min))
+    end_datetime = timezone.make_aware(dt.combine(end_date, time.max))
+    
+    # Get matches
+    matches = Match.objects.filter(
+        match_date__gte=start_datetime,
+        match_date__lte=end_datetime
+    ).select_related(
+        'home_team', 'away_team', 'zone',
+        'referee', 'assistant_referee_1', 'assistant_referee_2'
+    ).order_by('match_date', 'kickoff_time')
+    
+    # Helper function to get official's name (only approved with user accounts)
+    def get_official_name(official):
+        if not official:
+            return 'VACANT'
+        # Only show referee if approved, has user account, and not suspended
+        if hasattr(official, 'status') and official.status != 'approved':
+            return 'VACANT'
+        if hasattr(official, 'user') and official.user:
+            return official.user.get_full_name() or f"{official.first_name} {official.last_name}"
+        # If no user account, referee is not yet activated
+        return 'VACANT'
+    
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Match Officials Report"
+    
+    # Styling
+    header_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Title
+    ws.merge_cells('A1:H1')
+    title_cell = ws['A1']
+    title_cell.value = f"FKF Meru League - Match Officials Report ({start_date} to {end_date})"
+    title_cell.font = Font(bold=True, size=14)
+    title_cell.alignment = Alignment(horizontal='center')
+    
+    # Headers
+    headers = ['Date', 'Time', 'Match', 'Venue', 'Zone', 'Referee', 'AR1', 'AR2']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+    
+    # Data
+    row = 4
+    for match in matches:
+        ws.cell(row=row, column=1).value = match.match_date.strftime('%Y-%m-%d') if match.match_date else ''
+        ws.cell(row=row, column=2).value = str(match.kickoff_time) if match.kickoff_time else 'TBD'
+        ws.cell(row=row, column=3).value = f"{match.home_team.team_name} vs {match.away_team.team_name}"
+        ws.cell(row=row, column=4).value = match.venue or match.venue_details or 'TBD'
+        ws.cell(row=row, column=5).value = match.zone.name if match.zone else ''
+        ws.cell(row=row, column=6).value = get_official_name(match.referee)
+        ws.cell(row=row, column=7).value = get_official_name(match.assistant_referee_1)
+        ws.cell(row=row, column=8).value = get_official_name(match.assistant_referee_2)
+        
+        # Apply borders
+        for col in range(1, 9):
+            ws.cell(row=row, column=col).border = border
+        
+        row += 1
+    
+    # Column widths
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 10
+    ws.column_dimensions['C'].width = 35
+    ws.column_dimensions['D'].width = 25
+    ws.column_dimensions['E'].width = 15
+    ws.column_dimensions['F'].width = 20
+    ws.column_dimensions['G'].width = 20
+    ws.column_dimensions['H'].width = 20
+    
+    # Response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="Match_Officials_Report_{start_date}_{end_date}.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+def export_appointments_pdf(request):
+    """Export appointments to PDF"""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from django.http import HttpResponse
+    from datetime import datetime as dt, time
+    import io
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if start_date_str and end_date_str:
+        start_date = dt.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = dt.strptime(end_date_str, '%Y-%m-%d').date()
+    else:
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(days=30)
+    
+    # Convert to timezone-aware datetime
+    start_datetime = timezone.make_aware(dt.combine(start_date, time.min))
+    end_datetime = timezone.make_aware(dt.combine(end_date, time.max))
+    
+    # Get matches
+    matches = Match.objects.filter(
+        match_date__gte=start_datetime,
+        match_date__lte=end_datetime
+    ).select_related(
+        'home_team', 'away_team', 'zone',
+        'referee', 'assistant_referee_1', 'assistant_referee_2'
+    ).order_by('match_date', 'kickoff_time')
+    
+    # Helper function to get official's name (only approved with user accounts)
+    def get_official_name(official):
+        if not official:
+            return 'VACANT'
+        # Only show referee if approved, has user account, and not suspended
+        if hasattr(official, 'status') and official.status != 'approved':
+            return 'VACANT'
+        if hasattr(official, 'user') and official.user:
+            return official.user.get_full_name() or f"{official.first_name} {official.last_name}"
+        # If no user account, referee is not yet activated
+        return 'VACANT'
+    
+    # Create PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        textColor=colors.HexColor('#1E3A8A'),
+        spaceAfter=20,
+        alignment=1  # Center
+    )
+    
+    # Title
+    title = Paragraph(f"FKF Meru League - Match Officials Report<br/>{start_date} to {end_date}", title_style)
+    elements.append(title)
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Table data
+    data = [['Date', 'Time', 'Match', 'Venue', 'Referee', 'AR1', 'AR2']]
+    
+    for match in matches:
+        data.append([
+            match.match_date.strftime('%d/%m/%Y') if match.match_date else '',
+            str(match.kickoff_time)[:5] if match.kickoff_time else 'TBD',
+            f"{match.home_team.team_name}\nvs\n{match.away_team.team_name}",
+            match.venue or match.venue_details or 'TBD',
+            get_official_name(match.referee),
+            get_official_name(match.assistant_referee_1),
+            get_official_name(match.assistant_referee_2)
+        ])
+    
+    # Create table
+    table = Table(data, colWidths=[0.8*inch, 0.6*inch, 2*inch, 1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E3A8A')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+    ]))
+    
+    elements.append(table)
+    
+    # Build PDF
+    doc.build(elements)
+    
+    # Response
+    buffer.seek(0)
+    response = HttpResponse(buffer.read(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Match_Officials_Report_{start_date}_{end_date}.pdf"'
+    return response
 @login_required
 @permission_required('referees.submit_match_report', raise_exception=True)
 def view_report(request, report_id):

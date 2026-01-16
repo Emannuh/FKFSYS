@@ -4,6 +4,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 from django.core.exceptions import ValidationError
+from django.db import models
 from fkf_league.validators import normalize_kenya_phone
 from fkf_league.constants import KENYA_COUNTIES
 
@@ -20,7 +21,7 @@ from teams.models import Player, Team
 class RefereeRegistrationForm(forms.ModelForm):
     """
     SIMPLE REGISTRATION FORM - Only 4 required fields!
-    Optional fields: phone_digits, photo, county, id_number
+    Optional fields: phone_digits, photo, county, id_number, specialization
     """
     phone_digits = forms.CharField(
         max_length=9,
@@ -38,7 +39,7 @@ class RefereeRegistrationForm(forms.ModelForm):
         model = Referee
         fields = [
             'first_name', 'last_name', 'fkf_number', 'email',  # Required
-            'photo', 'county', 'id_number'                      # Optional (phone_digits handled separately)
+            'specialization', 'photo', 'county', 'id_number'   # Optional (phone_digits handled separately)
         ]
         widgets = {
             'first_name': forms.TextInput(attrs={
@@ -61,6 +62,9 @@ class RefereeRegistrationForm(forms.ModelForm):
                 'placeholder': 'referee@example.com',
                 'required': True
             }),
+            'specialization': forms.Select(attrs={
+                'class': 'form-control'
+            }),
             'county': forms.Select(attrs={
                 'class': 'form-control'
             }),
@@ -78,6 +82,7 @@ class RefereeRegistrationForm(forms.ModelForm):
             'last_name': 'Last Name *',
             'fkf_number': 'FKF License Number *',
             'email': 'Email Address *',
+            'specialization': 'Specialization',
             'county': 'County',
             'id_number': 'National ID Number',
             'photo': 'Profile Photo',
@@ -85,6 +90,7 @@ class RefereeRegistrationForm(forms.ModelForm):
         help_texts = {
             'fkf_number': 'Your Football Kenya Federation license number',
             'email': 'A valid email address for account notifications',
+            'specialization': 'Choose your primary role: Referee, Assistant Referee, or Match Commissioner',
             'photo': 'Upload a clear passport-size photo (optional)',
         }
     
@@ -139,7 +145,7 @@ class RefereeProfileUpdateForm(forms.ModelForm):
         model = Referee
         fields = [
             'first_name', 'last_name', 'email', 'fkf_number', 'level', 
-            'county', 'id_number', 'photo'
+            'specialization', 'county', 'id_number', 'photo'
         ]
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
@@ -147,6 +153,7 @@ class RefereeProfileUpdateForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control', 'readonly': True}),
             'fkf_number': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
             'level': forms.Select(attrs={'class': 'form-control'}),
+            'specialization': forms.Select(attrs={'class': 'form-control'}),
             'county': forms.Select(attrs={'class': 'form-control'}),
             'id_number': forms.TextInput(attrs={'class': 'form-control'}),
             'photo': forms.FileInput(attrs={'class': 'form-control'}),
@@ -157,6 +164,7 @@ class RefereeProfileUpdateForm(forms.ModelForm):
             'email': 'Email',
             'fkf_number': 'FKF License Number',
             'level': 'Referee Level',
+            'specialization': 'Specialization',
             'county': 'County',
             'id_number': 'National ID Number',
             'photo': 'Profile Photo',
@@ -208,7 +216,7 @@ class MatchOfficialsAppointmentForm(forms.ModelForm):
         model = MatchOfficials
         fields = [
             'main_referee', 'assistant_1', 'assistant_2',
-            'reserve_referee', 'var', 'avar1', 'match_commissioner'
+            'reserve_referee', 'var', 'avar1', 'avar2', 'match_commissioner'
         ]
         widgets = {
             'main_referee': forms.Select(attrs={'class': 'form-control', 'required': True}),
@@ -217,6 +225,7 @@ class MatchOfficialsAppointmentForm(forms.ModelForm):
             'reserve_referee': forms.Select(attrs={'class': 'form-control'}),
             'var': forms.Select(attrs={'class': 'form-control'}),
             'avar1': forms.Select(attrs={'class': 'form-control'}),
+            'avar2': forms.Select(attrs={'class': 'form-control'}),
             'match_commissioner': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
@@ -225,7 +234,8 @@ class MatchOfficialsAppointmentForm(forms.ModelForm):
             'assistant_2': 'ASSISTANT REFEREE 2 *',
             'reserve_referee': 'RESERVE REFEREE',
             'var': 'Video Assistant Referee (VAR)',
-            'avar1': 'Assistant VAR (AVAR)',
+            'avar1': 'Assistant VAR 1 (AVAR1)',
+            'avar2': 'Assistant VAR 2 (AVAR2)',
             'match_commissioner': 'Match Commissioner',
         }
 
@@ -233,9 +243,106 @@ class MatchOfficialsAppointmentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Only show approved and active referees
         approved_referees = Referee.objects.filter(status='approved', is_active=True)
-        for field_name in self.fields:
-            if field_name != 'match_commissioner':
-                self.fields[field_name].queryset = approved_referees
+        
+        # Get match instance if editing
+        match_instance = self.instance.match if self.instance and self.instance.pk else None
+        
+        # Get already appointed referees for this match's round/time slot
+        excluded_referees = set()
+        if match_instance:
+            # Find matches in the same round and similar time
+            from matches.models import Match
+            from datetime import timedelta
+            
+            match_date = match_instance.match_date
+            time_window_start = match_date - timedelta(hours=2)
+            time_window_end = match_date + timedelta(hours=2)
+            
+            # Get all matches in same time window
+            overlapping_matches = Match.objects.filter(
+                round_number=match_instance.round_number,
+                match_date__gte=time_window_start,
+                match_date__lte=time_window_end
+            ).exclude(id=match_instance.id)
+            
+            # Collect all appointed referees from these matches
+            for match in overlapping_matches:
+                if hasattr(match, 'officials'):
+                    officials = match.officials
+                    for field in ['main_referee', 'assistant_1', 'assistant_2', 
+                                  'reserve_referee', 'var', 'avar1', 'avar2', 'fourth_official', 
+                                  'match_commissioner']:
+                        referee = getattr(officials, field, None)
+                        if referee:
+                            excluded_referees.add(referee.id)
+        
+        # Filter referees by specialization for each role
+        # REFEREE role - only REFEREE specialization (can also be VAR, RESERVE)
+        referee_specialists = approved_referees.filter(
+            models.Q(specialization='REFEREE') | models.Q(specialization__isnull=True)
+        ).exclude(id__in=excluded_referees)
+        
+        # AR1 and AR2 roles - only ASSISTANT_REFEREE specialization
+        assistant_referee_specialists = approved_referees.filter(
+            models.Q(specialization='ASSISTANT_REFEREE') | models.Q(specialization__isnull=True)
+        ).exclude(id__in=excluded_referees)
+        
+        # AVAR2 role - can be REFEREE or ASSISTANT_REFEREE
+        avar2_specialists = approved_referees.filter(
+            models.Q(specialization='REFEREE') | 
+            models.Q(specialization='ASSISTANT_REFEREE') | 
+            models.Q(specialization__isnull=True)
+        ).exclude(id__in=excluded_referees)
+        
+        # COMMISSIONER role - only MATCH_COMMISSIONER specialization
+        commissioner_specialists = approved_referees.filter(
+            models.Q(specialization='MATCH_COMMISSIONER') | models.Q(specialization__isnull=True)
+        ).exclude(id__in=excluded_referees)
+        
+        # Apply filtered querysets to form fields
+        self.fields['main_referee'].queryset = referee_specialists
+        self.fields['reserve_referee'].queryset = referee_specialists
+        self.fields['var'].queryset = referee_specialists
+        
+        self.fields['assistant_1'].queryset = assistant_referee_specialists
+        self.fields['assistant_2'].queryset = assistant_referee_specialists
+        self.fields['avar1'].queryset = assistant_referee_specialists
+        
+        self.fields['avar2'].queryset = avar2_specialists
+        
+        self.fields['match_commissioner'].queryset = commissioner_specialists
+    
+    def clean(self):
+        """
+        Validate that the same official is not appointed to multiple positions
+        """
+        cleaned_data = super().clean()
+        
+        # Collect all appointed officials with their roles
+        officials_map = {}
+        
+        fields_to_check = [
+            ('main_referee', 'Referee'),
+            ('assistant_1', 'Assistant Referee 1'),
+            ('assistant_2', 'Assistant Referee 2'),
+            ('reserve_referee', 'Reserve Referee'),
+            ('var', 'VAR'),
+            ('avar1', 'Assistant VAR 1'),
+            ('avar2', 'Assistant VAR 2'),
+            ('match_commissioner', 'Match Commissioner'),
+        ]
+        
+        for field_name, role_name in fields_to_check:
+            official = cleaned_data.get(field_name)
+            if official:
+                if official in officials_map:
+                    raise forms.ValidationError(
+                        f"{official.full_name} cannot be appointed to multiple positions. "
+                        f"Already assigned as {officials_map[official]}, cannot also be {role_name}."
+                    )
+                officials_map[official] = role_name
+        
+        return cleaned_data
 
 
 class MatchOfficialsManualEntryForm(forms.ModelForm):

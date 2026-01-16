@@ -96,6 +96,7 @@
                             <th>FKF Number</th>
                             <th>Email</th>
                             <th>Phone</th>
+                            <th>Specialization</th>
                             <th>Registration Date</th>
                             <th>Actions</th>
                         </tr>
@@ -121,6 +122,13 @@
                             <td>{{ referee.fkf_number }}</td>
                             <td>{{ referee.email }}</td>
                             <td>{{ referee.phone_number|default:"-" }}</td>
+                            <td>
+                                {% if referee.specialization %}
+                                    <span class="badge bg-info">{{ referee.get_specialization_display }}</span>
+                                {% else %}
+                                    <span class="text-muted small">Not set</span>
+                                {% endif %}
+                            </td>
                             <td>{{ referee.date_joined|date:"d/m/Y H:i" }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">

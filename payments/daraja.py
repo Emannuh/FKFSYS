@@ -15,7 +15,13 @@ class MpesaDarajaAPI:
         self.shortcode = os.getenv('MPESA_SHORTCODE')
         self.passkey = os.getenv('MPESA_PASSKEY')
         self.callback_url = os.getenv('MPESA_CALLBACK_URL')
-        self.base_url = "https://sandbox.safaricom.co.ke"  # Change to live in production
+        self.environment = os.getenv('MPESA_ENVIRONMENT', 'sandbox')  # 'sandbox' or 'production'
+        
+        # Use appropriate base URL based on environment
+        if self.environment == 'production':
+            self.base_url = "https://api.safaricom.co.ke"  # Production
+        else:
+            self.base_url = "https://sandbox.safaricom.co.ke"  # Sandbox
         
     def get_access_token(self):
         """Get OAuth access token from Daraja API"""
@@ -41,9 +47,19 @@ class MpesaDarajaAPI:
         """Initiate STK Push payment"""
         access_token = self.get_access_token()
         if not access_token:
+            print("Failed to get access token")
             return None
         
         url = f"{self.base_url}/mpesa/stkpush/v1/processrequest"
+        
+        # Clean and format phone number - remove +, spaces, dashes
+        phone_number = str(phone_number).replace('+', '').replace(' ', '').replace('-', '')
+        
+        # Ensure phone starts with 254
+        if phone_number.startswith('0'):
+            phone_number = '254' + phone_number[1:]
+        elif not phone_number.startswith('254'):
+            phone_number = '254' + phone_number
         
         # Generate timestamp
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -52,18 +68,21 @@ class MpesaDarajaAPI:
         password_string = f"{self.shortcode}{self.passkey}{timestamp}"
         password = base64.b64encode(password_string.encode()).decode()
         
+        # Ensure amount is integer
+        amount = int(amount)
+        
         payload = {
-            "BusinessShortCode": self.shortcode,
+            "BusinessShortCode": int(self.shortcode),
             "Password": password,
             "Timestamp": timestamp,
             "TransactionType": "CustomerPayBillOnline",
             "Amount": amount,
-            "PartyA": phone_number,
-            "PartyB": self.shortcode,
-            "PhoneNumber": phone_number,
+            "PartyA": int(phone_number),
+            "PartyB": int(self.shortcode),
+            "PhoneNumber": int(phone_number),
             "CallBackURL": self.callback_url,
-            "AccountReference": account_reference,
-            "TransactionDesc": transaction_desc
+            "AccountReference": str(account_reference)[:12],  # Max 12 chars
+            "TransactionDesc": str(transaction_desc)[:13]  # Max 13 chars
         }
         
         headers = {
@@ -72,9 +91,20 @@ class MpesaDarajaAPI:
         }
         
         try:
+            print(f"Sending STK Push to: {phone_number}")
+            print(f"Amount: {amount}")
+            print(f"Payload: {json.dumps(payload, indent=2)}")
+            
             response = requests.post(url, json=payload, headers=headers)
+            print(f"Response Status: {response.status_code}")
+            print(f"Response: {response.text}")
+            
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP Error: {e}")
+            print(f"Response content: {e.response.text if e.response else 'No response'}")
+            return None
         except Exception as e:
             print(f"Error initiating payment: {e}")
             return None

@@ -26,6 +26,9 @@
                 <a href="{% url 'referees:all_referees' %}" class="btn btn-success">
                     <i class="fas fa-users me-2"></i>All Referees
                 </a>
+                <a href="{% url 'referees:weekly_report_display' %}" class="btn btn-primary">
+                    <i class="fas fa-chart-line me-2"></i>Weekly Report
+                </a>
             </div>
         </div>
     </div>
@@ -148,30 +151,40 @@
                 </div>
             </div>
 
-            <!-- Recent Appointments -->
+            <!-- All Appointed Matches -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary text-white py-3">
+                <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="fas fa-history me-2"></i>Recent Appointments
+                        <i class="fas fa-users-cog me-2"></i>All Appointments
                     </h5>
+                    <span class="badge bg-white text-primary fs-6" id="appointedMatchesCount">0</span>
                 </div>
                 <div class="card-body p-0">
+                    <div class="alert alert-info m-3 mb-2">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Matches with officials appointed. <strong>Appoint</strong> button is disabled - use <strong>View</strong>, <strong>Replace</strong>, or <strong>Cancel</strong>.
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
                                     <th>Date</th>
                                     <th>Match</th>
-                                    <th>Officials</th>
+                                    <th>Main Officials</th>
                                     <th>Status</th>
-                                    <th>Appointed By</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="recentAppointmentsBody">
+                            <tbody id="appointedMatchesBody">
                                 <!-- Will be loaded via AJAX -->
                             </tbody>
                         </table>
                     </div>
+                </div>
+                <div class="card-footer text-center py-3">
+                    <a href="{% url 'referees:matches_needing_officials' %}" class="btn btn-primary">
+                        <i class="fas fa-list me-2"></i>View All Appointments
+                    </a>
                 </div>
             </div>
         </div>
@@ -208,10 +221,6 @@
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-outline-primary" id="sendRemindersBtn">
                             <i class="fas fa-bell me-2"></i>Send Reminders
-                        </button>
-                        
-                        <button type="button" class="btn btn-outline-info" id="generateReportBtn">
-                            <i class="fas fa-file-excel me-2"></i>Generate Report
                         </button>
                     </div>
                 </div>
@@ -275,13 +284,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Load urgent matches
     loadUrgentMatches();
-    loadRecentAppointments();
+    loadAppointedMatches();
     loadAvailableReferees();
     loadStats();
     
     // Auto-refresh every 2 minutes
     setInterval(function() {
         loadUrgentMatches();
+        loadAppointedMatches();
         loadStats();
     }, 120000);
     
@@ -303,11 +313,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Error sending reminders');
             });
         }
-    });
-    
-    // Generate report button
-    document.getElementById('generateReportBtn').addEventListener('click', function() {
-        window.open('/referees/api/generate-weekly-report/', '_blank');
     });
 });
 
@@ -404,6 +409,88 @@ function loadRecentAppointments() {
                     </td>
                 </tr>
                 `;
+            }
+        });
+}
+
+function loadAppointedMatches() {
+    fetch('/referees/api/appointed-matches/')
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.getElementById('appointedMatchesBody');
+            const countBadge = document.getElementById('appointedMatchesCount');
+            
+            if (data.matches && data.matches.length > 0) {
+                let html = '';
+                data.matches.forEach(match => {
+                    let statusClass = match.status === 'CONFIRMED' ? 'bg-success' : 'bg-warning text-dark';
+                    let statusIcon = match.status === 'CONFIRMED' ? 'check-circle' : 'clock';
+                    
+                    html += `
+                    <tr>
+                        <td>
+                            <div class="fw-bold">${match.date}</div>
+                            <small>${match.time}</small>
+                        </td>
+                        <td>
+                            <div class="fw-bold">${match.home_team} vs ${match.away_team}</div>
+                            <small class="text-muted">
+                                <span class="badge bg-secondary">${match.zone}</span>
+                                <span class="badge bg-info">Round ${match.round}</span>
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                <div><strong>Ref:</strong> ${match.referee || 'Not assigned'}</div>
+                                <div><strong>AR1:</strong> ${match.ar1 || 'Not assigned'}</div>
+                                <div><strong>AR2:</strong> ${match.ar2 || 'Not assigned'}</div>
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge ${statusClass}">
+                                <i class="fas fa-${statusIcon}"></i> ${match.status_display}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-grid gap-1">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-secondary btn-sm" disabled title="Already appointed">
+                                        <i class="fas fa-ban"></i> Appoint
+                                    </button>
+                                    <a href="/referees/match/${match.id}/appoint/" class="btn btn-info btn-sm" title="View details">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/referees/match/${match.id}/replace/main_referee/" 
+                                       class="btn btn-warning btn-sm"
+                                       title="Replace officials">
+                                        <i class="fas fa-exchange-alt"></i> Replace
+                                    </a>
+                                    <a href="/referees/match/${match.id}/cancel/" 
+                                       class="btn btn-danger btn-sm"
+                                       onclick="return confirm('Cancel all appointments for this match?')"
+                                       title="Cancel appointments">
+                                        <i class="fas fa-times-circle"></i> Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    `;
+                });
+                tableBody.innerHTML = html;
+                countBadge.textContent = data.matches.length;
+            } else {
+                tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No appointed matches yet.</p>
+                    </td>
+                </tr>
+                `;
+                countBadge.textContent = '0';
             }
         });
 }

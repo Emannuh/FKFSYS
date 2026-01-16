@@ -21,10 +21,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-9#vk#@9o_@7@4*ot7x^q-^%$a_0g3y^_)o6(v5#5+xw=@+08yv'
+import os
+from dotenv import load_dotenv
+load_dotenv()
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '*']
 
@@ -154,11 +157,11 @@ REST_FRAMEWORK = {
 
 # MPESA Configuration (if needed)
 MPESA_CONFIG = {
-    'CONSUMER_KEY': 'your_consumer_key',
-    'CONSUMER_SECRET': 'your_consumer_secret',
-    'SHORTCODE': '174379',
-    'PASSKEY': 'your_passkey',
-    'CALLBACK_URL': 'http://127.0.0.1:8000/payments/callback/',
+    'CONSUMER_KEY': os.environ.get('MPESA_CONSUMER_KEY'),
+    'CONSUMER_SECRET': os.environ.get('MPESA_CONSUMER_SECRET'),
+    'SHORTCODE': os.environ.get('MPESA_SHORTCODE'),
+    'PASSKEY': os.environ.get('MPESA_PASSKEY'),
+    'CALLBACK_URL': os.environ.get('MPESA_CALLBACK_URL'),
 }
 
 # Login/Logout URLs

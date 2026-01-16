@@ -217,6 +217,7 @@
                                     <th>Match Details</th>
                                     <th>Venue</th>
                                     <th>Your Role</th>
+                                    <th>Fellow Officials</th>
                                     <th class="text-center">Action</th>
                                 </tr>
                             </thead>
@@ -238,6 +239,34 @@
                                         <span class="badge {% if appointment.role == 'REFEREE' %}bg-primary{% else %}bg-info{% endif %}">
                                             {{ appointment.role|title }}
                                         </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if appointment.officials_data.main_referee %}
+                                            <span class="badge bg-primary" title="Main Referee"><i class="fas fa-user-tie"></i> {{ appointment.officials_data.main_referee }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.assistant_1 %}
+                                            <span class="badge bg-info" title="Assistant Referee 1"><i class="fas fa-flag"></i> {{ appointment.officials_data.assistant_1 }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.assistant_2 %}
+                                            <span class="badge bg-info" title="Assistant Referee 2"><i class="fas fa-flag"></i> {{ appointment.officials_data.assistant_2 }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.fourth_official %}
+                                            <span class="badge bg-success" title="Fourth Official"><i class="fas fa-clipboard"></i> {{ appointment.officials_data.fourth_official }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.reserve_referee %}
+                                            <span class="badge bg-secondary" title="Reserve Referee"><i class="fas fa-user-plus"></i> {{ appointment.officials_data.reserve_referee }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.var %}
+                                            <span class="badge bg-danger" title="VAR"><i class="fas fa-video"></i> {{ appointment.officials_data.var }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.avar1 %}
+                                            <span class="badge bg-warning text-dark" title="AVAR"><i class="fas fa-video"></i> {{ appointment.officials_data.avar1 }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.match_commissioner %}
+                                            <span class="badge bg-dark" title="Match Commissioner"><i class="fas fa-user-shield"></i> {{ appointment.officials_data.match_commissioner }}</span>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group" role="group">
@@ -278,7 +307,7 @@
                                     <th>Match Details</th>
                                     <th>Venue</th>
                                     <th>Your Role</th>
-                                    <thth>
+                                    <th>Fellow Officials</th>
                                     <th width="200" class="text-center">Actions</th>
                                 </tr>
                             </thead>
@@ -308,6 +337,34 @@
                                         {% else %}
                                         <span class="badge bg-warning ms-1">?</span>
                                         {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if appointment.officials_data.main_referee %}
+                                            <span class="badge bg-primary" title="Main Referee"><i class="fas fa-user-tie"></i> {{ appointment.officials_data.main_referee }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.assistant_1 %}
+                                            <span class="badge bg-info" title="Assistant Referee 1"><i class="fas fa-flag"></i> {{ appointment.officials_data.assistant_1 }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.assistant_2 %}
+                                            <span class="badge bg-info" title="Assistant Referee 2"><i class="fas fa-flag"></i> {{ appointment.officials_data.assistant_2 }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.fourth_official %}
+                                            <span class="badge bg-success" title="Fourth Official"><i class="fas fa-clipboard"></i> {{ appointment.officials_data.fourth_official }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.reserve_referee %}
+                                            <span class="badge bg-secondary" title="Reserve Referee"><i class="fas fa-user-plus"></i> {{ appointment.officials_data.reserve_referee }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.var %}
+                                            <span class="badge bg-danger" title="VAR"><i class="fas fa-video"></i> {{ appointment.officials_data.var }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.avar1 %}
+                                            <span class="badge bg-warning text-dark" title="AVAR"><i class="fas fa-video"></i> {{ appointment.officials_data.avar1 }}</span>
+                                            {% endif %}
+                                            {% if appointment.officials_data.match_commissioner %}
+                                            <span class="badge bg-dark" title="Match Commissioner"><i class="fas fa-user-shield"></i> {{ appointment.officials_data.match_commissioner }}</span>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm" role="group">

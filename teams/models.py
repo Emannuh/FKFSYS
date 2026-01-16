@@ -164,6 +164,19 @@ class Player(models.Model):
     fkf_license_number = models.CharField(max_length=50, blank=True, verbose_name="FKF License Number")
     license_expiry_date = models.DateField(blank=True, null=True, verbose_name="License Expiry Date")
     
+    # External Verification
+    iprs_verified = models.BooleanField(default=False, help_text="Verified with Kenya IPRS")
+    iprs_verification_date = models.DateTimeField(null=True, blank=True)
+    fifa_verified = models.BooleanField(default=False, help_text="Verified with FIFA Connect")
+    fifa_verification_date = models.DateTimeField(null=True, blank=True)
+    fifa_id = models.CharField(max_length=50, blank=True, null=True, help_text="FIFA Connect Player ID")
+    verification_results = models.JSONField(
+        null=True, 
+        blank=True, 
+        help_text="Detailed verification results from IPRS and FIFA"
+    )
+    verification_warnings = models.TextField(blank=True, help_text="Any warnings from verification")
+    
     # Team Information
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='players')
     position = models.CharField(max_length=2, choices=POSITION_CHOICES)

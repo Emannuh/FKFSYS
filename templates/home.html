@@ -23,31 +23,61 @@
             </div>
         </div>
         
-        <div class="row mt-5">
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <h3 class="text-primary"><i class="fas fa-futbol"></i></h3>
-                        <h5>Team Registration</h5>
-                        <p>Register your team with location, home ground, and map coordinates</p>
+        <!-- Feature Cards -->
+        <div class="row mt-5 g-4">
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-futbol fa-3x text-primary"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Team Management</h5>
+                        <p class="card-text text-muted">Register your team, manage players, and track team performance throughout the season</p>
+                        <a href="{% url 'teams:team_registration' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-right me-2"></i>Register Team
+                        </a>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <h3 class="text-success"><i class="fas fa-money-bill-wave"></i></h3>
-                        <h5>MPesa Payment</h5>
-                        <p>Secure payment integration using Safaricom Daraja API</p>
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-trophy fa-3x text-warning"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">League Standings</h5>
+                        <p class="card-text text-muted">View real-time league tables, match results, and zone rankings</p>
+                        <a href="{% url 'matches:league_tables' %}" class="btn btn-outline-warning">
+                            <i class="fas fa-arrow-right me-2"></i>View Tables
+                        </a>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <h3 class="text-danger"><i class="fas fa-table"></i></h3>
-                        <h5>League Tables</h5>
-                        <p>Automatically generated league tables for Four zones</p>
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-calendar-alt fa-3x text-success"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Match Fixtures</h5>
+                        <p class="card-text text-muted">Check upcoming fixtures, match schedules, and venue information</p>
+                        <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-success">
+                            <i class="fas fa-arrow-right me-2"></i>View Fixtures
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-chart-line fa-3x text-danger"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Statistics & Rankings</h5>
+                        <p class="card-text text-muted">Track top scorers, player statistics, and team performance metrics</p>
+                        <a href="{% url 'matches:top_scorers' %}" class="btn btn-outline-danger">
+                            <i class="fas fa-arrow-right me-2"></i>View Stats
+                        </a>
                     </div>
                 </div>
             </div>
@@ -201,6 +231,32 @@
     color: #dc3545;
     font-weight: bold;
     margin-top: 5px;
+}
+
+.hover-card {
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.feature-icon {
+    transition: transform 0.3s ease;
+}
+
+.hover-card:hover .feature-icon {
+    transform: scale(1.1);
+}
+
+.card-title {
+    color: #212529;
+}
+
+.card-text {
+    font-size: 0.95rem;
 }
 </style>
 

@@ -161,6 +161,15 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
+                                        <label class="form-label fw-bold">Specialization</label>
+                                        {{ form.specialization|as_crispy_field }}
+                                        <small class="form-text text-muted">
+                                            <i class="fas fa-user-tag"></i> Your primary role (affects appointment eligibility)
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
                                         <label class="form-label fw-bold">County</label>
                                         {{ form.county|as_crispy_field }}
                                         <small class="form-text text-muted">Your home county</small>

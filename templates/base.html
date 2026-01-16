@@ -190,53 +190,52 @@
         
         /* ========== FOOTER STYLES ========== */
         .footer-custom {
-            background-color: var(--primary-black);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: white;
-            padding: 30px 0 15px 0;
+            padding: 0;
             margin-top: auto;
             border-top: 5px solid var(--primary-green);
             width: 100%;
         }
         
-        .footer-custom h5 {
-            color: var(--primary-green);
+        .footer-custom h5, .footer-custom h6 {
+            color: var(--primary-white);
             font-weight: 600;
             margin-bottom: 15px;
-            border-left: 3px solid var(--primary-green);
-            padding-left: 10px;
         }
         
-        .footer-custom p {
-            color: #ddd;
-            line-height: 1.6;
+        .footer-links li {
+            margin-bottom: 8px;
         }
         
-        .footer-custom a {
-            color: #ddd;
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
-            transition: color 0.3s;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
         }
         
-        .footer-custom a:hover {
+        .footer-links a:hover {
             color: var(--primary-green);
-            text-decoration: underline;
+            padding-left: 5px;
         }
         
-        .copyright {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 0.9rem;
-            color: #aaa;
+        .social-links a {
+            transition: all 0.3s ease;
+            display: inline-block;
         }
         
-        /* Registration alert in footer */
-        .registration-alert {
-            background-color: rgba(40, 167, 69, 0.15);
-            border: 1px solid var(--primary-green);
-            border-radius: 5px;
-            padding: 10px 15px;
-            margin-top: 15px;
+        .social-links a:hover {
+            transform: translateY(-3px);
+            color: var(--primary-green) !important;
+        }
+        
+        .text-white-50 {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        
+        .bg-white-50 {
+            opacity: 0.2;
         }
         
         /* ========== EXISTING STYLES ========== */
@@ -534,38 +533,94 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer-custom">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-8">
-                    <h5>FKF Meru County League</h5>
-                    <p>Official Football Kenya Federation Meru County League Management System</p>
-                    <p>Register your team, manage matches, track statistics, and follow the league standings all in one place.</p>
-                    
-                    <div class="registration-alert">
-                        <strong><i class="fas fa-bullhorn me-2"></i>Team Registration Now Open!</strong>
-                        <p class="mb-0 mt-2">Register your team for the 2025/2026 season. Don't miss out!</p>
+    <footer class="footer-custom mt-5">
+        <div class="container py-5">
+            <div class="row g-4">
+                <!-- About Section -->
+                <div class="col-lg-4 col-md-6">
+                    <h5 class="text-white mb-3">
+                        <i class="fas fa-futbol me-2"></i>FKF Meru County League
+                    </h5>
+                    <p class="text-white-50">
+                        Official Football Kenya Federation Meru County League Management System. 
+                        Promoting grassroots football development and competitive excellence in Meru County.
+                    </p>
+                    <div class="social-links mt-3">
+                        <a href="#" class="text-white me-3" title="Facebook">
+                            <i class="fab fa-facebook fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-white me-3" title="Twitter">
+                            <i class="fab fa-twitter fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-white me-3" title="Instagram">
+                            <i class="fab fa-instagram fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-white" title="YouTube">
+                            <i class="fab fa-youtube fa-lg"></i>
+                        </a>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <h5>Quick Links</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="{% url 'frontend:home' %}"><i class="fas fa-home me-2"></i>Home</a></li>
-                        <li><a href="{% url 'teams:team_registration' %}"><i class="fas fa-user-plus me-2"></i>Register Team</a></li>
-                        <li><a href="{% url 'teams:all_teams' %}"><i class="fas fa-users me-2"></i>All Teams</a></li>
-                        <li><a href="{% url 'matches:league_tables' %}"><i class="fas fa-table me-2"></i>League Tables</a></li>
-                        <li><a href="{% url 'matches:fixtures' %}"><i class="fas fa-calendar-alt me-2"></i>Fixtures</a></li>
+                
+                <!-- Quick Links -->
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="text-white mb-3">Quick Links</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="{% url 'frontend:home' %}"><i class="fas fa-chevron-right me-2"></i>Home</a></li>
+                        <li><a href="{% url 'teams:all_teams' %}"><i class="fas fa-chevron-right me-2"></i>Teams</a></li>
+                        <li><a href="{% url 'matches:fixtures' %}"><i class="fas fa-chevron-right me-2"></i>Fixtures</a></li>
+                        <li><a href="{% url 'matches:league_tables' %}"><i class="fas fa-chevron-right me-2"></i>Tables</a></li>
+                        <li><a href="{% url 'matches:top_scorers' %}"><i class="fas fa-chevron-right me-2"></i>Top Scorers</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Registration -->
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="text-white mb-3">Registration</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="{% url 'teams:team_registration' %}"><i class="fas fa-chevron-right me-2"></i>Register Team</a></li>
+                        <li><a href="{% url 'referees:referee_registration' %}"><i class="fas fa-chevron-right me-2"></i>Become a Referee</a></li>
+                        <li><a href="{% url 'frontend:rules' %}"><i class="fas fa-chevron-right me-2"></i>League Rules</a></li>
+                        <li><a href="{% url 'frontend:about' %}"><i class="fas fa-chevron-right me-2"></i>About Us</a></li>
+                        <li><a href="{% url 'frontend:contact' %}"><i class="fas fa-chevron-right me-2"></i>Contact</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Contact Info -->
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="text-white mb-3">Contact Us</h6>
+                    <ul class="list-unstyled text-white-50">
+                        <li class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            Meru County, Kenya
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-phone me-2"></i>
+                            +254 XXX XXX XXX
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-envelope me-2"></i>
+                            info@fkfmeru.co.ke
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock me-2"></i>
+                            Mon - Fri: 9AM - 5PM
+                        </li>
                     </ul>
                 </div>
             </div>
             
-            <div class="row copyright">
-                <div class="col-md-12 text-center">
-                    <p class="mb-0">&copy; 2025 FKF Meru County League. All rights reserved.</p>
-                    <p class="mb-0 mt-2">
-                        <small>
-                            <i class="fas fa-map-marker-alt me-1"></i> Meru County, Kenya
-                        </small>
+            <hr class="bg-white-50 my-4">
+            
+            <!-- Copyright -->
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start">
+                    <p class="text-white-50 mb-0">
+                        &copy; 2026 FKF Meru County League. All rights reserved.
+                    </p>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <p class="text-white-50 mb-0">
+                        Powered by <i class="fas fa-heart text-danger"></i> Football Kenya Federation
                     </p>
                 </div>
             </div>

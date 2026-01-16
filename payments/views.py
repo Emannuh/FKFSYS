@@ -12,6 +12,11 @@ from .daraja import MpesaDarajaAPI
 def payment_page(request, team_id):
     team = get_object_or_404(Team, id=team_id)
     
+    # Check if team already paid
+    if hasattr(team, 'payment_status') and team.payment_status:
+        messages.info(request, 'This team has already completed payment.')
+        return redirect('teams:registration_success')
+    
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
@@ -19,7 +24,7 @@ def payment_page(request, team_id):
             daraja = MpesaDarajaAPI()
             
             phone_number = form.cleaned_data['phone_number']
-            amount = 1000  # Registration fee in KSh
+            amount = 16000  # Registration fee in KSh
             
             # Initiate payment
             response = daraja.lipa_na_mpesa_online(
@@ -40,18 +45,21 @@ def payment_page(request, team_id):
                     status='pending'
                 )
                 
-                messages.success(request, 'Payment initiated! Please check your phone to complete the payment.')
-                return redirect('payment_status', payment_id=payment.id)
+                messages.success(request, '✅ Payment request sent! Please check your phone and enter your M-PESA PIN to complete the payment.')
+                return redirect('payments:payment_status', payment_id=payment.id)
             else:
-                messages.error(request, 'Failed to initiate payment. Please try again.')
+                error_msg = response.get('errorMessage', 'Unknown error') if response else 'Network error'
+                messages.error(request, f'❌ Failed to initiate payment: {error_msg}. Please try again.')
     
     else:
-        form = PaymentForm()
+        # Pre-fill phone number if available
+        initial_phone = team.phone_number if hasattr(team, 'phone_number') else ''
+        form = PaymentForm(initial={'phone_number': initial_phone})
     
     return render(request, 'payments/payment.html', {
         'form': form,
         'team': team,
-        'amount': 1000
+        'amount': 16000
     })
 
 def payment_status(request, payment_id):

@@ -10,8 +10,12 @@
             <p>Are you sure you want to <strong>cancel all officials</strong> for <strong>{{ match }}</strong>?</p>
             <form method="post">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-danger">Yes, Cancel All Appointments</button>
-                <a href="{% url 'matches:match_details' match.id %}" class="btn btn-secondary">No, Go Back</a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-ban me-1"></i>Yes, Cancel All Appointments
+                </button>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>No, Go Back to Dashboard
+                </a>
             </form>
         </div>
     </div>

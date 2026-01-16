@@ -141,6 +141,9 @@
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
+                                    <a href="{% url 'teams:admin_edit_player' player.id %}" class="btn btn-sm btn-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
                                     {% if player.is_suspended %}
                                         <a href="{% url 'teams:admin_unsuspend_player' player.id %}" class="btn btn-sm btn-success" title="Unsuspend">
                                             <i class="fas fa-check"></i>

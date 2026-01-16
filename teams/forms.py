@@ -156,6 +156,42 @@ class PlayerRegistrationForm(forms.ModelForm):
             'is_captain': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
+    def clean_id_number(self):
+        """Validate ID number format and check for duplicates + IPRS verification"""
+        from .id_verification import IDVerification, DuplicatePlayerChecker
+        from .external_verification import IPRSVerification
+        
+        id_number = self.cleaned_data.get('id_number')
+        
+        # 1. Validate format
+        id_number = IDVerification.validate_kenyan_id(id_number)
+        
+        # 2. Check for duplicates (exclude current player if editing)
+        exclude_id = self.instance.id if self.instance.pk else None
+        DuplicatePlayerChecker.check_id_number(id_number, exclude_player_id=exclude_id)
+        
+        # 3. Verify with IPRS (Kenya National Registration Bureau)
+        iprs = IPRSVerification()
+        first_name = self.data.get('first_name', '').strip()
+        last_name = self.data.get('last_name', '').strip()
+        dob = self.data.get('date_of_birth')
+        
+        if first_name and last_name:
+            full_name = f"{first_name} {last_name}"
+            iprs_result = iprs.verify_id_number(id_number, full_name=full_name, date_of_birth=dob)
+            
+            # Store result for later use
+            self.iprs_verification = iprs_result
+            
+            if not iprs_result['valid'] and iprs_result['verified']:
+                # Only raise error if verification was successful but ID is invalid
+                errors = iprs_result['errors']
+                raise forms.ValidationError(
+                    f"IPRS Verification Failed: {'; '.join(errors)}"
+                )
+        
+        return id_number
+    
     def clean_jersey_number(self):
         jersey_number = self.cleaned_data.get('jersey_number')
         if jersey_number is not None:
@@ -164,15 +200,100 @@ class PlayerRegistrationForm(forms.ModelForm):
         return jersey_number
     
     def clean_date_of_birth(self):
+        """Validate age eligibility"""
+        from .id_verification import IDVerification
+        
         dob = self.cleaned_data.get('date_of_birth')
         if dob:
-            today = datetime.date.today()
-            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-            if age < 16:
-                raise forms.ValidationError("Player must be at least 16 years old")
-            if age > 45:
-                raise forms.ValidationError("Player cannot be older than 45 years")
+            # Check age eligibility (16-45 years)
+            IDVerification.check_age_eligibility(dob, min_age=16, max_age=45)
         return dob
+    
+    def clean(self):
+        """Additional validation for duplicate players by name and DOB + FIFA verification"""
+        from .id_verification import DuplicatePlayerChecker
+        from .external_verification import FIFAConnectVerification
+        from django.utils import timezone
+        
+        cleaned_data = super().clean()
+        
+        first_name = cleaned_data.get('first_name')
+        last_name = cleaned_data.get('last_name')
+        date_of_birth = cleaned_data.get('date_of_birth')
+        
+        if first_name and last_name and date_of_birth:
+            # Check for duplicate name + DOB
+            exclude_id = self.instance.id if self.instance.pk else None
+            DuplicatePlayerChecker.check_name_and_dob(
+                first_name, last_name, date_of_birth, 
+                exclude_player_id=exclude_id
+            )
+            
+            # Verify with FIFA Connect
+            fifa = FIFAConnectVerification()
+            player_data = {
+                'first_name': first_name,
+                'last_name': last_name,
+                'date_of_birth': date_of_birth,
+                'nationality': cleaned_data.get('nationality', 'Kenyan'),
+                'id_number': cleaned_data.get('id_number')
+            }
+            
+            fifa_result = fifa.verify_player(player_data)
+            
+            # Store FIFA result for later use
+            self.fifa_verification = fifa_result
+            
+            if not fifa_result['valid'] and fifa_result['verified']:
+                # Player has FIFA sanctions or transfer ban
+                errors = fifa_result['errors']
+                raise forms.ValidationError(
+                    f"FIFA Connect Verification Failed: {'; '.join(errors)}"
+                )
+            
+            # Store verification results on instance if saving
+            if hasattr(self, 'iprs_verification') or fifa_result.get('verified'):
+                verification_data = {
+                    'iprs': getattr(self, 'iprs_verification', None),
+                    'fifa': fifa_result,
+                    'verified_at': timezone.now().isoformat()
+                }
+                
+                # Update instance verification fields
+                if hasattr(self, 'iprs_verification'):
+                    iprs = self.iprs_verification
+                    if iprs.get('verified'):
+                        self.instance.iprs_verified = iprs.get('valid', False)
+                        self.instance.iprs_verification_date = timezone.now()
+                
+                if fifa_result.get('verified'):
+                    self.instance.fifa_verified = fifa_result.get('valid', False)
+                    self.instance.fifa_verification_date = timezone.now()
+                    if fifa_result.get('data', {}).get('fifa_id'):
+                        self.instance.fifa_id = fifa_result['data']['fifa_id']
+                
+                self.instance.verification_results = verification_data
+                
+                # Collect warnings
+                warnings = []
+                if hasattr(self, 'iprs_verification'):
+                    warnings.extend(self.iprs_verification.get('errors', []))
+                warnings.extend(fifa_result.get('errors', []))
+                
+                if warnings:
+                    self.instance.verification_warnings = '\n'.join(warnings)
+        
+        return cleaned_data
+        if first_name and last_name and date_of_birth:
+            exclude_id = self.instance.id if self.instance.pk else None
+            try:
+                DuplicatePlayerChecker.check_duplicate_by_name_dob(
+                    first_name, last_name, date_of_birth, exclude_player_id=exclude_id
+                )
+            except forms.ValidationError as e:
+                self.add_error(None, e)
+        
+        return cleaned_data
     
     def clean_license_expiry_date(self):
         expiry_date = self.cleaned_data.get('license_expiry_date')

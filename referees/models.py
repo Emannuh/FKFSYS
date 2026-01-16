@@ -31,6 +31,12 @@ class Referee(models.Model):
         ('suspended', 'Suspended'),
     ]
     
+    SPECIALIZATION_CHOICES = [
+        ('REFEREE', 'Referee'),
+        ('ASSISTANT_REFEREE', 'Assistant Referee'),
+        ('MATCH_COMMISSIONER', 'Match Commissioner'),
+    ]
+    
     # User account (created after approval)
     user = models.OneToOneField(
         User, 
@@ -78,6 +84,14 @@ class Referee(models.Model):
         blank=True,
         null=True,
         verbose_name="Referee Level"
+    )
+    specialization = models.CharField(
+        max_length=30,
+        choices=SPECIALIZATION_CHOICES,
+        blank=True,
+        null=True,
+        verbose_name="Specialization",
+        help_text="Select your primary specialization: Referee, Assistant Referee, or Match Commissioner"
     )
     county = models.CharField(
         max_length=50,
@@ -197,6 +211,34 @@ class Referee(models.Model):
     def can_be_appointed(self):
         """Check if referee can be appointed"""
         return self.status == 'approved' and self.is_active
+    
+    def can_be_appointed_as(self, role):
+        """
+        Check if referee can be appointed to a specific role based on specialization
+        
+        Rules:
+        - REFEREE can be: REFEREE, RESERVE, VAR, AR2 (if needed)
+        - ASSISTANT_REFEREE can be: AR1, AR2, FOURTH, AVAR1
+        - MATCH_COMMISSIONER can only be: COMMISSIONER
+        """
+        if not self.can_be_appointed():
+            return False
+        
+        if not self.specialization:
+            # If no specialization set, allow all roles (backward compatibility)
+            return True
+        
+        role_mapping = {
+            'REFEREE': ['REFEREE', 'RESERVE', 'VAR'],
+            'ASSISTANT_REFEREE': ['AR1', 'AR2', 'FOURTH', 'AVAR1', 'RESERVE_AR'],
+            'MATCH_COMMISSIONER': ['COMMISSIONER'],
+        }
+        
+        # AVAR2 can be either REFEREE or ASSISTANT_REFEREE
+        if role == 'AVAR2':
+            return self.specialization in ['REFEREE', 'ASSISTANT_REFEREE']
+        
+        return role in role_mapping.get(self.specialization, [])
 
 
 class RefereeAvailability(models.Model):
@@ -234,6 +276,7 @@ class MatchOfficials(models.Model):
         ('RESERVE_AR', 'Reserve Assistant Referee'),
         ('VAR', 'Video Assistant Referee'),
         ('AVAR1', 'Assistant VAR 1'),
+        ('AVAR2', 'Assistant VAR 2'),
         ('FOURTH', 'Fourth Official'),
         ('COMMISSIONER', 'Match Commissioner'),
     ]
@@ -305,6 +348,13 @@ class MatchOfficials(models.Model):
         null=True, 
         blank=True,
         related_name='appointed_as_avar1'
+    )
+    avar2 = models.ForeignKey(
+        'Referee', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='appointed_as_avar2'
     )
     fourth_official = models.ForeignKey(
         'Referee', 
@@ -448,6 +498,7 @@ class MatchOfficials(models.Model):
             (self.reserve_assistant, 'Reserve Assistant Referee'),
             (self.var, 'VAR'),
             (self.avar1, 'AVAR 1'),
+            (self.avar2, 'AVAR 2'),
             (self.fourth_official, 'Fourth Official'),
             (self.match_commissioner, 'Match Commissioner'),
         ]

@@ -41,19 +41,20 @@ def team_registration(request):
                 team.save()
                 print(f"Team saved: {team.team_name}, Code: {team.team_code}")  # Debug
                 
-                # Store in session for success page - NOT for add_players
+                # Store in session for payment page
                 request.session['registration_success'] = True
                 request.session['success_team_name'] = team.team_name
                 request.session['success_team_code'] = team.team_code
+                request.session['team_id_for_payment'] = team.id
                 
                 # Add success message
                 messages.success(request, 
                     f'✅ Team "{team.team_name}" registered successfully! '
-                    f'Your Team Code: {team.team_code}'
+                    f'Please proceed to payment.'
                 )
                 
-                # REDIRECT to registration_success page
-                return redirect('teams:registration_success')
+                # REDIRECT to payment page
+                return redirect('payments:payment_page', team_id=team.id)
                 
             except Exception as e:
                 print(f"Error saving team: {e}")  # Debug
@@ -70,7 +71,7 @@ def team_registration(request):
     else:
         form = TeamRegistrationForm()
     
-    return render(request, 'teams/register.html', {'form': form})
+    return render(request, 'teams/register_improved.html', {'form': form, 'registration_fee': 16000})
 def add_players(request):
     """Add players to team - Only accessible after approval"""
     # Check session for registration
@@ -1155,6 +1156,73 @@ def admin_unsuspend_player(request, player_id):
     
     context = {'player': player}
     return render(request, 'teams/admin_unsuspend_player.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_edit_player(request, player_id):
+    """Admin edit player information"""
+    player = get_object_or_404(Player, id=player_id)
+    
+    if request.method == 'POST':
+        # Update personal information
+        player.first_name = request.POST.get('first_name', player.first_name)
+        player.last_name = request.POST.get('last_name', player.last_name)
+        player.date_of_birth = request.POST.get('date_of_birth', player.date_of_birth)
+        player.nationality = request.POST.get('nationality', player.nationality)
+        player.id_number = request.POST.get('id_number', player.id_number)
+        
+        # Update FKF license information
+        player.fkf_license_number = request.POST.get('fkf_license_number', player.fkf_license_number)
+        license_expiry = request.POST.get('license_expiry_date')
+        if license_expiry:
+            player.license_expiry_date = license_expiry
+        
+        # Update team information
+        team_id = request.POST.get('team')
+        if team_id:
+            try:
+                team = Team.objects.get(id=team_id, status='approved')
+                player.team = team
+            except Team.DoesNotExist:
+                messages.error(request, '❌ Invalid team selected')
+                return redirect('teams:admin_edit_player', player_id=player_id)
+        
+        player.position = request.POST.get('position', player.position)
+        player.jersey_number = request.POST.get('jersey_number', player.jersey_number)
+        player.is_captain = request.POST.get('is_captain') == 'on'
+        
+        # Update statistics (admin can manually adjust)
+        try:
+            player.goals_scored = int(request.POST.get('goals_scored', player.goals_scored))
+            player.yellow_cards = int(request.POST.get('yellow_cards', player.yellow_cards))
+            player.red_cards = int(request.POST.get('red_cards', player.red_cards))
+            player.matches_played = int(request.POST.get('matches_played', player.matches_played))
+        except ValueError:
+            messages.error(request, '❌ Invalid number in statistics')
+            return redirect('teams:admin_edit_player', player_id=player_id)
+        
+        # Handle photo upload
+        if 'photo' in request.FILES:
+            player.photo = request.FILES['photo']
+        
+        try:
+            player.save()
+            messages.success(request, f'✅ Player {player.full_name} updated successfully')
+            return redirect('teams:admin_manage_players')
+        except Exception as e:
+            messages.error(request, f'❌ Error updating player: {str(e)}')
+            return redirect('teams:admin_edit_player', player_id=player_id)
+    
+    # GET request - show form
+    teams = Team.objects.filter(status='approved').order_by('team_name')
+    
+    context = {
+        'player': player,
+        'teams': teams,
+        'position_choices': Player.POSITION_CHOICES,
+    }
+    return render(request, 'teams/admin_edit_player.html', context)
 
 
 @login_required
