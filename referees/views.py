@@ -34,7 +34,7 @@ def cancel_appointment(request, match_id):
         if officials.assistant_2:
             appointed_referees.append({'referee': officials.assistant_2, 'role': 'Assistant Referee 2'})
         if officials.fourth_official:
-            appointed_referees.append({'referee': officials.fourth_official, 'role': 'Fourth Official'})
+            appointed_referees.append({'referee': officials.fourth_official, 'role': 'Reserve Referee'})
         if officials.reserve_referee:
             appointed_referees.append({'referee': officials.reserve_referee, 'role': 'Reserve Referee'})
         if officials.reserve_assistant:
@@ -306,42 +306,32 @@ def referee_dashboard(request):
     
     try:
         referee = request.user.referee_profile
-        
         if not referee.can_be_appointed():
             messages.warning(request, mark_safe(
                 '<strong>Your referee account is pending approval.</strong><br>'
                 f'Status: <strong>{referee.get_status_display()}</strong>'
             ))
             return redirect('frontend:home')
-        
-        # Get matches where this referee is appointed
+
         appointments = MatchOfficials.objects.filter(
-            Q(main_referee=referee) | Q(assistant_1=referee) | 
+            Q(main_referee=referee) | Q(assistant_1=referee) |
             Q(assistant_2=referee) | Q(fourth_official=referee) |
             Q(reserve_referee=referee) | Q(reserve_assistant=referee) |
             Q(var=referee) | Q(avar1=referee) | Q(match_commissioner=referee)
         ).select_related('match', 'match__home_team', 'match__away_team', 'match__zone').order_by('match__match_date')
-        
-        # Debug: Log the number of appointments found
+
         print(f"DEBUG: Found {appointments.count()} appointments for referee {referee.full_name}")
-        
-        # Categorize appointments
+
         upcoming_matches = []
         pending_confirmation = []
         current_matches = []
         completed_matches = []
-        
         today = timezone.now().date()
-        
-        today = timezone.now().date()
-        
+
         for appointment in appointments:
             match = appointment.match
-            
-            # Determine role
             role = "Unknown"
             confirmed = False
-            
             if appointment.main_referee == referee:
                 role = "REFEREE"
                 confirmed = appointment.main_confirmed
@@ -362,20 +352,18 @@ def referee_dashboard(request):
                 confirmed = appointment.var_confirmed
             elif appointment.avar1 == referee:
                 role = "AVAR1"
-                confirmed = False  # Add confirmation field if needed
+                confirmed = False
             elif appointment.match_commissioner == referee:
                 role = "COMMISSIONER"
                 confirmed = appointment.commissioner_confirmed
-            
-            # Helper function to get official name safely
+
             def get_official_display_name(official):
                 if not official:
                     return None
                 if hasattr(official, 'user') and official.user:
                     return official.user.get_full_name() or f"{official.first_name} {official.last_name}"
                 return f"{official.first_name} {official.last_name}"
-            
-            # Get all officials for this match
+
             officials_data = {
                 'main_referee': get_official_display_name(appointment.main_referee),
                 'assistant_1': get_official_display_name(appointment.assistant_1),
@@ -385,7 +373,7 @@ def referee_dashboard(request):
                 'avar1': get_official_display_name(appointment.avar1),
                 'match_commissioner': get_official_display_name(appointment.match_commissioner),
             }
-            
+
             match_info = {
                 'match': match,
                 'role': role,
@@ -395,13 +383,14 @@ def referee_dashboard(request):
                 'match_date': match.match_date.date() if hasattr(match.match_date, 'date') else match.match_date,
                 'can_confirm': match.match_date.date() >= today and not confirmed if hasattr(match.match_date, 'date') else match.match_date >= today and not confirmed
             }
-            
-            # Categorize by date
+
             match_date = match.match_date.date() if hasattr(match.match_date, 'date') else match.match_date
-            
             if match_date == today:
-                # Today's matches - show in current matches regardless of confirmation status
-                current_matches.append(match_info)
+                if not confirmed:
+                    current_matches.append(match_info)
+                    pending_confirmation.append(match_info)
+                else:
+                    upcoming_matches.append(match_info)
             elif match_date > today:
                 if not confirmed:
                     pending_confirmation.append(match_info)
@@ -409,30 +398,24 @@ def referee_dashboard(request):
                     upcoming_matches.append(match_info)
             else:
                 completed_matches.append(match_info)
-        
-        # Debug: Log categorization
+
         print(f"DEBUG: Pending: {len(pending_confirmation)}, Current: {len(current_matches)}, Upcoming: {len(upcoming_matches)}, Completed: {len(completed_matches)}")
-        
-        # Get reports
+
         pending_reports = MatchReport.objects.filter(
             referee=referee,
             status='draft'
         ).order_by('-created_at')[:5]
-        
         submitted_reports = MatchReport.objects.filter(
             referee=referee,
             status='submitted'
         )
-        
         draft_reports = MatchReport.objects.filter(
             referee=referee,
             status='draft'
         )
-        
-        # Check suspension status
         is_suspended = referee.status == 'suspended'
         suspension_reason = referee.suspension_reason if is_suspended else None
-        
+        is_manager = request.user.groups.filter(name='Referees Manager').exists()
         context = {
             'referee': referee,
             'current_matches': current_matches,
@@ -447,6 +430,7 @@ def referee_dashboard(request):
             'is_suspended': is_suspended,
             'suspension_reason': suspension_reason,
             'total_appointments': appointments.count(),
+            'is_manager': is_manager,
         }
         return render(request, 'referees/dashboard.html', context)
     
@@ -821,7 +805,7 @@ def replace_referee(request, match_id, role):
         'RESERVE_AR': {'field': 'reserve_assistant', 'name': 'Reserve Assistant Referee'},
         'VAR': {'field': 'var', 'name': 'Video Assistant Referee'},
         'AVAR1': {'field': 'avar1', 'name': 'Assistant VAR 1'},
-        'FOURTH': {'field': 'fourth_official', 'name': 'Fourth Official'},
+        'FOURTH': {'field': 'fourth_official', 'name': 'Reserve Referee'},
         'COMMISSIONER': {'field': 'match_commissioner', 'name': 'Match Commissioner'},
     }
     
@@ -1435,8 +1419,8 @@ def submit_comprehensive_report(request, match_id):
 
     result_form = MatchReportForm(instance=match_report)
     score_form = MatchScoreForm(instance=match)
-    GoalFormSetCls = inlineformset_factory(Match, MatchGoal, form=MatchGoalForm, extra=1, fk_name='match')
-    CardFormSetCls = inlineformset_factory(Match, Caution, form=CautionForm, extra=1, fk_name='match')
+    GoalFormSetCls = inlineformset_factory(Match, MatchGoal, form=MatchGoalForm, extra=1, can_delete=True, fk_name='match')
+    CardFormSetCls = inlineformset_factory(Match, Caution, form=CautionForm, extra=1, can_delete=True, fk_name='match')
     StartingLineupFormSetCls = inlineformset_factory(
         Match, StartingLineup,
         extra=0,
@@ -1519,6 +1503,10 @@ def submit_comprehensive_report(request, match_id):
     topscorer_form = None   # Add if you have a TopScorerForm
 
     if request.method == 'POST':
+        print("POST request received!")
+        print("POST data keys:", list(request.POST.keys()))
+        print("Submit button:", request.POST.get('save_draft'), request.POST.get('submit_report'))
+        
         if not can_edit:
             messages.error(request, "You are not allowed to submit this report.")
             return redirect('referees:referee_dashboard')
@@ -1578,6 +1566,22 @@ def submit_comprehensive_report(request, match_id):
             return redirect('referees:submit_comprehensive_report', match_id=match.id)
 
         # Save comprehensive details (draft or final submission)
+        # Debug validation errors
+        if not result_form.is_valid():
+            print("Result form errors:", result_form.errors)
+        if not goal_formset.is_valid():
+            print("Goal formset errors:", goal_formset.errors)
+            print("Goal formset non_form_errors:", goal_formset.non_form_errors())
+        if not card_formset.is_valid():
+            print("Card formset errors:", card_formset.errors)
+            print("Card formset non_form_errors:", card_formset.non_form_errors())
+        if not starting_formset.is_valid():
+            print("Starting formset errors:", starting_formset.errors)
+            print("Starting formset non_form_errors:", starting_formset.non_form_errors())
+        if not reserve_formset.is_valid():
+            print("Reserve formset errors:", reserve_formset.errors)
+            print("Reserve formset non_form_errors:", reserve_formset.non_form_errors())
+
         if result_form.is_valid() and goal_formset.is_valid() and card_formset.is_valid() and starting_formset.is_valid() and reserve_formset.is_valid():
             result_form.save()
             instances = goal_formset.save()
@@ -1611,6 +1615,22 @@ def submit_comprehensive_report(request, match_id):
                 match_report.save(update_fields=['status', 'submitted_at'])
                 messages.success(request, f"Comprehensive report submitted for {match.home_team} vs {match.away_team}. Awaiting manager approval.")
                 return redirect('referees:referee_dashboard')
+        else:
+            # Form validation failed - show errors
+            messages.error(request, "Please correct the errors below and try again.")
+            # Add specific error messages
+            if not result_form.is_valid():
+                for field, errors in result_form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"Report {field}: {error}")
+            if not goal_formset.is_valid():
+                messages.error(request, "Please check the goals section for errors.")
+            if not card_formset.is_valid():
+                messages.error(request, "Please check the cautions section for errors.")
+            if not starting_formset.is_valid():
+                messages.error(request, "Please check the starting lineup section for errors.")
+            if not reserve_formset.is_valid():
+                messages.error(request, "Please check the reserves section for errors.")
 
     # On GET, restrict existing forms' player choices to their team (if any)
     from teams.models import Player
@@ -1656,6 +1676,7 @@ def submit_comprehensive_report(request, match_id):
         'can_edit': can_edit,
         'home_players': match.home_team.players.all(),
         'away_players': match.away_team.players.all(),
+        'halftime_substitutions': match.substitutions.filter(minute__gte=45, minute__lte=60),
     }
     return render(request, 'referees/match_report_comprehensive.html', context)
 

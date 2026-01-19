@@ -252,13 +252,24 @@ def team_dashboard(request, team_id=None):
             # Check if within submission window (4 hours before kick-off) and not after kick-off
             try:
                 if match.kickoff_time:
+                    # Handle kickoff_time as string (CharField)
+                    kickoff_time = match.kickoff_time
+                    if isinstance(kickoff_time, str):
+                        try:
+                            kickoff_time = datetime.strptime(kickoff_time, '%H:%M:%S').time()
+                        except (ValueError, AttributeError):
+                            try:
+                                kickoff_time = datetime.strptime(kickoff_time, '%H:%M').time()
+                            except (ValueError, AttributeError):
+                                kickoff_time = datetime.strptime('12:00', '%H:%M').time()  # Default to noon
+                    
                     match_datetime = timezone.make_aware(
-                        timezone.datetime.combine(match.match_date, match.kickoff_time)
+                        timezone.datetime.combine(match.match_date, kickoff_time)
                     )
                 else:
                     # If no kickoff time, assume noon
                     match_datetime = timezone.make_aware(
-                        timezone.datetime.combine(match.match_date, timezone.datetime.strptime('12:00', '%H:%M').time())
+                        timezone.datetime.combine(match.match_date, datetime.strptime('12:00', '%H:%M').time())
                     )
                 time_until_match = match_datetime - today
                 # Can submit if match hasn't started yet and within 4 hours window
@@ -531,13 +542,24 @@ def team_manager_dashboard(request):
             # Check if within submission window (4 hours before kick-off) and not after kick-off
             try:
                 if match.kickoff_time:
+                    # Handle kickoff_time as string (CharField)
+                    kickoff_time = match.kickoff_time
+                    if isinstance(kickoff_time, str):
+                        try:
+                            kickoff_time = datetime.strptime(kickoff_time, '%H:%M:%S').time()
+                        except (ValueError, AttributeError):
+                            try:
+                                kickoff_time = datetime.strptime(kickoff_time, '%H:%M').time()
+                            except (ValueError, AttributeError):
+                                kickoff_time = datetime.strptime('12:00', '%H:%M').time()  # Default to noon
+                    
                     match_datetime = timezone.make_aware(
-                        timezone.datetime.combine(match.match_date, match.kickoff_time)
+                        timezone.datetime.combine(match.match_date, kickoff_time)
                     )
                 else:
                     # If no kickoff time, assume noon
                     match_datetime = timezone.make_aware(
-                        timezone.datetime.combine(match.match_date, timezone.datetime.strptime('12:00', '%H:%M').time())
+                        timezone.datetime.combine(match.match_date, datetime.strptime('12:00', '%H:%M').time())
                     )
                 time_until_match = match_datetime - today
                 # Can submit if match hasn't started yet and within 4 hours window
@@ -1372,6 +1394,186 @@ def admin_unsuspend_official(request, official_id):
 
 
 @login_required
+def view_approved_squad(request, match_id):
+    """Team manager view of their approved matchday squad (read-only)"""
+    from matches.models import Match
+    from referees.models import MatchdaySquad, SquadPlayer
+    from django.utils import timezone
+    
+    # Get the match
+    match = get_object_or_404(Match, id=match_id)
+    
+    # Get user's approved team
+    team = Team.objects.filter(manager=request.user, status='approved').first()
+    
+    if not team:
+        messages.error(request, "You don't have an approved team.")
+        return redirect('teams:team_manager_dashboard')
+    
+    # Check if team is playing in this match
+    if team not in [match.home_team, match.away_team]:
+        messages.error(request, "Your team is not playing in this match.")
+        return redirect('teams:team_manager_dashboard')
+    
+    # Get the approved squad
+    squad = MatchdaySquad.objects.filter(
+        match=match, 
+        team=team, 
+        status='approved'
+    ).first()
+    
+    if not squad:
+        messages.error(request, "No approved squad found for this match.")
+        return redirect('teams:team_manager_dashboard')
+    
+    # Check if match has kicked off (only show after kickoff)
+    if match.match_date and match.kickoff_time:
+        kickoff_time = match.kickoff_time
+        if isinstance(kickoff_time, str):
+            try:
+                from datetime import datetime
+                kickoff_time = datetime.strptime(kickoff_time, '%H:%M:%S').time()
+            except (ValueError, AttributeError):
+                try:
+                    kickoff_time = datetime.strptime(kickoff_time, '%H:%M').time()
+                except (ValueError, AttributeError):
+                    messages.error(request, "Invalid kickoff time format.")
+                    return redirect('teams:team_manager_dashboard')
+        
+        match_datetime = timezone.make_aware(
+            timezone.datetime.combine(match.match_date, kickoff_time)
+        )
+        
+        if timezone.now() < match_datetime:
+            messages.warning(request, "Squad details will be available after match kickoff.")
+            return redirect('teams:team_manager_dashboard')
+    else:
+        messages.error(request, "Match timing not set.")
+        return redirect('teams:team_manager_dashboard')
+    
+    # Get squad players
+    starting_players = squad.squad_players.filter(is_starting=True).select_related('player').order_by('position_order')
+    substitute_players = squad.squad_players.filter(is_starting=False).select_related('player').order_by('jersey_number')
+    
+    # Get completed substitutions for this match
+    completed_subs = []
+    if hasattr(match, 'substitutions'):
+        completed_subs = match.substitutions.filter(team=team).order_by('minute')
+    
+    context = {
+        'match': match,
+        'team': team,
+        'squad': squad,
+        'starting_players': starting_players,
+        'substitute_players': substitute_players,
+        'completed_subs': completed_subs,
+        'title': f'Approved Squad - {match.home_team} vs {match.away_team}',
+    }
+    
+    return render(request, 'teams/view_approved_squad.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_manage_officials(request):
+    """Admin view to manage team officials"""
+    officials = TeamOfficial.objects.select_related('team').order_by('team__team_name', 'full_name')
+    
+    context = {
+        'officials': officials,
+        'title': 'Manage Team Officials',
+    }
+    return render(request, 'teams/admin_manage_officials.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_add_team_official(request):
+    """Admin add a team official"""
+    if request.method == 'POST':
+        team_id = request.POST.get('team_id')
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        position = request.POST.get('position')
+        mobile = request.POST.get('mobile', '').strip()
+        
+        if not all([team_id, first_name, last_name, position]):
+            messages.error(request, "All fields are required.")
+            return redirect('teams:admin_manage_officials')
+        
+        try:
+            team = Team.objects.get(id=team_id)
+            TeamOfficial.objects.create(
+                team=team,
+                first_name=first_name,
+                last_name=last_name,
+                position=position,
+                mobile=mobile
+            )
+            messages.success(request, f"Official {first_name} {last_name} added to {team.team_name}")
+        except Exception as e:
+            messages.error(request, f"Error adding official: {str(e)}")
+        
+        return redirect('teams:admin_manage_officials')
+    
+    teams = Team.objects.filter(status='approved').order_by('team_name')
+    context = {
+        'teams': teams,
+        'title': 'Add Team Official',
+    }
+    return render(request, 'teams/admin_add_official.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_suspend_official(request, official_id):
+    """Admin suspend a team official"""
+    official = get_object_or_404(TeamOfficial, id=official_id)
+    
+    if request.method == 'POST':
+        matches = request.POST.get('matches', 0)
+        reason = request.POST.get('reason', '').strip()
+        
+        official.is_suspended = True
+        official.suspension_matches = int(matches) if matches else 0
+        official.suspension_reason = reason
+        official.suspension_end = None
+        official.save()
+        
+        messages.success(request, f'Official {official.full_name} suspended')
+        return redirect('teams:admin_manage_officials')
+    
+    context = {
+        'official': official,
+        'title': 'Suspend Team Official',
+    }
+    return render(request, 'teams/admin_suspend_official.html', context)
+
+
+@login_required
+@user_passes_test(admin_or_league_manager_required)
+def admin_unsuspend_official(request, official_id):
+    """Admin unsuspend a team official"""
+    official = get_object_or_404(TeamOfficial, id=official_id)
+    
+    if request.method == 'POST':
+        official.is_suspended = False
+        official.suspension_matches = 0
+        official.suspension_reason = ''
+        official.suspension_end = None
+        official.save()
+        
+        messages.success(request, f'Official {official.full_name} suspension lifted')
+        return redirect('teams:admin_manage_officials')
+    
+    context = {
+        'official': official,
+        'title': 'Unsuspend Team Official',
+    }
+    return render(request, 'teams/admin_unsuspend_official.html', context)
+
+
+@login_required
 @user_passes_test(admin_or_league_manager_required)
 def admin_delete_official(request, official_id):
     """Admin delete a team official"""
@@ -1381,8 +1583,11 @@ def admin_delete_official(request, official_id):
         team = official.team
         official_name = official.full_name
         official.delete()
-        messages.success(request, f'✅ Official {official_name} removed from {team.team_name}')
+        messages.success(request, f'Official {official_name} removed from {team.team_name}')
         return redirect('teams:admin_manage_officials')
     
-    context = {'official': official}
+    context = {
+        'official': official,
+        'title': 'Delete Team Official',
+    }
     return render(request, 'teams/admin_delete_official.html', context)

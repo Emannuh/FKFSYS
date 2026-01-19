@@ -50,12 +50,32 @@ def action_approve_teams(modeladmin, request, queryset):
 @admin.register(Zone)
 class ZoneAdmin(admin.ModelAdmin):
     list_display = ['name', 'approved_teams_display', 'fixtures_status', 
-                   'fixture_generation_date', 'match_day_display', 'actions_column']
+                   'fixture_generation_date', 'match_day_display']
     list_filter = ['fixtures_generated', 'match_day_of_week']
     search_fields = ['name']
     
-    # ⬇⬇⬇ ADD FIXTURE GENERATION ACTIONS ⬇⬇⬇
-    actions = [action_generate_fixtures, action_regenerate_fixtures]
+    # ⬇⬇⬇ Temporarily disable actions due to Python 3.14 compatibility ⬇⬇⬇
+    # actions = ['generate_fixtures', 'regenerate_fixtures']
+    
+    def generate_fixtures(self, request, queryset):
+        """Super Admin: Manually generate fixtures for zones"""
+        for zone in queryset:
+            success, message = generate_fixtures_for_zone(zone.id)
+            if success:
+                self.message_user(request, message)
+            else:
+                self.message_user(request, f"❌ {zone.name}: {message}", level='error')
+    generate_fixtures.short_description = "⚽ GENERATE FIXTURES for selected zones"
+    
+    def regenerate_fixtures(self, request, queryset):
+        """Super Admin: Delete and regenerate fixtures"""
+        for zone in queryset:
+            success, message = regenerate_fixtures_for_zone(zone.id)
+            if success:
+                self.message_user(request, message)
+            else:
+                self.message_user(request, f"❌ {zone.name}: {message}", level='error')
+    regenerate_fixtures.short_description = "🔄 REGENERATE FIXTURES (delete & recreate)"
     
     def approved_teams_display(self, obj):
         count = obj.team_set.filter(status='approved').count()
@@ -82,27 +102,9 @@ class ZoneAdmin(admin.ModelAdmin):
     match_day_display.short_description = 'Match Day'
     
     def actions_column(self, obj):
-        """Quick action buttons in list view"""
-        buttons = []
-        if not obj.fixtures_generated:
-            buttons.append(
-                f'<a href="/admin/matches/match/generate/?zone={obj.id}" '
-                f'class="button" style="background: green; color: white; padding: 5px 10px; '
-                f'border-radius: 3px; text-decoration: none;">GENERATE</a>'
-            )
-        else:
-            buttons.append(
-                f'<a href="/matches/fixtures/?zone={obj.id}" '
-                f'class="button" style="background: blue; color: white; padding: 5px 10px; '
-                f'border-radius: 3px; text-decoration: none;" target="_blank">VIEW</a>'
-            )
-            buttons.append(
-                f'<a href="/admin/teams/zone/{obj.id}/change/" '
-                f'class="button" style="background: orange; color: white; padding: 5px 10px; '
-                f'border-radius: 3px; text-decoration: none;">EDIT</a>'
-            )
-        return format_html(' '.join(buttons))
-    actions_column.short_description = 'Quick Actions'
+        """Quick action buttons in list view - temporarily disabled due to Python 3.14 compatibility"""
+        return "Actions disabled"
+    # actions_column.short_description = 'Quick Actions'
 
 
 @admin.register(Team)

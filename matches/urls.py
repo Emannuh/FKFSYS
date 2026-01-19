@@ -42,6 +42,10 @@ urlpatterns = [
     path('match/<int:match_id>/reschedule/',
          __import__('matches.admin_views').admin_views.reschedule_match,
          name='reschedule_match'),
+    # Move match to another round
+    path('admin/<int:match_id>/move-round/',
+         __import__('matches.move_match_round_view').move_match_round_view.move_match_round,
+         name='move_match_round'),
     path('top-scorers/', views.top_scorers, name='top_scorers'),
     path('team/<int:team_id>/fixtures/', views.team_fixtures, name='team_fixtures'),
     path('zone/<int:zone_id>/fixtures/', views.zone_fixtures, name='zone_fixtures'),

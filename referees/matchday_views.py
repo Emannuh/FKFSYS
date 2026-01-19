@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+import json
 from datetime import timedelta
 
 from matches.models import Match
@@ -452,8 +453,8 @@ def approve_matchday_squads(request, match_id):
 # ========== FOURTH OFFICIAL / RESERVE REFEREE VIEWS ==========
 
 @login_required
-def fourth_official_substitutions(request, match_id):
-    """Fourth official/main referee/reserve referee manages substitutions during match"""
+def reserve_referee_substitutions(request, match_id):
+    """Reserve referee/main referee/reserve referee manages substitutions during match"""
     match = get_object_or_404(Match, id=match_id)
     
     try:
@@ -462,12 +463,12 @@ def fourth_official_substitutions(request, match_id):
         messages.error(request, "You need to be a registered referee.")
         return redirect('referees:referee_dashboard')
     
-    # Check if this referee is main referee, fourth official, or reserve for this match
+    # Check if this referee is main referee or reserve referee (fourth official) for this match
     # Both main referee and reserve referee can approve substitutions
     appointment = MatchOfficials.objects.filter(
         match=match
     ).filter(
-        Q(main_referee=referee) | Q(fourth_official=referee) | Q(reserve_referee=referee)
+        Q(main_referee=referee) | Q(fourth_official=referee)
     ).first()
     
     if not appointment:
@@ -476,10 +477,9 @@ def fourth_official_substitutions(request, match_id):
     
     # Determine referee role
     is_main_referee = appointment.main_referee == referee
-    is_reserve = appointment.reserve_referee == referee
-    is_fourth_official = appointment.fourth_official == referee
+    is_reserve = appointment.fourth_official == referee
     # Both main referee and reserve can approve substitutions
-    can_approve_subs = is_main_referee or is_reserve or is_fourth_official
+    can_approve_subs = is_main_referee or is_reserve
     
     # Get squads
     home_squad = MatchdaySquad.objects.filter(match=match, team=match.home_team).first()
@@ -489,22 +489,66 @@ def fourth_official_substitutions(request, match_id):
     home_requests = SubstitutionRequest.objects.filter(match=match, team=match.home_team, status='pending').order_by('-requested_at')
     away_requests = SubstitutionRequest.objects.filter(match=match, team=match.away_team, status='pending').order_by('-requested_at')
     
-    # Calculate used opportunities (count completed substitutions, excluding halftime)
+# Calculate used opportunities (count completed substitutions)
     home_opportunities_used = SubstitutionRequest.objects.filter(
         match=match, 
         team=match.home_team, 
         status='completed'
-    ).exclude(minute__gte=45, minute__lte=60).count()  # Exclude halftime
+    ).count()
     
     away_opportunities_used = SubstitutionRequest.objects.filter(
         match=match, 
         team=match.away_team, 
         status='completed'
-    ).exclude(minute__gte=45, minute__lte=60).count()  # Exclude halftime
+    ).count()
     
     # Calculate progress percentages
     home_progress_percentage = min(home_opportunities_used * 33.33, 100)
     away_progress_percentage = min(away_opportunities_used * 33.33, 100)
+    
+    # Prepare squad data for JavaScript
+    def get_squad_data(squad):
+        if not squad:
+            return {'starting': [], 'subs': []}
+        starting = [{'id': sp.player.id, 'jersey': sp.jersey_number, 'name': sp.player.full_name} 
+                   for sp in squad.squad_players.filter(is_starting=True)]
+        subs = [{'id': sp.player.id, 'jersey': sp.jersey_number, 'name': sp.player.full_name} 
+               for sp in squad.squad_players.filter(is_starting=False)]
+        return {'starting': starting, 'subs': subs}
+    
+    # Get completed substitutions for display
+    completed_subs = SubstitutionRequest.objects.filter(
+        match=match, 
+        status='completed'
+    ).order_by('minute')
+    
+    # Calculate used substitutions (for display)
+    home_subs_count = SubstitutionRequest.objects.filter(
+        match=match, 
+        team=match.home_team, 
+        status='completed'
+    ).count()
+    
+    away_subs_count = SubstitutionRequest.objects.filter(
+        match=match, 
+        team=match.away_team, 
+        status='completed'
+    ).count()
+    
+    # Check for concussion subs
+    home_concussion_sub = SubstitutionRequest.objects.filter(
+        match=match, 
+        team=match.home_team, 
+        status='completed',
+        sub_type='concussion'
+    ).exists()
+    
+    away_concussion_sub = SubstitutionRequest.objects.filter(
+        match=match, 
+        team=match.away_team, 
+        status='completed',
+        sub_type='concussion'
+    ).exists()
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -523,46 +567,101 @@ def fourth_official_substitutions(request, match_id):
                 sub_request.effected_by = referee
                 sub_request.save()
                 
+                # Create or update SubstitutionOpportunity
+                from .models import SubstitutionOpportunity
+                is_halftime = 45 <= int(minute) <= 60
+                opportunity, created = SubstitutionOpportunity.objects.get_or_create(
+                    match=match,
+                    team=sub_request.team,
+                    minute=int(minute),
+                    defaults={
+                        'opportunity_number': SubstitutionOpportunity.objects.filter(
+                            match=match, 
+                            team=sub_request.team, 
+                            is_halftime=False
+                        ).count() + 1,
+                        'is_halftime': is_halftime
+                    }
+                )
+                opportunity.substitutions.add(sub_request)
+                
+                # Create Substitution record for match report
+                from .models import Substitution
+                Substitution.objects.create(
+                    match=match,
+                    team=sub_request.team,
+                    minute=int(minute),
+                    player_out=sub_request.player_out,
+                    player_in=sub_request.player_in,
+                    jersey_out=sub_request.player_out.jersey_number,
+                    jersey_in=sub_request.player_in.jersey_number,
+                )
+                
                 messages.success(request, f"Substitution completed: {sub_request.player_out.full_name} → {sub_request.player_in.full_name}")
-                return redirect('referees:fourth_official_substitutions', match_id=match.id)
+                return redirect('referees:reserve_referee_substitutions', match_id=match.id)
+    
+    # Prepare squad data for JavaScript
+    def get_squad_data(squad):
+        if not squad:
+            return {'starting': [], 'subs': []}
+        starting = [{'id': sp.player.id, 'jersey': sp.jersey_number, 'name': sp.player.full_name} 
+                   for sp in squad.squad_players.filter(is_starting=True)]
+        subs = [{'id': sp.player.id, 'jersey': sp.jersey_number, 'name': sp.player.full_name} 
+               for sp in squad.squad_players.filter(is_starting=False)]
+        return {'starting': starting, 'subs': subs}
+    
+    home_squad_json = json.dumps(get_squad_data(home_squad))
+    away_squad_json = json.dumps(get_squad_data(away_squad))
     
     context = {
         'match': match,
         'referee': referee,
         'is_main_referee': is_main_referee,
         'is_reserve_referee': is_reserve,
-        'is_fourth_official': is_fourth_official,
         'can_approve_subs': can_approve_subs,
         'home_squad': home_squad,
         'away_squad': away_squad,
+        'home_squad_json': home_squad_json,
+        'away_squad_json': away_squad_json,
         'home_requests': home_requests,
         'away_requests': away_requests,
-        'home_opportunities': home_opportunities,
-        'away_opportunities': away_opportunities,
+        'home_opportunities': home_opportunities_used,
+        'away_opportunities': away_opportunities_used,
         'home_opportunities_used': home_opportunities_used,
         'away_opportunities_used': away_opportunities_used,
         'home_progress_percentage': home_progress_percentage,
         'away_progress_percentage': away_progress_percentage,
+        'completed_subs': completed_subs,
+        'home_subs_count': home_subs_count,
+        'away_subs_count': away_subs_count,
+        'home_concussion_sub': home_concussion_sub,
+        'away_concussion_sub': away_concussion_sub,
     }
-    return render(request, 'referees/matchday/fourth_official_subs.html', context)
+    return render(request, 'referees/matchday/reserve_referee_subs.html', context)
 
 
 @login_required
 @require_http_methods(["POST"])
 def activate_concussion_substitute(request, match_id):
-    """Reserve referee activates concussion substitute (6th sub)"""
+    """Referee activates concussion substitute (6th sub)"""
     match = get_object_or_404(Match, id=match_id)
     
     try:
         referee = request.user.referee_profile
     except AttributeError:
-        return JsonResponse({'success': False, 'error': 'Not a registered referee'}, status=403)
+        messages.error(request, 'Not a registered referee.')
+        return redirect('referees:reserve_referee_substitutions', match_id=match.id)
     
-    # Check if this referee is reserve referee for this match
-    try:
-        appointment = MatchOfficials.objects.get(match=match, reserve_referee=referee)
-    except MatchOfficials.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'You are not the reserve referee for this match'}, status=403)
+    # Check if this referee is main referee or reserve referee for this match
+    appointment = MatchOfficials.objects.filter(
+        match=match
+    ).filter(
+        Q(main_referee=referee) | Q(fourth_official=referee)
+    ).first()
+    
+    if not appointment:
+        messages.error(request, 'You are not authorized to activate concussion substitutes for this match.')
+        return redirect('referees:reserve_referee_substitutions', match_id=match.id)
     
     # Get data from request
     team_id = request.POST.get('team_id')
@@ -570,10 +669,18 @@ def activate_concussion_substitute(request, match_id):
     player_in_id = request.POST.get('player_in_id')
     minute = request.POST.get('minute')
     
-    team = get_object_or_404(Team, id=team_id)
-    player_out = get_object_or_404(Player, id=player_out_id)
-    player_in = get_object_or_404(Player, id=player_in_id)
-    squad = get_object_or_404(MatchdaySquad, match=match, team=team)
+    if not all([team_id, player_out_id, player_in_id, minute]):
+        messages.error(request, 'All fields are required.')
+        return redirect('referees:reserve_referee_substitutions', match_id=match.id)
+    
+    try:
+        team = get_object_or_404(Team, id=team_id)
+        player_out = get_object_or_404(Player, id=player_out_id)
+        player_in = get_object_or_404(Player, id=player_in_id)
+        squad = get_object_or_404(MatchdaySquad, match=match, team=team)
+    except:
+        messages.error(request, 'Invalid team or player selection.')
+        return redirect('referees:reserve_referee_substitutions', match_id=match.id)
     
     # Create concussion substitution request
     sub_request = SubstitutionRequest.objects.create(
@@ -588,13 +695,23 @@ def activate_concussion_substitute(request, match_id):
         requested_by=request.user,
         effected_at=timezone.now(),
         effected_by=referee,
-        notes='Concussion substitute activated by reserve referee'
+        notes='Concussion substitute activated by referee'
     )
     
-    return JsonResponse({
-        'success': True,
-        'message': f'Concussion substitute activated: {player_out.full_name} → {player_in.full_name}'
-    })
+    # Create Substitution record for match report
+    from .models import Substitution
+    Substitution.objects.create(
+        match=match,
+        team=team,
+        minute=int(minute),
+        player_out=player_out,
+        player_in=player_in,
+        jersey_out=player_out.jersey_number,
+        jersey_in=player_in.jersey_number,
+    )
+    
+    messages.success(request, f'Concussion substitute activated: {player_out.full_name} → {player_in.full_name}')
+    return redirect('referees:reserve_referee_substitutions', match_id=match.id)
 
 
 @login_required

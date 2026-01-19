@@ -17,6 +17,7 @@ urlpatterns = [
     path('team-officials/', views.team_officials, name='team_officials'),
     path('delete-official/<int:official_id>/', views.delete_official, name='delete_official'),
     path('manager-dashboard/', views.team_manager_dashboard, name='team_manager_dashboard'),
+    path('view-squad/<int:match_id>/', views.view_approved_squad, name='view_approved_squad'),
     path('update-kits/<int:team_id>/', views.update_team_kits, name='update_kits'),
     path('add-players-approved/', views.add_players_to_approved_team, name='add_players_approved'),
     path('add-player-action/', views.add_player_action, name='add_player_action'),
@@ -51,6 +52,6 @@ urlpatterns = [
     path('admin/official/add/', views.admin_add_team_official, name='admin_add_official'),
     path('admin/official/<int:official_id>/suspend/', views.admin_suspend_official, name='admin_suspend_official'),
     path('admin/official/<int:official_id>/unsuspend/', views.admin_unsuspend_official, name='admin_unsuspend_official'),
-    path('admin/official/<int:official_id>/delete/', views.admin_delete_official, name='admin_delete_official'),
+    path('admin/official/<int:official_id>/delete/', views.admin_delete_official, name='admin_delete_team_official'),
     
 ]

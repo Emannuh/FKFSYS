@@ -443,7 +443,7 @@ class ReservePlayerForm(forms.ModelForm):
         widgets = {
             'team': forms.Select(attrs={'class': 'form-control'}),
             'player': forms.Select(attrs={'class': 'form-control'}),
-            'jersey_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 99}),
+            'jersey_number': forms.NumberInput(attrs={'class': 'form-control jersey-number-input', 'min': 1, 'max': 99, 'style': 'max-width:70px;'}),
         }
 
 
@@ -456,8 +456,8 @@ class SubstitutionForm(forms.ModelForm):
             'minute': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 120}),
             'player_out': forms.Select(attrs={'class': 'form-control'}),
             'player_in': forms.Select(attrs={'class': 'form-control'}),
-            'jersey_out': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 99}),
-            'jersey_in': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 99}),
+            'jersey_out': forms.NumberInput(attrs={'class': 'form-control jersey-number-input', 'min': 1, 'max': 99, 'style': 'max-width:70px;'}),
+            'jersey_in': forms.NumberInput(attrs={'class': 'form-control jersey-number-input', 'min': 1, 'max': 99, 'style': 'max-width:70px;'}),
         }
 
 
@@ -651,6 +651,9 @@ class PreMatchMeetingFormForm(forms.ModelForm):
             'home_gk_shirt_number': forms.TextInput(attrs={'class': 'form-control'}),
             'home_gk_short_track': forms.TextInput(attrs={'class': 'form-control'}),
             'home_gk_stocking': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_playing_unit_shirt': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_playing_unit_short': forms.TextInput(attrs={'class': 'form-control'}),
+            'home_playing_unit_stocking': forms.TextInput(attrs={'class': 'form-control'}),
             'home_reserve_gk_shirt': forms.TextInput(attrs={'class': 'form-control'}),
             'home_reserve_gk_short_track': forms.TextInput(attrs={'class': 'form-control'}),
             'home_reserve_gk_stocking': forms.TextInput(attrs={'class': 'form-control'}),
@@ -664,6 +667,9 @@ class PreMatchMeetingFormForm(forms.ModelForm):
             'away_gk_shirt_number': forms.TextInput(attrs={'class': 'form-control'}),
             'away_gk_short_track': forms.TextInput(attrs={'class': 'form-control'}),
             'away_gk_stocking': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_playing_unit_shirt': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_playing_unit_short': forms.TextInput(attrs={'class': 'form-control'}),
+            'away_playing_unit_stocking': forms.TextInput(attrs={'class': 'form-control'}),
             'away_reserve_gk_shirt': forms.TextInput(attrs={'class': 'form-control'}),
             'away_reserve_gk_short_track': forms.TextInput(attrs={'class': 'form-control'}),
             'away_reserve_gk_stocking': forms.TextInput(attrs={'class': 'form-control'}),

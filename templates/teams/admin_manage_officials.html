@@ -147,7 +147,7 @@
                                         <i class="fas fa-ban"></i> Suspend
                                     </a>
                                 {% endif %}
-                                <a href="{% url 'teams:admin_delete_official' official.id %}" class="btn btn-sm btn-danger" 
+                                <a href="{% url 'teams:admin_delete_team_official' official.id %}" class="btn btn-sm btn-danger" 
                                    title="Delete" onclick="return confirm('Delete {{ official.full_name }}?')">
                                     <i class="fas fa-trash"></i> Delete
                                 </a>

@@ -11,16 +11,31 @@ from django.utils import timezone
 @staff_member_required
 def reschedule_match(request, match_id):
     match = get_object_or_404(Match, id=match_id)
+    rounds = Match.objects.values_list('round_number', flat=True).distinct().order_by('round_number')
     if request.method == 'POST':
         new_date = request.POST.get('new_date')
         new_kickoff_time = request.POST.get('new_kickoff_time')
+        new_round = request.POST.get('new_round')
         success, message = update_match_date(match.id, new_date, new_kickoff_time, new_kickoff_time)
         if success:
+            # Update round if changed, with swap logic
+            if new_round and str(match.round_number) != str(new_round):
+                old_round = match.round_number
+                new_round_int = int(new_round)
+                swap_match = Match.objects.filter(zone=match.zone, round_number=new_round_int).exclude(id=match.id).first()
+                if swap_match:
+                    swap_match.round_number = old_round
+                    swap_match.save()
+                match.round_number = new_round_int
+                match.save()
+                message += f' | Round changed to {new_round}'
+                if swap_match:
+                    message += f' (Swapped with match {swap_match.id})'
             messages.success(request, message)
         else:
             messages.error(request, message)
         return redirect(f'/matches/match/{match.id}/?updated=1')
-    return render(request, 'admin_dashboard/reschedule_single.html', {'match': match})
+    return render(request, 'admin_dashboard/reschedule_single.html', {'match': match, 'rounds': rounds})
 
 
 @staff_member_required
@@ -174,7 +189,15 @@ def edit_match(request, match_id):
             match.match_date = timezone.make_aware(datetime.strptime(match_date, '%Y-%m-%d'))
             match.kickoff_time = kickoff_time
             match.venue = venue
-            match.round_number = round_number
+            old_round = match.round_number
+            new_round = int(round_number)
+            # Swap logic: only if round is changed
+            if old_round != new_round:
+                swap_match = Match.objects.filter(zone=match.zone, round_number=new_round).exclude(id=match.id).first()
+                if swap_match:
+                    swap_match.round_number = old_round
+                    swap_match.save()
+                match.round_number = new_round
             match.status = status
             match.home_score = home_score
             match.away_score = away_score

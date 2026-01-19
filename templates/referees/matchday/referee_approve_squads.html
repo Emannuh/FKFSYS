@@ -322,10 +322,10 @@
                     <i class="fas fa-arrow-left me-1"></i>Back to List
                 </a>
                 
-                {% if home_squad.status == 'submitted' and away_squad.status == 'submitted' %}
+                {% if home_squad.status == 'submitted' or away_squad.status == 'submitted' %}
                 <button type="submit" class="btn btn-success btn-lg" name="action" value="approve_both"
-                        onclick="return confirm('Approve both teams\' squads and populate match report?')">
-                    <i class="fas fa-check-double me-1"></i>Approve Both Teams
+                        onclick="return confirm('Approve all submitted squads and populate match report?')">
+                    <i class="fas fa-check-double me-1"></i>Approve Submitted Teams
                 </button>
                 {% endif %}
                 

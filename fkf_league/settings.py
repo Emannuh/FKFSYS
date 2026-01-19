@@ -29,6 +29,40 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+# Monkey patch for Python 3.14 compatibility with Django 4.2
+# This fixes the "'super' object has no attribute 'dicts'" error
+import django.template.context
+from django.template.context import Context, RequestContext
+
+# Store original __copy__ method
+_original_copy = Context.__copy__
+
+def patched_copy(self):
+    """Patched __copy__ method to handle Python 3.14 compatibility"""
+    # Create a new instance without calling super().__copy__()
+    new_context = self.__class__.__new__(self.__class__)
+    
+    # Copy all attributes manually
+    new_context.__dict__.update(self.__dict__)
+    
+    # Deep copy the dicts list to avoid shared references
+    if hasattr(self, 'dicts') and isinstance(self.dicts, list):
+        new_context.dicts = self.dicts[:]
+    
+    # Copy render_context if it exists
+    if hasattr(self, 'render_context'):
+        import copy
+        try:
+            new_context.render_context = copy.copy(self.render_context)
+        except (TypeError, AttributeError):
+            # Some render_context objects might not be copyable
+            new_context.render_context = self.render_context
+    
+    return new_context
+
+# Apply the patch
+Context.__copy__ = patched_copy
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '*']
 
 

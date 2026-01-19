@@ -209,6 +209,11 @@
                 <a href="{% url 'referees:referee_squad_approval_list' %}" class="btn btn-primary">
                     <i class="fas fa-clipboard-check me-2"></i>Squad Approvals
                 </a>
+                {% if is_manager %}
+                <a href="{% url 'referees:pending_prematch_forms_manager' %}" class="btn btn-warning">
+                    <i class="fas fa-file-signature me-2"></i>Pre-Match Approvals
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -271,7 +276,7 @@
                                             <span class="badge bg-info" title="Assistant Referee 2"><i class="fas fa-flag"></i> {{ appointment.officials_data.assistant_2 }}</span>
                                             {% endif %}
                                             {% if appointment.officials_data.fourth_official %}
-                                            <span class="badge bg-success" title="Fourth Official"><i class="fas fa-clipboard"></i> {{ appointment.officials_data.fourth_official }}</span>
+                                            <span class="badge bg-success" title="Reserve Referee"><i class="fas fa-clipboard"></i> {{ appointment.officials_data.fourth_official }}</span>
                                             {% endif %}
                                             {% if appointment.officials_data.reserve_referee %}
                                             <span class="badge bg-secondary" title="Reserve Referee"><i class="fas fa-user-plus"></i> {{ appointment.officials_data.reserve_referee }}</span>
@@ -370,7 +375,7 @@
                                             <span class="badge bg-info" title="Assistant Referee 2"><i class="fas fa-flag"></i> {{ appointment.officials_data.assistant_2 }}</span>
                                             {% endif %}
                                             {% if appointment.officials_data.fourth_official %}
-                                            <span class="badge bg-success" title="Fourth Official"><i class="fas fa-clipboard"></i> {{ appointment.officials_data.fourth_official }}</span>
+                                            <span class="badge bg-success" title="Reserve Referee"><i class="fas fa-clipboard"></i> {{ appointment.officials_data.fourth_official }}</span>
                                             {% endif %}
                                             {% if appointment.officials_data.reserve_referee %}
                                             <span class="badge bg-secondary" title="Reserve Referee"><i class="fas fa-user-plus"></i> {{ appointment.officials_data.reserve_referee }}</span>
@@ -392,8 +397,14 @@
                                                class="btn btn-outline-primary">
                                                 <i class="fas fa-eye"></i> View
                                             </a>
-                                            {% if appointment.role == 'REFEREE' or appointment.role == 'FOURTH_OFFICIAL' or appointment.role == 'RESERVE_REFEREE' %}
-                                            <a href="{% url 'referees:fourth_official_substitutions' appointment.match.id %}" 
+                                            {% if appointment.role == 'REFEREE' %}
+                                            <a href="{% url 'referees:submit_prematch_form' appointment.match.id %}"
+                                               class="btn btn-outline-warning" title="Pre-Match Form">
+                                                <i class="fas fa-file-alt"></i> Pre-Match
+                                            </a>
+                                            {% endif %}
+                                            {% if appointment.role == 'REFEREE' or appointment.role == 'RESERVE' %}
+                                            <a href="{% url 'referees:reserve_referee_substitutions' appointment.match.id %}" 
                                                class="btn btn-outline-info" title="Manage Substitutions">
                                                 <i class="fas fa-exchange-alt"></i> Subs
                                             </a>
@@ -478,7 +489,7 @@
                                             <span class="badge bg-info" title="Assistant Referee 2"><i class="fas fa-flag"></i> {{ appointment.officials_data.assistant_2 }}</span>
                                             {% endif %}
                                             {% if appointment.officials_data.fourth_official %}
-                                            <span class="badge bg-success" title="Fourth Official"><i class="fas fa-clipboard"></i> {{ appointment.officials_data.fourth_official }}</span>
+                                            <span class="badge bg-success" title="Reserve Referee"><i class="fas fa-clipboard"></i> {{ appointment.officials_data.fourth_official }}</span>
                                             {% endif %}
                                             {% if appointment.officials_data.reserve_referee %}
                                             <span class="badge bg-secondary" title="Reserve Referee"><i class="fas fa-user-plus"></i> {{ appointment.officials_data.reserve_referee }}</span>
@@ -506,8 +517,8 @@
                                                 <i class="fas fa-file-alt"></i> Pre-Match
                                             </a>
                                             {% endif %}
-                                            {% if appointment.role == 'FOURTH_OFFICIAL' or appointment.role == 'RESERVE_REFEREE' or appointment.role == 'REFEREE' or appointment.role == 'RESERVE' %}
-                                            <a href="{% url 'referees:fourth_official_substitutions' appointment.match.id %}" 
+                                            {% if appointment.role == 'RESERVE' or appointment.role == 'RESERVE_REFEREE' or appointment.role == 'REFEREE' %}
+                                            <a href="{% url 'referees:reserve_referee_substitutions' appointment.match.id %}" 
                                                class="btn btn-outline-info" title="Manage Substitutions">
                                                 <i class="fas fa-exchange-alt"></i> Subs
                                             </a>

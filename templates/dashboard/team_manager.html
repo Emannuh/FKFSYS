@@ -284,13 +284,26 @@
                                         </button>
                                         {% elif match_data.squad and match_data.squad.status == 'approved' %}
                                         <div class="btn-group-vertical" role="group">
-                                            <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye me-1"></i>View Squad
-                                            </a>
                                             <!-- Check if match has started (after kickoff) -->
-                                            {% if match_data.match_started %}
-                                                <a href="{% url 'referees:team_request_substitution' match_data.match.id %}" class="btn btn-sm btn-warning">
-                                                    <i class="fas fa-exchange-alt me-1"></i>Request Substitution
+                                            {% load tz %}
+                                            {% if match_data.match.kickoff_time and match_data.match.match_date %}
+                                                {% timezone "Africa/Nairobi" %}
+                                                    {% if match_data.match.match_date|date:"Y-m-d" == "now"|date:"Y-m-d" and "now"|date:"H:i" >= match_data.match.kickoff_time %}
+                                                        <a href="{% url 'teams:view_approved_squad' match_data.match.id %}" class="btn btn-sm btn-success">
+                                                            <i class="fas fa-eye me-1"></i>View Approved Squad
+                                                        </a>
+                                                        <a href="{% url 'referees:team_request_substitution' match_data.match.id %}" class="btn btn-sm btn-warning">
+                                                            <i class="fas fa-exchange-alt me-1"></i>Request Substitution
+                                                        </a>
+                                                    {% else %}
+                                                        <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info">
+                                                            <i class="fas fa-eye me-1"></i>View Squad
+                                                        </a>
+                                                    {% endif %}
+                                                {% endtimezone %}
+                                            {% else %}
+                                                <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-eye me-1"></i>View Squad
                                                 </a>
                                             {% endif %}
                                         </div>

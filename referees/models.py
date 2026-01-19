@@ -749,6 +749,7 @@ class ReservePlayer(models.Model):
     team = models.ForeignKey('teams.Team', on_delete=models.CASCADE)
     player = models.ForeignKey('teams.Player', on_delete=models.CASCADE)
     jersey_number = models.IntegerField()
+    not_working = models.BooleanField(default=False, help_text="Tick if this reserve player was not available/working.")
     
     class Meta:
         unique_together = ['match', 'team', 'player']
@@ -917,8 +918,12 @@ class PreMatchMeetingForm(models.Model):
     home_gk_shirt_color = models.CharField(max_length=50, blank=True)
     home_gk_shirt_number = models.CharField(max_length=10, blank=True)
     home_gk_short_track = models.CharField(max_length=50, blank=True)
-    home_gk_stocking = models.CharField(max_length=50, blank=True)
-    
+
+    # Playing unit colours
+    home_playing_unit_shirt = models.CharField(max_length=50, blank=True)
+    home_playing_unit_short = models.CharField(max_length=50, blank=True)
+    home_playing_unit_stocking = models.CharField(max_length=50, blank=True)
+
     home_reserve_gk_shirt = models.CharField(max_length=50, blank=True)
     home_reserve_gk_short_track = models.CharField(max_length=50, blank=True)
     home_reserve_gk_stocking = models.CharField(max_length=50, blank=True)
@@ -934,8 +939,12 @@ class PreMatchMeetingForm(models.Model):
     away_gk_shirt_color = models.CharField(max_length=50, blank=True)
     away_gk_shirt_number = models.CharField(max_length=10, blank=True)
     away_gk_short_track = models.CharField(max_length=50, blank=True)
-    away_gk_stocking = models.CharField(max_length=50, blank=True)
-    
+
+    # Playing unit colours
+    away_playing_unit_shirt = models.CharField(max_length=50, blank=True)
+    away_playing_unit_short = models.CharField(max_length=50, blank=True)
+    away_playing_unit_stocking = models.CharField(max_length=50, blank=True)
+
     away_reserve_gk_shirt = models.CharField(max_length=50, blank=True)
     away_reserve_gk_short_track = models.CharField(max_length=50, blank=True)
     away_reserve_gk_stocking = models.CharField(max_length=50, blank=True)

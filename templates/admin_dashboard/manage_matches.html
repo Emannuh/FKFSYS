@@ -173,6 +173,9 @@
                                             <a href="{% url 'matches:edit_match' match.id %}" class="btn btn-sm btn-primary" title="Edit Match">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                               <a href="{% url 'matches:move_match_round' match.id %}" class="btn btn-sm btn-secondary" title="Move Match to Another Round">
+                                                   <i class="fas fa-random"></i>
+                                               </a>
                                             <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-sm btn-warning" title="Reschedule">
                                                 <i class="fas fa-calendar-alt"></i>
                                             </a>

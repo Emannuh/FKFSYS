@@ -111,7 +111,7 @@ def test_url_patterns():
             ('team_matchday_squad_list', 'referees:team_matchday_squad_list'),
             ('submit_matchday_squad', 'referees:submit_matchday_squad', {'match_id': 1}),
             ('referee_squad_approval_list', 'referees:referee_squad_approval_list'),
-            ('fourth_official_substitutions', 'referees:fourth_official_substitutions', {'match_id': 1}),
+            ('reserve_referee_substitutions', 'referees:reserve_referee_substitutions', {'match_id': 1}),
         ]
         
         all_ok = True
@@ -148,7 +148,7 @@ def test_views():
             'submit_matchday_squad',
             'referee_squad_approval_list',
             'approve_matchday_squads',
-            'fourth_official_substitutions',
+            'reserve_referee_substitutions',
             'activate_concussion_substitute',
         ]
         
@@ -182,7 +182,7 @@ def test_templates():
         'templates/referees/matchday/squad_list.html',
         'templates/referees/matchday/submit_squad.html',
         'templates/referees/matchday/approval_list.html',
-        'templates/referees/matchday/fourth_official_subs.html',
+        'templates/referees/matchday/reserve_referee_subs.html',
     ]
     
     all_ok = True

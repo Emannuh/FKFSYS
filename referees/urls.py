@@ -33,7 +33,7 @@ urlpatterns = [
     path('matchday/referee/approve/<int:match_id>/', matchday_views.approve_matchday_squads, name='approve_matchday_squads'),
     
     # Matchday Squad Management - Fourth Official / Reserve Referee
-    path('matchday/fourth-official/<int:match_id>/', matchday_views.fourth_official_substitutions, name='fourth_official_substitutions'),
+    path('matchday/reserve-referee/<int:match_id>/', matchday_views.reserve_referee_substitutions, name='reserve_referee_substitutions'),
     path('matchday/concussion-sub/<int:match_id>/', matchday_views.activate_concussion_substitute, name='activate_concussion_substitute'),
     
     # Manager Report Approval
