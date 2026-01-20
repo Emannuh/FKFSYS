@@ -103,7 +103,7 @@ def team_matchday_squad_list(request):
 
 @login_required
 def submit_matchday_squad(request, match_id):
-    """Team manager submits matchday squad"""
+    """Team manager submits or views matchday squad"""
     match = get_object_or_404(Match, id=match_id)
     
     # Get team from managed_teams relationship
@@ -113,7 +113,7 @@ def submit_matchday_squad(request, match_id):
         team = None
     
     if not team:
-        messages.error(request, "You need to be associated with a team to submit squads.")
+        messages.error(request, "You need to be associated with a team to manage squads.")
         return redirect('dashboard')
     
     # Check if team is playing in this match
@@ -127,14 +127,25 @@ def submit_matchday_squad(request, match_id):
         team=team
     )
     
-    # Check if can submit
-    if squad.is_locked():
-        messages.error(request, "This squad is locked and cannot be modified.")
-        return redirect('referees:team_matchday_squad_list')
+    # Check permissions based on squad status
+    can_edit = squad.can_edit()  # For pending/submitted
+    can_view = squad.can_view_only() or squad.status == 'approved'  # For approved/locked
+    can_request_edit = squad.can_request_edit()  # For approved before kick-off
     
-    if not squad.can_submit():
-        messages.warning(request, "Squad submission window has not opened yet (opens 4 hours before kick-off).")
-        return redirect('referees:team_matchday_squad_list')
+    if not (can_edit or can_view):
+        messages.error(request, "You don't have permission to view or edit this squad.")
+        return redirect('teams:team_manager_dashboard')
+    
+    # For viewing approved squads, don't require submission window
+    if squad.status == 'approved':
+        can_edit = False  # Read-only for approved squads
+    
+    # Get all eligible players (not suspended)
+    eligible_players = team.players.filter(is_suspended=False).order_by('position', 'jersey_number')
+    
+    # Get current squad selections
+    selected_starting = list(squad.squad_players.filter(is_starting=True).values_list('player_id', flat=True))
+    selected_subs = list(squad.squad_players.filter(is_starting=False).values_list('player_id', flat=True))
     
     # Get all eligible players (not suspended)
     eligible_players = team.players.filter(is_suspended=False).order_by('position', 'jersey_number')
@@ -255,6 +266,9 @@ def submit_matchday_squad(request, match_id):
         'eligible_players': eligible_players,
         'selected_starting': selected_starting,
         'selected_subs': selected_subs,
+        'can_edit': can_edit,
+        'can_view': can_view,
+        'can_request_edit': can_request_edit,
     }
     return render(request, 'referees/matchday/submit_squad.html', context)
 
@@ -293,9 +307,25 @@ def referee_squad_approval_list(request):
             'can_approve': not match.has_kicked_off() if hasattr(match, 'has_kicked_off') else True,
         })
     
+    # Get pending squad edit requests for these matches
+    match_ids = [d['match'].id for d in matches_data]
+    from .models import SquadEditRequest
+    pending_edit_requests = SquadEditRequest.objects.filter(
+        squad__match_id__in=match_ids,
+        status='pending'
+    ).select_related('squad', 'squad__match', 'squad__team', 'requested_by')
+
+    # Get count of approved requests by this referee
+    approved_count = SquadEditRequest.objects.filter(
+        reviewed_by=referee,
+        status='approved'
+    ).count()
+
     context = {
         'referee': referee,
         'matches_data': matches_data,
+        'pending_edit_requests': pending_edit_requests,
+        'approved_count': approved_count,
     }
     return render(request, 'referees/matchday/referee_approval_list.html', context)
 
@@ -828,3 +858,148 @@ def team_request_substitution(request, match_id):
         'remaining_subs': remaining_subs,
     }
     return render(request, 'referees/matchday/team_request_substitution.html', context)
+
+
+# ========== SQUAD EDIT REQUEST VIEWS ==========
+
+@login_required
+def team_request_squad_edit(request, match_id):
+    """Team manager requests to edit an approved squad"""
+    match = get_object_or_404(Match, id=match_id)
+    
+    # Get team from managed_teams relationship
+    if hasattr(request.user, 'managed_teams'):
+        team = request.user.managed_teams.first()
+    else:
+        team = None
+    
+    if not team:
+        messages.error(request, "You need to be associated with a team to request squad edits.")
+        return redirect('dashboard')
+    
+    # Check if team is playing in this match
+    if team not in [match.home_team, match.away_team]:
+        messages.error(request, "Your team is not playing in this match.")
+        return redirect('teams:team_manager_dashboard')
+    
+    # Get squad
+    squad = get_object_or_404(MatchdaySquad, match=match, team=team)
+    
+    # Check if edit can be requested
+    if not squad.can_request_edit():
+        if squad.is_locked():
+            messages.error(request, "Cannot request edit - match has already started.")
+        elif squad.status != 'approved':
+            messages.error(request, "Can only request edits for approved squads.")
+        else:
+            messages.error(request, "You already have a pending edit request.")
+        return redirect('teams:team_manager_dashboard')
+    
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+        edit_player_ids = request.POST.getlist('edit_players')  # expects a list of player IDs to edit
+
+        # Limit: max 2 requests per manager per match
+        from .models import SquadEditRequest
+        existing_requests = SquadEditRequest.objects.filter(
+            squad__match=match,
+            requested_by=request.user
+        ).count()
+        if existing_requests >= 2:
+            messages.error(request, "You have reached the maximum of 2 squad edit requests for this match.")
+            return render(request, 'referees/matchday/request_squad_edit.html', {
+                'match': match,
+                'squad': squad,
+                'team': team,
+            })
+
+        # Limit: max 2 players per request
+        if len(edit_player_ids) > 2:
+            messages.error(request, "You can only request to edit up to 2 players per request.")
+            return render(request, 'referees/matchday/request_squad_edit.html', {
+                'match': match,
+                'squad': squad,
+                'team': team,
+            })
+
+        if not reason:
+            messages.error(request, "Please provide a reason for the edit request.")
+            return render(request, 'referees/matchday/request_squad_edit.html', {
+                'match': match,
+                'squad': squad,
+                'team': team,
+            })
+
+        # Save edit request (add player IDs to notes for now)
+        SquadEditRequest.objects.create(
+            squad=squad,
+            requested_by=request.user,
+            reason=reason + (f" | Players to edit: {', '.join(edit_player_ids)}" if edit_player_ids else "")
+        )
+
+        messages.success(request, "Edit request submitted! Awaiting referee approval.")
+        return redirect('teams:team_manager_dashboard')
+    
+    context = {
+        'match': match,
+        'squad': squad,
+        'team': team,
+    }
+    return render(request, 'referees/matchday/request_squad_edit.html', context)
+
+
+@login_required
+def referee_review_squad_edit_requests(request):
+    """Referee reviews pending squad edit requests"""
+    try:
+        referee = request.user.referee_profile
+    except AttributeError:
+        messages.error(request, "You need to be a registered referee.")
+        return redirect('referees:referee_dashboard')
+    
+    # Get matches where this referee is appointed
+    appointments = MatchOfficials.objects.filter(
+        Q(main_referee=referee) | Q(assistant_1=referee) | Q(assistant_2=referee),
+        match__status='scheduled'
+    ).select_related('match')
+    
+    match_ids = appointments.values_list('match_id', flat=True)
+    
+    # Get pending edit requests for these matches
+    from .models import SquadEditRequest
+    pending_requests = SquadEditRequest.objects.filter(
+        squad__match_id__in=match_ids,
+        status='pending'
+    ).select_related('squad', 'squad__match', 'squad__team', 'requested_by')
+    
+    # Get count of approved requests by this referee
+    approved_count = SquadEditRequest.objects.filter(
+        reviewed_by=referee,
+        status='approved'
+    ).count()
+    
+    if request.method == 'POST':
+        request_id = request.POST.get('request_id')
+        action = request.POST.get('action')
+        notes = request.POST.get('notes', '')
+        
+        edit_request = get_object_or_404(SquadEditRequest, id=request_id, status='pending')
+        
+        # Check if referee has already approved 2 requests
+
+        
+        if action == 'approve':
+            edit_request.approve_request(referee, notes)
+            messages.success(request, f"Edit request approved for {edit_request.squad.team.team_name}.")
+        elif action == 'decline':
+            edit_request.decline_request(referee, notes)
+            messages.success(request, f"Edit request declined for {edit_request.squad.team.team_name}.")
+        
+        return redirect('referees:referee_review_edit_requests')
+    
+    context = {
+        'referee': referee,
+        'pending_requests': pending_requests,
+        'approved_count': approved_count,
+    }
+    return render(request, 'referees/matchday/referee_review_edit_requests.html', context)

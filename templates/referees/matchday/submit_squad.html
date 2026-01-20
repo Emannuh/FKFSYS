@@ -1,20 +1,27 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Submit Matchday Squad - {{ team.name }}{% endblock %}
+{% block title %}{% if can_edit %}Submit{% else %}View{% endif %} Matchday Squad - {{ team.team_name }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-2">
-                <i class="fas fa-clipboard-list"></i> Submit Matchday Squad
+                <i class="fas fa-clipboard-list"></i> {% if can_edit %}Submit{% else %}View{% endif %} Matchday Squad
             </h1>
-            <p class="text-muted">{{ match.home_team }} vs {{ match.away_team }} - {{ match.match_date|date:"d/m/Y" }}</p>
+            <p class="text-muted">{{ match.home_team.team_name }} vs {{ match.away_team.team_name }} - {{ match.match_date|date:"d/m/Y" }}</p>
         </div>
-        <a href="{% url 'referees:team_matchday_squad_list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back
-        </a>
+        <div class="btn-group">
+            {% if can_request_edit %}
+            <a href="{% url 'referees:team_request_squad_edit' match.id %}" class="btn btn-warning">
+                <i class="fas fa-edit me-2"></i>Request Edit
+            </a>
+            {% endif %}
+            <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
     </div>
 
     <!-- Squad Status -->
@@ -28,8 +35,10 @@
         {% endif %}
     </div>
 
+    {% if can_edit %}
     <form method="post" id="squadForm">
         {% csrf_token %}
+    {% endif %}
         
         <div class="row">
             <!-- Starting 11 -->
@@ -55,7 +64,7 @@
                                            id="starting_{{ player.id }}"
                                            data-position="{{ player.position }}"
                                            {% if player.id in selected_starting %}checked{% endif %}
-                                           {% if squad.status == 'locked' %}disabled{% endif %}
+                                           {% if not can_edit %}disabled{% endif %}
                                            style="width: 20px; height: 20px; cursor: pointer;">
                                     <label class="form-check-label ms-2" for="starting_{{ player.id }}" style="cursor: pointer;">
                                         <strong>#{{ player.jersey_number }}</strong> {{ player.full_name }}
@@ -90,7 +99,7 @@
                                            value="{{ player.id }}"
                                            id="sub_{{ player.id }}"
                                            {% if player.id in selected_subs %}checked{% endif %}
-                                           {% if squad.status == 'locked' %}disabled{% endif %}
+                                           {% if not can_edit %}disabled{% endif %}
                                            style="width: 20px; height: 20px; cursor: pointer;">
                                     <label class="form-check-label ms-2" for="sub_{{ player.id }}" style="cursor: pointer;">
                                         <strong>#{{ player.jersey_number }}</strong> {{ player.full_name }}
@@ -105,7 +114,7 @@
         </div>
 
         <!-- Submit Buttons -->
-        {% if squad.can_edit %}
+        {% if can_edit %}
         <div class="card shadow">
             <div class="card-body text-center">
                 <button type="submit" class="btn btn-success btn-lg px-5" id="submitBtn">
@@ -117,7 +126,9 @@
             </div>
         </div>
         {% endif %}
+    {% if can_edit %}
     </form>
+    {% endif %}
 </div>
 
 <script>

@@ -1186,7 +1186,18 @@ class MatchdaySquad(models.Model):
     
     def can_edit(self):
         """Squad can be edited before match starts"""
+        # Can edit if pending or submitted, or if approved but edit request was granted
         return self.status in ['pending', 'submitted'] and not self.is_locked()
+    
+    def can_request_edit(self):
+        """Team manager can request edit for approved squad before kick-off"""
+        return (self.status == 'approved' and 
+                not self.is_locked() and 
+                not self.edit_requests.filter(status='pending').exists())
+    
+    def can_view_only(self):
+        """Team manager can only view (after kick-off or locked)"""
+        return self.status in ['approved', 'locked'] and self.is_locked()
     
     def is_locked(self):
         """Squad is locked at kick-off time"""
@@ -1203,11 +1214,15 @@ class MatchdaySquad(models.Model):
             else:
                 kickoff_time = self.match.kickoff_time
             
-            match_datetime = timezone.make_aware(
-                timezone.datetime.combine(self.match.match_date, kickoff_time)
-            )
+            # Extract date from match_date (which is a datetime) and combine with kickoff_time
+            match_date = self.match.match_date.date()
+            match_datetime_naive = timezone.datetime.combine(match_date, kickoff_time)
             
-            return timezone.now() >= match_datetime
+            # Make it aware in local timezone, then convert to UTC for comparison with timezone.now()
+            match_datetime_local = timezone.make_aware(match_datetime_naive)
+            match_datetime_utc = match_datetime_local.astimezone(timezone.utc)
+            
+            return timezone.now() >= match_datetime_utc
         except (ValueError, TypeError, AttributeError):
             return False
     
@@ -1256,6 +1271,73 @@ class MatchdaySquad(models.Model):
             raise ValidationError(f"Cannot include suspended players: {player_names}")
         
         return True
+
+
+class SquadEditRequest(models.Model):
+    """
+    Request from team manager to edit an approved squad before kick-off
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending Referee Review'),
+        ('approved', 'Approved - Can Edit'),
+        ('declined', 'Declined by Referee'),
+    ]
+    
+    squad = models.ForeignKey(MatchdaySquad, on_delete=models.CASCADE, related_name='edit_requests')
+    requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='squad_edit_requests')
+    
+    # Request details
+    reason = models.TextField(help_text="Reason for requesting edit")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Referee response
+    reviewed_by = models.ForeignKey('Referee', on_delete=models.SET_NULL, null=True, blank=True)
+    review_notes = models.TextField(blank=True, help_text="Referee's review notes")
+    
+    # Timestamps
+    requested_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-requested_at']
+    
+    def __str__(self):
+        return f"Edit request for {self.squad} by {self.requested_by.get_full_name()}"
+    
+    def can_request_edit(self):
+        """Check if edit can be requested (approved squad, before kick-off, no pending request)"""
+        if self.squad.status != 'approved':
+            return False
+        
+        # Check if match hasn't started
+        if self.squad.is_locked():
+            return False
+        
+        # Check no pending request exists
+        return not SquadEditRequest.objects.filter(
+            squad=self.squad, 
+            status='pending'
+        ).exists()
+    
+    def approve_request(self, referee, notes=""):
+        """Approve the edit request"""
+        self.status = 'approved'
+        self.reviewed_by = referee
+        self.review_notes = notes
+        self.reviewed_at = timezone.now()
+        self.save()
+        
+        # Unlock the squad for editing
+        self.squad.status = 'submitted'  # Allow editing
+        self.squad.save()
+    
+    def decline_request(self, referee, notes=""):
+        """Decline the edit request"""
+        self.status = 'declined'
+        self.reviewed_by = referee
+        self.review_notes = notes
+        self.reviewed_at = timezone.now()
+        self.save()
 
 
 class SquadPlayer(models.Model):

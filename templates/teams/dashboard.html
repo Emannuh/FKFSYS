@@ -108,97 +108,99 @@
                 </div>
                 {% endif %}
 
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Round</th>
-                                <th>Match</th>
-                                <th>Date & Time</th>
-                                <th>Squad Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for match_data in upcoming_matches %}
-                            <tr class="{% if match_data.is_active_match %}table-success{% endif %}">
-                                <td>
-                                    <span class="badge bg-secondary">R{{ match_data.match.round_number|default:"N/A" }}</span>
+                <div class="row">
+                    {% for match_data in upcoming_matches %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 {% if match_data.is_active_match %}border-success{% elif match_data.can_submit %}border-primary{% else %}border-secondary{% endif %}">
+                            <div class="card-header {% if match_data.is_active_match %}bg-success text-white{% elif match_data.can_submit %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-futbol me-2"></i>
+                                        Round {{ match_data.match.round_number|default:"N/A" }}
+                                    </h6>
                                     {% if match_data.is_active_match %}
-                                    <span class="badge bg-success ms-1">Active</span>
+                                    <span class="badge bg-light text-success">Active</span>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    <strong>{{ match_data.match.home_team.team_name }}</strong>
-                                    <span class="text-muted">vs</span>
-                                    <strong>{{ match_data.match.away_team.team_name }}</strong>
-                                </td>
-                                <td>
-                                    <i class="fas fa-calendar me-1"></i>{{ match_data.match.match_date|date:"M d, Y" }}
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="fas fa-clock me-1"></i>
-                                        {{ match_data.match.kickoff_time|time:"H:i"|default:"TBD" }}
-                                    </small>
-                                </td>
-                                <td>
-                                    {% if match_data.squad %}
-                                        {% if match_data.squad.status == 'pending' %}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-center mb-3">
+                                    <h5 class="card-title">
+                                        <strong>{{ match_data.match.home_team.team_name }}</strong>
+                                        <span class="text-muted">vs</span>
+                                        <strong>{{ match_data.match.away_team.team_name }}</strong>
+                                    </h5>
+                                </div>
+                                
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <i class="fas fa-calendar text-muted"></i>
+                                        <br>
+                                        <small>{{ match_data.match.match_date|date:"M d, Y" }}</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <i class="fas fa-clock text-muted"></i>
+                                        <br>
+                                        <small>{{ match_data.match.kickoff_time|time:"H:i"|default:"TBD" }}</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center">
+                                    <div class="mb-2">
+                                        {% if match_data.squad %}
+                                            {% if match_data.squad.status == 'pending' %}
+                                            <span class="badge bg-secondary">Not Submitted</span>
+                                            {% elif match_data.squad.status == 'submitted' %}
+                                            <span class="badge bg-warning">Awaiting Approval</span>
+                                            {% elif match_data.squad.status == 'approved' %}
+                                            <span class="badge bg-success">Approved</span>
+                                            {% elif match_data.squad.status == 'locked' %}
+                                            <span class="badge bg-dark">Locked</span>
+                                            {% endif %}
+                                        {% else %}
                                         <span class="badge bg-secondary">Not Submitted</span>
-                                        {% elif match_data.squad.status == 'submitted' %}
-                                        <span class="badge bg-warning">Awaiting Approval</span>
-                                        {% elif match_data.squad.status == 'approved' %}
-                                        <span class="badge bg-success">Approved</span>
-                                        {% elif match_data.squad.status == 'locked' %}
-                                        <span class="badge bg-dark">Locked</span>
                                         {% endif %}
-                                    {% else %}
-                                    <span class="badge bg-secondary">Not Submitted</span>
-                                    {% endif %}
-                                </td>
-                                <td>
+                                    </div>
+                                    
                                     {% if match_data.can_submit %}
                                         {% if match_data.squad and match_data.squad.status == 'locked' %}
-                                        <button class="btn btn-sm btn-secondary" disabled>
+                                        <button class="btn btn-sm btn-secondary w-100" disabled>
                                             <i class="fas fa-lock me-1"></i>Locked
                                         </button>
                                         {% elif match_data.squad and match_data.squad.status == 'approved' %}
-                                        <div class="btn-group-vertical" role="group">
+                                        <div class="d-grid gap-2">
                                             <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info">
                                                 <i class="fas fa-eye me-1"></i>View Squad
                                             </a>
-                                            <!-- Check if match has started (after kickoff) -->
-                                            {% now "U" as current_timestamp %}
-                                            {% if match_data.match.match_date and match_data.match.kickoff_time %}
-                                                <a href="{% url 'referees:team_request_substitution' match_data.match.id %}" class="btn btn-sm btn-warning">
-                                                    <i class="fas fa-exchange-alt me-1"></i>Request Substitution
-                                                </a>
+                                            {% if match_data.can_request_edit %}
+                                            <a href="{% url 'referees:team_request_squad_edit' match_data.match.id %}" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-edit me-1"></i>Request Edit
+                                            </a>
                                             {% endif %}
                                         </div>
                                         {% else %}
-                                        <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-primary">
+                                        <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-primary w-100">
                                             <i class="fas fa-edit me-1"></i>
                                             {% if match_data.squad and match_data.squad.status != 'pending' %}Edit{% else %}Submit{% endif %} Squad
                                         </a>
                                         {% endif %}
                                     {% else %}
                                         {% if not match_data.is_active_match %}
-                                        <button class="btn btn-sm btn-secondary" disabled>
+                                        <button class="btn btn-sm btn-secondary w-100" disabled>
                                             <i class="fas fa-ban me-1"></i>Not Available
                                         </button>
-                                        <br>
-                                        <small class="text-muted">Complete active round first</small>
+                                        <small class="text-muted d-block">Complete active round first</small>
                                         {% else %}
-                                        <button class="btn btn-sm btn-secondary" disabled>
+                                        <button class="btn btn-sm btn-secondary w-100" disabled>
                                             <i class="fas fa-clock me-1"></i>Opens 4h Before
                                         </button>
                                         {% endif %}
                                     {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
 
                 <div class="alert alert-light mt-3 mb-0">

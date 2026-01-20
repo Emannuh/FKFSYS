@@ -173,19 +173,37 @@
             </div>
         </div>
         
+        <!-- Squad Approvals Card -->
         <div class="col-md-3 col-sm-6 mb-3">
             <div class="card bg-primary text-white shadow">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50 mb-1">Total Reports</h6>
-                            <h2 class="mb-0">{{ submitted_reports.count|add:draft_reports.count }}</h2>
+                            <h6 class="card-title text-white-50 mb-1">Squad Approvals</h6>
+                            <h2 class="mb-0">Squad</h2>
                             <p class="mb-0 mt-2">
-                                <small>{{ submitted_reports.count }} submitted</small>
+                                <small><a href="{% url 'referees:referee_squad_approval_list' %}" class="text-white text-decoration-underline">View Approvals →</a></small>
                             </p>
                         </div>
                         <div>
-                            <i class="fas fa-chart-line fa-3x opacity-50"></i>
+                            <i class="fas fa-clipboard-check fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                    <!-- Squad Edit Requests Card (nested) -->
+                    <div class="card bg-secondary text-white shadow mt-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title text-white-50 mb-1">Squad Edit Requests</h6>
+                                    <h2 class="mb-0">{{ pending_edit_requests|length }}</h2>
+                                    <p class="mb-0 mt-2">
+                                        <small>{% if pending_edit_requests %}<a href="{% url 'referees:referee_review_edit_requests' %}" class="text-white text-decoration-underline">Review Now →</a>{% else %}No pending requests{% endif %}</small>
+                                    </p>
+                                </div>
+                                <div>
+                                    <i class="fas fa-edit fa-2x opacity-50"></i>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

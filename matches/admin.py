@@ -1,4 +1,4 @@
-# matches/admin.py - COMPLETE FIXED VERSION (OPTION A)
+from django import forms
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import path
@@ -7,6 +7,32 @@ from django.contrib import messages
 from .models import Match, Goal, Card, LeagueTable, Suspension
 from teams.models import Zone
 from .utils.fixture_generator import generate_fixtures_for_zone, regenerate_fixtures_for_zone, update_match_date
+
+class MatchAdminForm(forms.ModelForm):
+    class Meta:
+        model = Match
+        fields = '__all__'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure match_date field doesn't warn about naive datetimes
+        if 'match_date' in self.fields:
+            field = self.fields['match_date']
+            original_to_python = field.to_python
+            def safe_to_python(value):
+                result = original_to_python(value)
+                if result and hasattr(result, 'tzinfo') and timezone.is_naive(result):
+                    result = timezone.make_aware(result)
+                return result
+            field.to_python = safe_to_python
+    
+    def clean_match_date(self):
+        match_date = self.cleaned_data.get('match_date')
+        if match_date:
+            from django.utils import timezone
+            if timezone.is_naive(match_date):
+                match_date = timezone.make_aware(match_date)
+        return match_date
 
 # Zone Admin Configuration
 @admin.action(description="🎯 Generate fixtures for selected zones")
@@ -45,6 +71,7 @@ except admin.sites.NotRegistered:
 
 # SUPER ADMIN: Custom view for manual fixture generation
 class MatchAdmin(admin.ModelAdmin):
+    form = MatchAdminForm
     # FIXED: Added 'status' to list_display so it can be in list_editable
     list_display = ['match_display', 'zone', 'round_number', 'match_date_display', 
                    'kickoff_time_display', 'status', 'status_badge', 'score_display', 'actions_column']
@@ -76,6 +103,13 @@ class MatchAdmin(admin.ModelAdmin):
                 'placeholder': '15:00'
             })
         return form
+    
+    def save_model(self, request, obj, form, change):
+        """Ensure match_date is timezone-aware before saving"""
+        from django.utils import timezone
+        if obj.match_date and timezone.is_naive(obj.match_date):
+            obj.match_date = timezone.make_aware(obj.match_date)
+        super().save_model(request, obj, form, change)
     
     # Custom display methods
     def match_display(self, obj):

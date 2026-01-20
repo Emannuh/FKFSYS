@@ -26,11 +26,13 @@ urlpatterns = [
     # Matchday Squad Management - Team Manager
     path('matchday/squads/', matchday_views.team_matchday_squad_list, name='team_matchday_squad_list'),
     path('matchday/squad/submit/<int:match_id>/', matchday_views.submit_matchday_squad, name='submit_matchday_squad'),
+    path('matchday/squad/edit-request/<int:match_id>/', matchday_views.team_request_squad_edit, name='team_request_squad_edit'),
     path('matchday/substitution/request/<int:match_id>/', matchday_views.team_request_substitution, name='team_request_substitution'),
     
     # Matchday Squad Management - Main Referee
     path('matchday/referee/approvals/', matchday_views.referee_squad_approval_list, name='referee_squad_approval_list'),
     path('matchday/referee/approve/<int:match_id>/', matchday_views.approve_matchday_squads, name='approve_matchday_squads'),
+    path('matchday/referee/edit-requests/', matchday_views.referee_review_squad_edit_requests, name='referee_review_edit_requests'),
     
     # Matchday Squad Management - Fourth Official / Reserve Referee
     path('matchday/reserve-referee/<int:match_id>/', matchday_views.reserve_referee_substitutions, name='reserve_referee_substitutions'),

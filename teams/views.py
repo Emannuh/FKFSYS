@@ -283,7 +283,9 @@ def team_dashboard(request, team_id=None):
             'squad': squad,
             'can_submit': can_submit,
             'is_active_match': active_match and match.id == active_match.id,
-            'squad_status': squad.get_status_display() if squad else 'Not Submitted'
+            'squad_status': squad.get_status_display() if squad else 'Not Submitted',
+            'can_view_only': squad.can_view_only() if squad else False,
+            'can_request_edit': squad.can_request_edit() if squad else False,
         })
     
     logger.info(f"Prepared {len(matches_data)} matches with squad info. Current round: {current_round}")
@@ -464,7 +466,7 @@ def team_manager_dashboard(request):
     from matches.models import Match
     from referees.models import MatchdaySquad
     from django.utils import timezone
-    from datetime import timedelta
+    from datetime import timedelta, datetime
     import logging
     
     logger = logging.getLogger(__name__)
@@ -573,7 +575,9 @@ def team_manager_dashboard(request):
             'squad': squad,
             'can_submit': can_submit,
             'is_active_match': active_match and match.id == active_match.id,
-            'squad_status': squad.get_status_display() if squad else 'Not Submitted'
+            'squad_status': squad.get_status_display() if squad else 'Not Submitted',
+            'can_view_only': squad.can_view_only() if squad else False,
+            'can_request_edit': squad.can_request_edit() if squad else False,
         })
     
     logger.info(f"Prepared {len(matches_data)} matches with squad info. Current round: {current_round}")

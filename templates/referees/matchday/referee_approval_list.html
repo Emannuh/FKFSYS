@@ -116,5 +116,36 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Pending Squad Edit Requests (smaller, integrated) -->
+    {% if pending_edit_requests %}
+    <div class="mt-3">
+        <h6 class="mb-2 text-secondary"><i class="fas fa-edit me-2"></i>Pending Squad Edit Requests</h6>
+        <div class="row g-2">
+            {% for request in pending_edit_requests %}
+            <div class="col-md-4 col-sm-6">
+                <div class="card border-warning small-card">
+                    <div class="card-body py-2 px-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-warning"><i class="fas fa-edit me-1"></i>{{ request.squad.team.team_name }}</span>
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        </div>
+                        <div class="mb-1">
+                            <small class="text-primary">{{ request.squad.match.home_team.team_name }} vs {{ request.squad.match.away_team.team_name }}</small><br>
+                            <small class="text-muted">{{ request.squad.match.match_date|date:"M d, Y" }} {{ request.squad.match.kickoff_time|default:"TBD" }}</small>
+                        </div>
+                        <small><strong>By:</strong> {{ request.requested_by.get_full_name }}</small><br>
+                        <small><strong>On:</strong> {{ request.requested_at|date:"M d, Y H:i" }}</small>
+                        <div class="mt-1">
+                            <small class="text-muted">{{ request.notes|truncatechars:60 }}</small>
+                        </div>
+                        <a href="{% url 'referees:referee_review_edit_requests' %}?request_id={{ request.id }}" class="btn btn-sm btn-outline-primary mt-2">Review</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

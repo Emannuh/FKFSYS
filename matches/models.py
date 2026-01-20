@@ -50,9 +50,10 @@ class Match(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    class Meta:
-        ordering = ['match_date']
-        verbose_name_plural = 'matches'
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.match_date and timezone.is_naive(self.match_date):
+            self.match_date = timezone.make_aware(self.match_date)
     
     def __str__(self):
         return f"{self.home_team} vs {self.away_team} - {self.match_date.strftime('%Y-%m-%d')}"
@@ -64,10 +65,21 @@ class Match(models.Model):
         elif self.away_score > self.home_score:
             return self.away_team
         return None
+    
+    def __setattr__(self, name, value):
+        if name == 'match_date' and value is not None:
+            # Check if it's a datetime and naive
+            if hasattr(value, 'tzinfo') and timezone.is_naive(value):
+                value = timezone.make_aware(value)
+        super().__setattr__(name, value)
+    
+    def clean(self):
+        if self.match_date and timezone.is_naive(self.match_date):
+            self.match_date = timezone.make_aware(self.match_date)
 
 
 class Goal(models.Model):
-    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='goals')
+    match = models.ForeignKey('Match', on_delete=models.CASCADE, related_name='goals')
     scorer = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='goals')
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
     minute = models.IntegerField()
@@ -87,7 +99,7 @@ class Card(models.Model):
         ('red', 'Red Card'),
     ]
     
-    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='cards')
+    match = models.ForeignKey('Match', on_delete=models.CASCADE, related_name='cards')
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='cards')
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
     card_type = models.CharField(max_length=10, choices=CARD_TYPE_CHOICES)
@@ -140,7 +152,7 @@ class Suspension(models.Model):
     ]
 
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='suspensions')
-    match = models.ForeignKey(Match, on_delete=models.CASCADE, null=True, blank=True)
+    match = models.ForeignKey('Match', on_delete=models.CASCADE, null=True, blank=True)
     reason = models.CharField(max_length=50, choices=REASON_CHOICES)
     details = models.TextField(blank=True)
     matches_missed = models.PositiveIntegerField(default=0)

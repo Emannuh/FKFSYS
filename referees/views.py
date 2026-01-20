@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from datetime import timedelta
 from matches.models import Match
-from .models import MatchOfficials, MatchReport
+from .models import MatchOfficials, MatchReport, SquadEditRequest
 
 def referees_manager_required(user):
     """Check if user is in Referees Manager group or is staff"""
@@ -416,6 +416,14 @@ def referee_dashboard(request):
         is_suspended = referee.status == 'suspended'
         suspension_reason = referee.suspension_reason if is_suspended else None
         is_manager = request.user.groups.filter(name='Referees Manager').exists()
+        
+        # Get pending squad edit requests for matches where this referee is appointed
+        match_ids = appointments.values_list('match_id', flat=True)
+        pending_edit_requests = SquadEditRequest.objects.filter(
+            squad__match_id__in=match_ids,
+            status='pending'
+        ).select_related('squad', 'squad__match', 'squad__team')
+        
         context = {
             'referee': referee,
             'current_matches': current_matches,
@@ -425,6 +433,7 @@ def referee_dashboard(request):
             'pending_reports': pending_reports,
             'submitted_reports': submitted_reports,
             'draft_reports': draft_reports,
+            'pending_edit_requests': pending_edit_requests,
             'can_confirm': request.user.has_perm('referees.confirm_appointment'),
             'can_submit_report': request.user.has_perm('referees.submit_match_report'),
             'is_suspended': is_suspended,
