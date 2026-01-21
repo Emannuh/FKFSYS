@@ -39,33 +39,87 @@
                     <form method="post">
                         {% csrf_token %}
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="player_out" class="form-label">Player Coming Off <span class="text-danger">*</span></label>
-                                <select class="form-select" id="player_out" name="player_out" required>
-                                    <option value="">-- Select Player --</option>
-                                    {% for squad_player in starting_players %}
-                                        <option value="{{ squad_player.player.id }}">
-                                            #{{ squad_player.player.jersey_number }} {{ squad_player.player.full_name }} 
-                                            ({{ squad_player.player.get_position_display }})
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label for="player_in" class="form-label">Substitute Coming On <span class="text-danger">*</span></label>
-                                <select class="form-select" id="player_in" name="player_in" required>
-                                    <option value="">-- Select Substitute --</option>
-                                    {% for squad_player in substitute_players %}
-                                        <option value="{{ squad_player.player.id }}">
-                                            #{{ squad_player.player.jersey_number }} {{ squad_player.player.full_name }} 
-                                            ({{ squad_player.player.get_position_display }})
-                                        </option>
-                                    {% endfor %}
-                                </select>
+                        <div id="subs-container">
+                            <div class="row sub-row mb-2">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Player Coming Off <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="player_out[]" required>
+                                        <option value="">-- Select Player --</option>
+                                        {% for squad_player in starting_players %}
+                                            <option value="{{ squad_player.player.id }}">
+                                                #{{ squad_player.player.jersey_number }} {{ squad_player.player.full_name }} 
+                                                ({{ squad_player.player.get_position_display }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Substitute Coming On <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="player_in[]" required>
+                                        <option value="">-- Select Substitute --</option>
+                                        {% for squad_player in substitute_players %}
+                                            <option value="{{ squad_player.player.id }}">
+                                                #{{ squad_player.player.jersey_number }} {{ squad_player.player.full_name }} 
+                                                ({{ squad_player.player.get_position_display }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Substitution Time <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="sub_minute[]" required>
+                                        <option value="">-- Select Time --</option>
+                                        <option value="HT">HT (Halftime)</option>
+                                        {% for min in min_range %}
+                                            <option value="{{ min }}">{{ min }}'</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-12 mb-2 d-flex justify-content-end">
+                                    <button type="button" class="btn btn-danger btn-sm remove-sub-row" style="display:none;">
+                                        <i class="fas fa-minus-circle"></i> Remove
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-secondary btn-sm" id="add-sub-row">
+                                <i class="fas fa-plus-circle"></i> Add Another Substitution
+                            </button>
+                        </div>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const maxSubs = {{ remaining_subs|default:5 }};
+                            const subsContainer = document.getElementById('subs-container');
+                            const addBtn = document.getElementById('add-sub-row');
+                            function updateRemoveButtons() {
+                                const rows = subsContainer.querySelectorAll('.sub-row');
+                                rows.forEach((row, idx) => {
+                                    const btn = row.querySelector('.remove-sub-row');
+                                    btn.style.display = rows.length > 1 ? '' : 'none';
+                                });
+                            }
+                            addBtn.addEventListener('click', function() {
+                                const rows = subsContainer.querySelectorAll('.sub-row');
+                                if (rows.length >= maxSubs) return;
+                                const newRow = rows[0].cloneNode(true);
+                                newRow.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
+                                newRow.querySelector('.remove-sub-row').addEventListener('click', function() {
+                                    newRow.remove();
+                                    updateRemoveButtons();
+                                });
+                                subsContainer.appendChild(newRow);
+                                updateRemoveButtons();
+                            });
+                            subsContainer.querySelector('.remove-sub-row').addEventListener('click', function() {
+                                if (subsContainer.querySelectorAll('.sub-row').length > 1) {
+                                    this.closest('.sub-row').remove();
+                                    updateRemoveButtons();
+                                }
+                            });
+                            updateRemoveButtons();
+                        });
+                        </script>
 
                         <div class="mb-3">
                             <label for="sub_type" class="form-label">Substitution Type</label>

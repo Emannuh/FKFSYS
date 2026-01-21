@@ -494,22 +494,22 @@ def reserve_referee_substitutions(request, match_id):
         return redirect('referees:referee_dashboard')
     
     # Check if this referee is main referee or reserve referee (fourth official) for this match
-    # Both main referee and reserve referee can approve substitutions
+    # Accept either field for reserve/fourth official
     appointment = MatchOfficials.objects.filter(
         match=match
     ).filter(
-        Q(main_referee=referee) | Q(fourth_official=referee)
+        Q(main_referee=referee) | Q(fourth_official=referee) | Q(reserve_referee=referee)
     ).first()
-    
+
     if not appointment:
         messages.error(request, "You are not assigned to this match as an official.")
         return redirect('referees:referee_dashboard')
-    
+
     # Determine referee role
     is_main_referee = appointment.main_referee == referee
-    is_reserve = appointment.fourth_official == referee
-    # Both main referee and reserve can approve substitutions
-    can_approve_subs = is_main_referee or is_reserve
+    is_reserve_referee = (appointment.fourth_official == referee) or (appointment.reserve_referee == referee)
+    # Only main referee or reserve referee (fourth official) can approve substitutions
+    can_approve_subs = is_main_referee or is_reserve_referee
     
     # Get squads
     home_squad = MatchdaySquad.objects.filter(match=match, team=match.home_team).first()
@@ -600,19 +600,30 @@ def reserve_referee_substitutions(request, match_id):
                 # Create or update SubstitutionOpportunity
                 from .models import SubstitutionOpportunity
                 is_halftime = 45 <= int(minute) <= 60
-                opportunity, created = SubstitutionOpportunity.objects.get_or_create(
+                # Try to find an existing opportunity for this team, match, and minute
+                opportunity = SubstitutionOpportunity.objects.filter(
                     match=match,
                     team=sub_request.team,
-                    minute=int(minute),
-                    defaults={
-                        'opportunity_number': SubstitutionOpportunity.objects.filter(
-                            match=match, 
-                            team=sub_request.team, 
+                    minute=int(minute)
+                ).first()
+                if opportunity is None:
+                    # For non-halftime, count only unique minutes (opportunities) so far
+                    if not is_halftime:
+                        used_minutes = SubstitutionOpportunity.objects.filter(
+                            match=match,
+                            team=sub_request.team,
                             is_halftime=False
-                        ).count() + 1,
-                        'is_halftime': is_halftime
-                    }
-                )
+                        ).values_list('minute', flat=True)
+                        opportunity_number = len(set(used_minutes)) + 1
+                    else:
+                        opportunity_number = 0  # Halftime doesn't count toward 3
+                    opportunity = SubstitutionOpportunity.objects.create(
+                        match=match,
+                        team=sub_request.team,
+                        minute=int(minute),
+                        opportunity_number=opportunity_number,
+                        is_halftime=is_halftime
+                    )
                 opportunity.substitutions.add(sub_request)
                 
                 # Create Substitution record for match report
@@ -647,7 +658,7 @@ def reserve_referee_substitutions(request, match_id):
         'match': match,
         'referee': referee,
         'is_main_referee': is_main_referee,
-        'is_reserve_referee': is_reserve,
+        'is_reserve_referee': is_reserve_referee,
         'can_approve_subs': can_approve_subs,
         'home_squad': home_squad,
         'away_squad': away_squad,
@@ -807,45 +818,81 @@ def team_request_substitution(request, match_id):
     remaining_subs = 5 - normal_subs_used
     
     if request.method == 'POST':
-        player_out_id = request.POST.get('player_out')
-        player_in_id = request.POST.get('player_in')
+        player_out_ids = request.POST.getlist('player_out[]')
+        player_in_ids = request.POST.getlist('player_in[]')
+        sub_minutes = request.POST.getlist('sub_minute[]')
         sub_type = request.POST.get('sub_type', 'normal')
         notes = request.POST.get('notes', '')
-        
-        if not player_out_id or not player_in_id:
-            messages.error(request, "Please select both players for substitution.")
-        elif player_out_id == player_in_id:
-            messages.error(request, "Cannot substitute a player for themselves.")
-        else:
-            player_out = get_object_or_404(Player, id=player_out_id)
-            player_in = get_object_or_404(Player, id=player_in_id)
-            
-            # Validate substitution
-            if not squad.squad_players.filter(player=player_out).exists():
-                messages.error(request, f"{player_out.full_name} is not in the matchday squad.")
-            elif not squad.squad_players.filter(player=player_in, is_starting=False).exists():
-                messages.error(request, f"{player_in.full_name} is not available as a substitute.")
-            elif remaining_subs <= 0 and sub_type == 'normal':
-                messages.error(request, "You have used all 5 substitutions.")
+        errors = []
+        success_count = 0
+        used_pairs = set()
+        # Only allow up to remaining_subs substitutions
+        max_subs = min(remaining_subs, len(player_out_ids))
+        for idx in range(max_subs):
+            player_out_id = player_out_ids[idx] if idx < len(player_out_ids) else None
+            player_in_id = player_in_ids[idx] if idx < len(player_in_ids) else None
+            sub_minute = sub_minutes[idx] if idx < len(sub_minutes) else None
+            if not player_out_id or not player_in_id or not sub_minute:
+                errors.append(f"Substitution {idx+1}: Please select both players and time.")
+                continue
+            if player_out_id == player_in_id:
+                errors.append(f"Substitution {idx+1}: Cannot substitute a player for themselves.")
+                continue
+            pair_key = (player_out_id, player_in_id, sub_minute)
+            if pair_key in used_pairs:
+                errors.append(f"Substitution {idx+1}: Duplicate substitution pair.")
+                continue
+            used_pairs.add(pair_key)
+            player_out = Player.objects.filter(id=player_out_id).first()
+            player_in = Player.objects.filter(id=player_in_id).first()
+            if not player_out or not squad.squad_players.filter(player=player_out).exists():
+                errors.append(f"Substitution {idx+1}: Player out is not in the matchday squad.")
+                continue
+            if not player_in or not squad.squad_players.filter(player=player_in, is_starting=False).exists():
+                errors.append(f"Substitution {idx+1}: Player in is not available as a substitute.")
+                continue
+            # Check if already subbed out
+            if SubstitutionRequest.objects.filter(match=match, team=team, player_out=player_out, status__in=['pending','completed']).exists():
+                errors.append(f"Substitution {idx+1}: {player_out.full_name} has already been substituted out.")
+                continue
+            # Check if already subbed in
+            if SubstitutionRequest.objects.filter(match=match, team=team, player_in=player_in, status__in=['pending','completed']).exists():
+                errors.append(f"Substitution {idx+1}: {player_in.full_name} has already been substituted in.")
+                continue
+            # Check substitution limit
+            if success_count >= remaining_subs:
+                errors.append(f"Substitution {idx+1}: Maximum number of substitutions reached.")
+                break
+            # Handle halftime
+            minute_val = None
+            if sub_minute == 'HT':
+                minute_val = 45
             else:
-                # Create substitution request
-                SubstitutionRequest.objects.create(
-                    match=match,
-                    squad=squad,
-                    team=team,
-                    player_out=player_out,
-                    player_in=player_in,
-                    sub_type=sub_type,
-                    status='pending',
-                    requested_by=request.user,
-                    notes=notes
-                )
-                
-                messages.success(request, 
-                    f"Substitution request submitted: {player_out.full_name} → {player_in.full_name}. "
-                    "Awaiting referee approval."
-                )
-                return redirect('referees:team_request_substitution', match_id=match.id)
+                try:
+                    minute_val = int(sub_minute)
+                except Exception:
+                    errors.append(f"Substitution {idx+1}: Invalid minute value.")
+                    continue
+            SubstitutionRequest.objects.create(
+                match=match,
+                squad=squad,
+                team=team,
+                player_out=player_out,
+                player_in=player_in,
+                sub_type=sub_type,
+                minute=minute_val,
+                status='pending',
+                requested_by=request.user,
+                notes=notes
+            )
+            success_count += 1
+        if success_count:
+            messages.success(request, f"{success_count} substitution request(s) submitted. Awaiting referee approval.")
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+        if success_count:
+            return redirect('referees:team_request_substitution', match_id=match.id)
     
     context = {
         'match': match,
@@ -856,6 +903,7 @@ def team_request_substitution(request, match_id):
         'pending_requests': pending_requests,
         'completed_subs': completed_subs,
         'remaining_subs': remaining_subs,
+        'min_range': range(1, 121),
     }
     return render(request, 'referees/matchday/team_request_substitution.html', context)
 
