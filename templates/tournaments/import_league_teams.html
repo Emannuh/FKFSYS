@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Import League Teams – {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3><i class="fas fa-download text-primary me-2"></i>Import League Teams</h3>
+                <a href="{% url 'tournaments:manage_registrations' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Registrations
+                </a>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-1"></i>
+                Select existing FKF County League teams to import into <strong>{{ tournament.name }}</strong>.
+                Imported teams will be <strong>auto-approved</strong> and their existing team data (logo, players, etc.) will be used.
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">Available League Teams</h6>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if form.teams.field.queryset.count == 0 %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
+                            All eligible league teams are already registered!
+                        </div>
+                        {% else %}
+                        <div class="mb-3">
+                            <p class="text-muted mb-2">{{ form.teams.field.queryset.count }} team(s) available for import:</p>
+                            <div class="list-group">
+                                {% for team in form.teams.field.queryset %}
+                                <label class="list-group-item d-flex align-items-center">
+                                    <input type="checkbox" name="teams" value="{{ team.pk }}" class="form-check-input me-3">
+                                    <div class="d-flex align-items-center flex-grow-1">
+                                        {% if team.logo %}
+                                        <img src="{{ team.logo.url }}" alt="" class="rounded-circle me-2" style="width:35px;height:35px;object-fit:cover;">
+                                        {% else %}
+                                        <div class="rounded-circle bg-secondary me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;">
+                                            <i class="fas fa-shield-alt text-white small"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ team.team_name }}</strong>
+                                            <br><small class="text-muted">{{ team.zone|default:"No zone" }} | {{ team.players.count }} players</small>
+                                        </div>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% for error in form.teams.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary" id="select-all-btn">
+                                <i class="fas fa-check-double me-1"></i>Select All
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-download me-1"></i>Import Selected Teams
+                            </button>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('select-all-btn')?.addEventListener('click', function() {
+    const checkboxes = document.querySelectorAll('input[name="teams"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => cb.checked = !allChecked);
+    this.innerHTML = allChecked
+        ? '<i class="fas fa-check-double me-1"></i>Select All'
+        : '<i class="fas fa-times me-1"></i>Deselect All';
+});
+</script>
+{% endblock %}

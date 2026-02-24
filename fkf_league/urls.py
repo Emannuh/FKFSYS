@@ -24,6 +24,9 @@ urlpatterns = [
     
     # Admin dashboard URLs (if you need specific admin views)
     path('admin-dashboard/', include('admin_dashboard.urls')),
+    
+    # Tournament management
+    path('tournaments/', include('tournaments.urls')),
 ]
 
 if settings.DEBUG:

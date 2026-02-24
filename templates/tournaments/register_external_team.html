@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Register External Team – {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3><i class="fas fa-plus-circle text-info me-2"></i>Register External Team</h3>
+                <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </a>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-1"></i>
+                <strong>External Team Registration</strong> – This form is for teams that are <strong>not</strong>
+                currently part of the FKF County League. If your team is already registered in the league,
+                use the <a href="{% url 'tournaments:register_team' tournament.slug %}">League Team Registration</a> instead.
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">{{ tournament.name }} – New Team Registration</h6>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        <h6 class="text-muted mb-3 mt-2"><i class="fas fa-shield-alt me-1"></i>Team Information</h6>
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+
+                        {% if tournament.entry_fee > 0 %}
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Entry fee: <strong>KSh {{ tournament.entry_fee }}</strong>. Payment confirmation will be done by admin.
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-paper-plane me-1"></i>Submit Registration
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Standings – {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-trophy text-warning me-2"></i>{{ tournament.name }} – Standings</h2>
+        </div>
+        <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Overview
+        </a>
+    </div>
+
+    {% if groups %}
+    {% for group in groups %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0"><i class="fas fa-users me-1"></i>{{ group.name }}</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped mb-0 align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width:40px">#</th>
+                        <th>Team</th>
+                        <th class="text-center">P</th>
+                        <th class="text-center">W</th>
+                        <th class="text-center">D</th>
+                        <th class="text-center">L</th>
+                        <th class="text-center">GF</th>
+                        <th class="text-center">GA</th>
+                        <th class="text-center">GD</th>
+                        <th class="text-center fw-bold">Pts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in group.standings %}
+                    <tr {% if forloop.counter <= 2 %}class="table-success"{% endif %}>
+                        <td class="fw-bold">{{ forloop.counter }}</td>
+                        <td>
+                            {{ s.team_registration.display_name }}
+                            {% if s.team_registration.seed %}<span class="badge bg-secondary ms-1">Seed {{ s.team_registration.seed }}</span>{% endif %}
+                        </td>
+                        <td class="text-center">{{ s.played }}</td>
+                        <td class="text-center">{{ s.won }}</td>
+                        <td class="text-center">{{ s.drawn }}</td>
+                        <td class="text-center">{{ s.lost }}</td>
+                        <td class="text-center">{{ s.goals_for }}</td>
+                        <td class="text-center">{{ s.goals_against }}</td>
+                        <td class="text-center">{{ s.goal_difference }}</td>
+                        <td class="text-center fw-bold fs-5">{{ s.points }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="10" class="text-center text-muted py-3">No standings recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-chart-bar fa-3x mb-3"></i>
+        <h5>No group standings available.</h5>
+        <p>Standings will appear once groups are created and matches are played.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

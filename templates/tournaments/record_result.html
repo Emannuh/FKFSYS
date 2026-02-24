@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Record Result – Match #{{ match.match_number }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3><i class="fas fa-futbol text-primary me-2"></i>Record Match Result</h3>
+                <a href="{% url 'tournaments:tournament_fixtures' match.tournament.slug %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Fixtures
+                </a>
+            </div>
+
+            <!-- Match Info Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <span class="badge bg-info mb-2">{{ match.get_stage_display }} – Match #{{ match.match_number }}</span>
+                    <div class="d-flex justify-content-center align-items-center gap-4 my-3">
+                        <div class="text-end" style="min-width: 150px">
+                            <h5 class="mb-0">{% if match.home_team %}{{ match.home_team.display_name }}{% else %}TBD{% endif %}</h5>
+                        </div>
+                        <div class="display-6 text-muted">vs</div>
+                        <div class="text-start" style="min-width: 150px">
+                            <h5 class="mb-0">{% if match.away_team %}{{ match.away_team.display_name }}{% else %}TBD{% endif %}</h5>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0">{{ match.match_date|date:"l, d F Y – H:i" }} | {{ match.venue|default:match.tournament.venue }}</p>
+                </div>
+            </div>
+
+            <!-- Result Form -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-edit me-1"></i>Enter Result</h6>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.home_score.id_for_label }}" class="form-label fw-semibold">
+                                    {% if match.home_team %}{{ match.home_team.team }}{% else %}Home{% endif %} Score <span class="text-danger">*</span>
+                                </label>
+                                {{ form.home_score }}
+                                {% for error in form.home_score.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.away_score.id_for_label }}" class="form-label fw-semibold">
+                                    {% if match.away_team %}{{ match.away_team.team }}{% else %}Away{% endif %} Score <span class="text-danger">*</span>
+                                </label>
+                                {{ form.away_score }}
+                                {% for error in form.away_score.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <h6 class="text-muted mb-3">Penalties (if applicable)</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.home_penalties.id_for_label }}" class="form-label">Home Penalties</label>
+                                {{ form.home_penalties }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.away_penalties.id_for_label }}" class="form-label">Away Penalties</label>
+                                {{ form.away_penalties }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'tournaments:tournament_fixtures' match.tournament.slug %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i>Save Result
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

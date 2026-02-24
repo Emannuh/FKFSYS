@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Tournaments – FKF Meru League{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-trophy text-warning"></i> Tournaments</h2>
+            <p class="text-muted mb-0">FKF Meru County tournament competitions</p>
+        </div>
+        {% if request.user.is_superuser or request.user.groups.all|length %}
+        <a href="{% url 'tournaments:admin_dashboard' %}" class="btn btn-outline-danger">
+            <i class="fas fa-cogs me-1"></i>Admin Panel
+        </a>
+        {% endif %}
+    </div>
+
+    {% if tournaments %}
+    <div class="row">
+        {% for t in tournaments %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                {% if t.banner %}
+                <img src="{{ t.banner.url }}" class="card-img-top" alt="{{ t.name }}" style="height:180px;object-fit:cover;">
+                {% else %}
+                <div class="card-img-top bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="height:180px;">
+                    <i class="fas fa-trophy fa-4x text-success opacity-50"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ t.name }}</h5>
+                    <p class="card-text text-muted small">{{ t.description|truncatewords:25 }}</p>
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                        <span class="badge bg-{% if t.status == 'registration' %}success{% elif t.status == 'ongoing' %}primary{% elif t.status == 'completed' %}secondary{% else %}warning{% endif %}">
+                            {{ t.get_status_display }}
+                        </span>
+                        <span class="badge bg-info">{{ t.get_format_display }}</span>
+                        {% if t.zone %}<span class="badge bg-dark">{{ t.zone }}</span>{% endif %}
+                    </div>
+                    <p class="small mb-1"><i class="fas fa-calendar me-1"></i>{{ t.start_date|date:"M d, Y" }} – {{ t.end_date|date:"M d, Y" }}</p>
+                    <p class="small mb-0"><i class="fas fa-users me-1"></i>{{ t.registered_teams_count }} / {{ t.max_teams }} teams</p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{% url 'tournaments:tournament_detail' t.slug %}" class="btn btn-success btn-sm w-100">
+                        <i class="fas fa-eye me-1"></i>View Tournament
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-trophy fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">No Tournaments Yet</h4>
+        <p>Check back soon for upcoming tournament competitions.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

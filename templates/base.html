@@ -333,6 +333,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'matches:fixtures' %}">Fixtures</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'tournaments:tournament_list' %}">Tournaments</a>
+                    </li>
                     
                     {% if user.is_authenticated %}
                         {% if user.is_staff %}
@@ -392,6 +395,23 @@
                                 <li>
                                     <a class="dropdown-item" href="{% url 'teams:admin_manage_officials' %}">
                                         <i class="fas fa-id-card"></i> Manage Team Officials
+                                    </a>
+                                </li>
+                                
+                                <li><hr class="dropdown-divider"></li>
+                                
+                                <!-- TOURNAMENT MANAGEMENT -->
+                                <li class="dropdown-header" style="font-weight: 600; color: #DC3545;">
+                                    <i class="fas fa-trophy"></i> TOURNAMENT MANAGEMENT
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'tournaments:admin_dashboard' %}">
+                                        <i class="fas fa-trophy"></i> Tournament Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'tournaments:create_tournament' %}">
+                                        <i class="fas fa-plus-circle"></i> Create Tournament
                                     </a>
                                 </li>
                                 

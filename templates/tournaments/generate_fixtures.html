@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Generate Fixtures – {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3><i class="fas fa-calendar-plus text-primary me-2"></i>Generate Fixtures</h3>
+                <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Fixtures
+                </a>
+            </div>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Tournament Info Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="text-muted small">Format</div>
+                            <div class="fw-bold">{{ tournament.get_format_display }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-muted small">Approved Teams</div>
+                            <div class="fw-bold">{{ team_count }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-muted small">Existing Matches</div>
+                            <div class="fw-bold">{{ existing_match_count }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if existing_match_count > 0 %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                <strong>Warning:</strong> This tournament already has <strong>{{ existing_match_count }}</strong> fixture(s).
+                Generating new fixtures will <strong>delete all existing matches</strong> (including any results) and create a fresh schedule.
+            </div>
+            {% endif %}
+
+            {% if team_count < 2 %}
+            <div class="alert alert-danger">
+                <i class="fas fa-times-circle me-1"></i>
+                You need at least <strong>2 approved teams</strong> to generate fixtures. Currently {{ team_count }} approved.
+            </div>
+            {% else %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-cogs me-1"></i>Fixture Settings</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>{{ tournament.get_format_display }} format:</strong>
+                            {% if tournament.format == 'knockout' %}
+                            Single elimination bracket. Teams are randomly seeded.
+                            {% elif tournament.format == 'group_knockout' %}
+                            Teams divided into groups for round-robin play, followed by knockout stage for group winners.
+                            {% elif tournament.format == 'round_robin' %}
+                            Every team plays every other team once.
+                            {% elif tournament.format == 'swiss' %}
+                            Swiss system pairing.
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary" onclick="return confirm('{% if existing_match_count > 0 %}This will delete all existing fixtures and results. {% endif %}Generate fixtures for {{ team_count }} teams?')">
+                                <i class="fas fa-magic me-1"></i>Generate Fixtures
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

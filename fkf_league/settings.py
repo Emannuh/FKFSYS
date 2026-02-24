@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     'referees', 
     'admin_dashboard',
     'frontend',
+    'tournaments',
 ]
 
 MIDDLEWARE = [

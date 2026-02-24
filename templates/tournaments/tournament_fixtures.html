@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Fixtures – {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-calendar-alt text-primary me-2"></i>{{ tournament.name }} – Fixtures</h2>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Overview
+            </a>
+            {% if request.user.is_superuser or request.user.groups.all|length %}
+            <a href="{% url 'tournaments:create_match' tournament.slug %}" class="btn btn-success btn-sm">
+                <i class="fas fa-plus me-1"></i>Add Match
+            </a>
+            <a href="{% url 'tournaments:generate_fixtures' tournament.slug %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-magic me-1"></i>Generate Fixtures
+            </a>
+            <a href="{% url 'tournaments:matches_needing_officials' tournament.slug %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-user-tie me-1"></i>Appoint Officials
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% regroup matches by get_stage_display as stages %}
+    {% for stage in stages %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h6 class="mb-0">{{ stage.grouper }}</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Home</th>
+                        <th class="text-center">Score</th>
+                        <th>Away</th>
+                        <th>Venue</th>
+                        <th>Status</th>
+                        {% if request.user.is_superuser or request.user.groups.all|length %}
+                        <th>Action</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in stage.list %}
+                    <tr>
+                        <td>{{ m.match_date|date:"d M, H:i" }}</td>
+                        <td class="fw-bold">{% if m.home_team %}{{ m.home_team.display_name }}{% else %}TBD{% endif %}</td>
+                        <td class="text-center fw-bold">
+                            {% if m.status == 'completed' %}
+                            {{ m.home_score }} – {{ m.away_score }}
+                            {% if m.home_penalties is not None %}
+                            <br><small class="text-muted">({{ m.home_penalties }}-{{ m.away_penalties }} pens)</small>
+                            {% endif %}
+                            {% elif m.status == 'live' %}
+                            <span class="badge bg-danger">LIVE {{ m.home_score }} – {{ m.away_score }}</span>
+                            {% else %}
+                            vs
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">{% if m.away_team %}{{ m.away_team.display_name }}{% else %}TBD{% endif %}</td>
+                        <td>{{ m.venue|default:tournament.venue }}</td>
+                        <td>
+                            <span class="badge bg-{% if m.status == 'completed' %}success{% elif m.status == 'live' %}danger{% elif m.status == 'scheduled' %}primary{% else %}warning{% endif %}">
+                                {{ m.get_status_display }}
+                            </span>
+                        </td>
+                        {% if request.user.is_superuser or request.user.groups.all|length %}
+                        <td>
+                            {% if m.status != 'completed' %}
+                            <a href="{% url 'tournaments:record_result' m.pk %}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-calendar-times fa-3x mb-3"></i>
+        <h5>No fixtures scheduled yet.</h5>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Manage Registrations – {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-clipboard-list text-warning me-2"></i>Registrations – {{ tournament.name }}</h2>
+        <div class="btn-group">
+            <a href="{% url 'tournaments:import_league_teams' tournament.slug %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-download me-1"></i>Import League Teams
+            </a>
+            <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Team</th>
+                        <th>Registered By</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Seed</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reg in registrations %}
+                    <tr>
+                        <td class="fw-bold">
+                            {{ reg.display_name }}
+                            {% if reg.team_type == 'external' %}<span class="badge bg-info ms-1">External</span>{% endif %}
+                        </td>
+                        <td>{{ reg.registered_by.get_full_name|default:reg.registered_by.username|default:"—" }}</td>
+                        <td>{{ reg.registered_at|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <span class="badge bg-{% if reg.status == 'approved' %}success{% elif reg.status == 'rejected' %}danger{% elif reg.status == 'withdrawn' %}secondary{% else %}warning{% endif %}">
+                                {{ reg.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if reg.payment_confirmed %}
+                            <span class="badge bg-success">Paid</span>
+                            {% else %}
+                            <span class="badge bg-danger">Unpaid</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ reg.seed|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'tournaments:review_registration' reg.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i> Review
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">No registrations yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Register for {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:600px;">
+    <h2 class="mb-4"><i class="fas fa-clipboard-check text-success me-2"></i>Register for Tournament</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5>{{ tournament.name }}</h5>
+            <p class="text-muted">{{ tournament.start_date|date:"d M Y" }} – {{ tournament.end_date|date:"d M Y" }}</p>
+            {% if tournament.entry_fee > 0 %}
+            <div class="alert alert-info">
+                <i class="fas fa-money-bill me-1"></i> Entry fee: <strong>KSh {{ tournament.entry_fee }}</strong>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h6 class="mb-0">Registering: {{ team.team_name }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-check mb-3">
+                    {{ form.confirm }}
+                    <label class="form-check-label" for="{{ form.confirm.id_for_label }}">
+                        {{ form.confirm.label }}
+                    </label>
+                    {% if form.confirm.errors %}<div class="text-danger small">{{ form.confirm.errors }}</div>{% endif %}
+                </div>
+                <button type="submit" class="btn btn-success btn-lg w-100">
+                    <i class="fas fa-paper-plane me-1"></i>Submit Registration
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
