@@ -379,7 +379,7 @@
                                         <button class="btn btn-outline-secondary" disabled title="Already appointed - Cannot appoint again">
                                             <i class="fas fa-ban me-1"></i>Appoint
                                         </button>
-                                        <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-info" title="View appointment details">
+                                        <a href="{% url 'matches:view_match_officials' match.id %}" class="btn btn-info" title="View Match Officials">
                                             <i class="fas fa-eye me-1"></i>View
                                         </a>
                                     </div>
@@ -604,9 +604,15 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="badge {% if match.status == 'scheduled' %}bg-primary{% elif match.status == 'completed' %}bg-success{% else %}bg-warning{% endif %}">
+                                <span class="badge {% if match.status == 'scheduled' %}bg-primary{% elif match.status == 'completed' %}bg-success{% elif match.status == 'live' %}bg-danger{% else %}bg-warning{% endif %}">
                                     {{ match.get_status_display }}
                                 </span>
+                                {% if match.status == 'live' %}
+                                <span class="badge bg-danger blink-live ms-1">● LIVE</span>
+                                {% if match.start_time %}
+                                <br><span class="badge bg-danger live-timer" data-start="{{ match.start_time|date:'c' }}"></span>
+                                {% endif %}
+                                {% endif %}
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm w-100">
@@ -707,9 +713,29 @@
 .table-success, .table-info, .table-warning {
     --bs-table-bg-state: transparent;
 }
+.blink-live {
+    animation: blink 1s steps(2, start) infinite;
+}
+@keyframes blink {
+    to { visibility: hidden; }
+}
 </style>
 
 <script>
+// Live timer updater
+function updateLiveTimers() {
+    document.querySelectorAll('.live-timer').forEach(el => {
+        const start = new Date(el.dataset.start);
+        const now = new Date();
+        const diff = Math.floor((now - start) / 1000);
+        const mins = Math.floor(diff / 60);
+        const secs = diff % 60;
+        el.textContent = mins + "'" + (secs < 10 ? '0' : '') + secs + '"';
+    });
+}
+updateLiveTimers();
+setInterval(updateLiveTimers, 1000);
+
 document.addEventListener('DOMContentLoaded', function() {
     // Auto-refresh page every 5 minutes to get latest status
     setTimeout(function() {

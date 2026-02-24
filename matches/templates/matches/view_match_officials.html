@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Match Officials for {{ match }}</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Role</th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Confirmed?</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Main Referee</td>
+            <td>{{ match.officials.main_referee.get_full_name|default:match.officials.main_referee_name }}</td>
+            <td>{{ match.officials.main_referee.mobile|default:match.officials.main_referee_mobile }}</td>
+            <td>{% if match.officials.main_confirmed %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        <tr>
+            <td>Assistant Referee 1</td>
+            <td>{{ match.officials.assistant_1.get_full_name|default:match.officials.ar1_name }}</td>
+            <td>{{ match.officials.assistant_1.mobile|default:match.officials.ar1_mobile }}</td>
+            <td>{% if match.officials.ar1_confirmed %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        <tr>
+            <td>Assistant Referee 2</td>
+            <td>{{ match.officials.assistant_2.get_full_name|default:match.officials.ar2_name }}</td>
+            <td>{{ match.officials.assistant_2.mobile|default:match.officials.ar2_mobile }}</td>
+            <td>{% if match.officials.ar2_confirmed %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        {% if match.officials.reserve_referee %}
+        <tr>
+            <td>Reserve Referee</td>
+            <td>{{ match.officials.reserve_referee.get_full_name }}</td>
+            <td>{{ match.officials.reserve_referee.mobile }}</td>
+            <td>{% if match.officials.reserve_confirmed %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        {% endif %}
+        {% if match.officials.var %}
+        <tr>
+            <td>VAR</td>
+            <td>{{ match.officials.var.get_full_name }}</td>
+            <td>{{ match.officials.var.mobile }}</td>
+            <td>{% if match.officials.var_confirmed %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        {% endif %}
+        {% if match.officials.fourth_official %}
+        <tr>
+            <td>Fourth Official</td>
+            <td>{{ match.officials.fourth_official.get_full_name }}</td>
+            <td>{{ match.officials.fourth_official.mobile }}</td>
+            <td>{% if match.officials.fourth_confirmed %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        {% endif %}
+        {% if match.officials.match_commissioner %}
+        <tr>
+            <td>Match Commissioner</td>
+            <td>{{ match.officials.match_commissioner.get_full_name }}</td>
+            <td>{{ match.officials.match_commissioner.mobile }}</td>
+            <td>{% if match.officials.commissioner_confirmed %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+<a href="{% url 'matches:match_details' match.id %}" class="btn btn-secondary">Back to Match Details</a>
+{% endblock %}

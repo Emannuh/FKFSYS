@@ -10,6 +10,7 @@ from teams.models import Team, Player
 class Match(models.Model):
     STATUS_CHOICES = [
         ('scheduled', 'Scheduled'),
+        ('live', 'Live'),
         ('ongoing', 'Ongoing'),
         ('completed', 'Completed'),
         ('postponed', 'Postponed'),
@@ -37,6 +38,7 @@ class Match(models.Model):
     
     venue = models.CharField(max_length=200)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    start_time = models.DateTimeField(null=True, blank=True, help_text="Time when match went live.")
     
     # Scores
     home_score = models.IntegerField(default=0)

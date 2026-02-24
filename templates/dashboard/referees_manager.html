@@ -450,6 +450,8 @@ function loadAppointedMatches() {
                             <span class="badge ${statusClass}">
                                 <i class="fas fa-${statusIcon}"></i> ${match.status_display}
                             </span>
+                            ${match.match_status === 'live' ? '<span class="badge bg-danger blink-live ms-1">● LIVE</span>' : ''}
+                            ${match.match_status === 'live' && match.start_time ? '<br><span class="badge bg-danger live-timer" data-start="' + match.start_time + '"></span>' : ''}
                         </td>
                         <td>
                             <div class="d-grid gap-1">
@@ -457,7 +459,7 @@ function loadAppointedMatches() {
                                     <button class="btn btn-outline-secondary btn-sm" disabled title="Already appointed">
                                         <i class="fas fa-ban"></i> Appoint
                                     </button>
-                                    <a href="/referees/match/${match.id}/appoint/" class="btn btn-info btn-sm" title="View details">
+                                    <a href="/matches/match/${match.id}/officials/" class="btn btn-info btn-sm" title="View Match Officials">
                                         <i class="fas fa-eye"></i> View
                                     </a>
                                 </div>
@@ -588,5 +590,26 @@ function getCookie(name) {
 .badge {
     font-weight: 500;
 }
+.blink-live {
+    animation: blink 1s steps(2, start) infinite;
+}
+@keyframes blink {
+    to { visibility: hidden; }
+}
 </style>
+
+<script>
+// Live timer updater (runs after DOM and after AJAX loads)
+function updateLiveTimers() {
+    document.querySelectorAll('.live-timer').forEach(el => {
+        const start = new Date(el.dataset.start);
+        const now = new Date();
+        const diff = Math.floor((now - start) / 1000);
+        const mins = Math.floor(diff / 60);
+        const secs = diff % 60;
+        el.textContent = mins + "'" + (secs < 10 ? '0' : '') + secs + '"';
+    });
+}
+setInterval(updateLiveTimers, 1000);
+</script>
 {% endblock %}

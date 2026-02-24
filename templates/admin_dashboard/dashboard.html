@@ -221,11 +221,19 @@
                     {% for match in recent_matches %}
                     <div class="list-group-item">
                         <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">{{ match.home_team }} vs {{ match.away_team }}</h6>
+                            <h6 class="mb-1">
+                                {{ match.home_team }} vs {{ match.away_team }}
+                                {% if match.status == 'live' %}
+                                <span class="badge bg-danger blink-live ms-1">● LIVE</span>
+                                {% endif %}
+                            </h6>
                             <small>{{ match.match_date|date:"M d" }}</small>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="badge bg-primary">{{ match.home_score }} - {{ match.away_score }}</span>
+                            {% if match.status == 'live' and match.start_time %}
+                            <span class="badge bg-danger live-timer" data-start="{{ match.start_time|date:'c' }}"></span>
+                            {% endif %}
                             <small class="text-muted">{{ match.zone.name }}</small>
                         </div>
                     </div>
@@ -238,6 +246,34 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.blink-live {
+    animation: blink 1s steps(2, start) infinite;
+}
+@keyframes blink {
+    to { visibility: hidden; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateLiveTimers() {
+    document.querySelectorAll('.live-timer').forEach(el => {
+        const start = new Date(el.dataset.start);
+        const now = new Date();
+        const diff = Math.floor((now - start) / 1000);
+        const mins = Math.floor(diff / 60);
+        const secs = diff % 60;
+        el.textContent = mins + "'" + (secs < 10 ? '0' : '') + secs + '"';
+    });
+}
+updateLiveTimers();
+setInterval(updateLiveTimers, 1000);
+</script>
 {% endblock %}
             <div class="card-body">
                 <div class="list-group">

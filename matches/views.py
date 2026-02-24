@@ -1,6 +1,9 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.http import HttpResponseForbidden
+from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 def match_results(request):
     """Public view: List all completed match results"""
@@ -275,3 +278,29 @@ def zone_fixtures(request, zone_id):
         'completed_matches': completed,
     }
     return render(request, 'matches/zone_fixtures.html', context)
+
+
+# --- START MATCH VIEW ---
+@login_required
+@user_passes_test(league_manager_required)
+@require_POST
+def start_match(request, match_id):
+    match = get_object_or_404(Match, id=match_id)
+    if match.status == 'live':
+        messages.info(request, 'Match is already live.')
+        return redirect('matches:match_details', match_id=match.id)
+    match.status = 'live'
+    match.start_time = timezone.now()
+    match.save()
+    messages.success(request, 'Match started and is now LIVE.')
+    return redirect('matches:match_details', match_id=match.id)
+
+
+# --- VIEW MATCH OFFICIALS VIEW ---
+@login_required
+def view_match_officials(request, match_id):
+    match = get_object_or_404(Match, id=match_id)
+    context = {
+        'match': match,
+    }
+    return render(request, 'matches/view_match_officials.html', context)

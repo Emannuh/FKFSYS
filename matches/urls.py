@@ -37,7 +37,9 @@ urlpatterns = [
     # All other match-related URLs
     path('tables/', views.league_tables, name='league_tables'),
     path('fixtures/', views.fixtures, name='fixtures'),
-    path('match/<int:match_id>/', views.match_details, name='match_details'),
+     path('match/<int:match_id>/', views.match_details, name='match_details'),
+     path('match/<int:match_id>/start/', views.start_match, name='start_match'),
+     path('match/<int:match_id>/officials/', views.view_match_officials, name='view_match_officials'),
     # Admin-only reschedule view
     path('match/<int:match_id>/reschedule/',
          __import__('matches.admin_views').admin_views.reschedule_match,
