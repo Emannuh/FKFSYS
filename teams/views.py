@@ -608,7 +608,53 @@ def team_manager_dashboard(request):
         })
     
     logger.info(f"Prepared {len(matches_data)} matches with squad info. Current round: {current_round}")
-    
+
+    # ── Tournament data ─────────────────────────────────────────────────
+    from tournaments.models import (
+        Tournament, TournamentTeamRegistration, TournamentMatch,
+        TournamentMatchdaySquad, ExternalTeam,
+    )
+
+    team_tournament_regs = TournamentTeamRegistration.objects.filter(
+        team=team,
+    ).select_related('tournament')
+
+    external_tournament_regs = TournamentTeamRegistration.objects.none()
+    ext_teams = ExternalTeam.objects.filter(manager_user=request.user)
+    if ext_teams.exists():
+        external_tournament_regs = TournamentTeamRegistration.objects.filter(
+            external_team__in=ext_teams,
+        ).select_related('tournament', 'external_team')
+
+    open_tournaments = Tournament.objects.filter(
+        status='registration',
+        registration_deadline__gte=timezone.now(),
+    ).exclude(registrations__team=team)
+
+    # Tournament matches for this team
+    all_regs = list(
+        TournamentTeamRegistration.objects.filter(team=team, status='approved')
+    ) + list(
+        TournamentTeamRegistration.objects.filter(
+            external_team__manager_user=request.user, status='approved'
+        )
+    )
+    tournament_matches_data = []
+    for reg in all_regs:
+        t_matches = TournamentMatch.objects.filter(
+            Q(home_team=reg) | Q(away_team=reg),
+            status='scheduled',
+        ).select_related('tournament', 'home_team', 'away_team').order_by('match_date')
+        for tm in t_matches:
+            t_squad = TournamentMatchdaySquad.objects.filter(match=tm, team_registration=reg).first()
+            tournament_matches_data.append({
+                'match': tm,
+                'reg': reg,
+                'squad': t_squad,
+                'starting_count': t_squad.squad_players.filter(is_starting=True).count() if t_squad else 0,
+                'subs_count': t_squad.squad_players.filter(is_starting=False).count() if t_squad else 0,
+            })
+
     context = {
         'team': team,
         'players': players,
@@ -626,6 +672,11 @@ def team_manager_dashboard(request):
         'transfer_window_open': settings.transfer_window_open,
         'upcoming_matches': matches_data,
         'current_round': current_round,
+        # Tournament
+        'team_tournament_regs': team_tournament_regs,
+        'external_tournament_regs': external_tournament_regs,
+        'open_tournaments': open_tournaments,
+        'tournament_matches_data': tournament_matches_data,
     }
     return render(request, 'dashboard/team_manager.html', context)
 
