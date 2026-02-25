@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Edit Match #{{ match.match_number }} – {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3><i class="fas fa-edit text-primary me-2"></i>Edit Match Details</h3>
+                    <p class="text-muted mb-0">{{ tournament.name }} – {{ match.get_stage_display }} #{{ match.match_number }}</p>
+                </div>
+                <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Fixtures
+                </a>
+            </div>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Match info -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center gap-4 my-2">
+                        <h5 class="mb-0">{% if match.home_team %}{{ match.home_team.display_name }}{% else %}TBD{% endif %}</h5>
+                        <span class="display-6 text-muted">vs</span>
+                        <h5 class="mb-0">{% if match.away_team %}{{ match.away_team.display_name }}{% else %}TBD{% endif %}</h5>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit form -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-cog me-1"></i>Match Settings</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="match_date" class="form-label"><i class="fas fa-calendar me-1"></i>Match Date & Time</label>
+                                <input type="datetime-local" name="match_date" id="match_date" class="form-control"
+                                       value="{{ match.match_date|date:'Y-m-d\TH:i' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="kickoff_time" class="form-label"><i class="fas fa-clock me-1"></i>Kickoff Time (display)</label>
+                                <input type="text" name="kickoff_time" id="kickoff_time" class="form-control"
+                                       value="{{ match.kickoff_time }}" placeholder="e.g. 15:00">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="venue" class="form-label"><i class="fas fa-map-marker-alt me-1"></i>Venue</label>
+                            <input type="text" name="venue" id="venue" class="form-control"
+                                   value="{{ match.venue }}" placeholder="Stadium name">
+                        </div>
+
+                        <hr>
+                        <h6 class="text-muted mb-3"><i class="fas fa-stopwatch me-1"></i>Duration Settings</h6>
+                        <p class="small text-muted">
+                            Tournaments may have different match durations per round.
+                            Adjust the total and half duration accordingly.
+                        </p>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="match_duration" class="form-label">Total Duration (min)</label>
+                                <input type="number" name="match_duration" id="match_duration" class="form-control"
+                                       value="{{ match.match_duration }}" min="20" max="120">
+                                <div class="form-text">Standard: 90</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="half_duration" class="form-label">Half Duration (min)</label>
+                                <input type="number" name="half_duration" id="half_duration" class="form-control"
+                                       value="{{ match.half_duration }}" min="10" max="60">
+                                <div class="form-text">Standard: 45</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="extra_time_duration" class="form-label">Extra Time (min)</label>
+                                <input type="number" name="extra_time_duration" id="extra_time_duration" class="form-control"
+                                       value="{{ match.extra_time_duration }}" min="0" max="60">
+                                <div class="form-text">Standard: 30 (2×15)</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label"><i class="fas fa-sticky-note me-1"></i>Notes</label>
+                            <textarea name="notes" id="notes" class="form-control" rows="2"
+                                      placeholder="Optional match notes">{{ match.notes }}</textarea>
+                        </div>
+
+                        <div class="text-end">
+                            <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

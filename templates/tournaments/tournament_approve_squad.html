@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Approve Squad – {{ squad.team_registration.display_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3><i class="fas fa-clipboard-check text-warning me-2"></i>Review Tournament Squad</h3>
+                    <p class="text-muted mb-0">
+                        {{ match.tournament.name }} – {{ match.get_stage_display }} #{{ match.match_number }}
+                    </p>
+                </div>
+                <a href="{% url 'tournaments:tournament_referee_squad_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </a>
+            </div>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Match Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <span class="badge bg-info mb-2">{{ match.get_stage_display }} – Match #{{ match.match_number }}</span>
+                    <div class="d-flex justify-content-center align-items-center gap-4 my-3">
+                        <div class="text-end" style="min-width: 150px">
+                            <h5 class="mb-0">{% if match.home_team %}{{ match.home_team.display_name }}{% else %}TBD{% endif %}</h5>
+                        </div>
+                        <div class="display-6 text-muted">vs</div>
+                        <div class="text-start" style="min-width: 150px">
+                            <h5 class="mb-0">{% if match.away_team %}{{ match.away_team.display_name }}{% else %}TBD{% endif %}</h5>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0">
+                        {{ match.match_date|date:"l, d F Y – H:i"|default:"TBD" }}
+                        | {{ match.venue|default:match.tournament.venue }}
+                        | {{ match.match_duration }} min
+                    </p>
+                </div>
+            </div>
+
+            <!-- Team being reviewed -->
+            <div class="alert alert-light border mb-4 text-center">
+                <strong>Reviewing squad for:</strong>
+                <span class="badge bg-primary fs-6">{{ squad.team_registration.display_name }}</span>
+                <span class="badge bg-{% if squad.status == 'submitted' %}warning text-dark{% elif squad.status == 'approved' %}success{% else %}secondary{% endif %} ms-2">
+                    {{ squad.get_status_display }}
+                </span>
+            </div>
+
+            <div class="row">
+                <!-- Starting 11 -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-running me-1"></i>Starting XI ({{ starting|length }})</h6>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            {% for sp in starting %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    <strong>#{{ sp.jersey_number }}</strong>
+                                    {{ sp.player_name }}
+                                </span>
+                                {% if sp.player %}
+                                <span class="badge bg-secondary">{{ sp.player.get_position_display }}</span>
+                                {% elif sp.external_player %}
+                                <span class="badge bg-secondary">{{ sp.external_player.get_position_display }}</span>
+                                {% endif %}
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-muted text-center">No starting players</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Substitutes -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-users me-1"></i>Substitutes ({{ subs|length }})</h6>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            {% for sp in subs %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    <strong>#{{ sp.jersey_number }}</strong>
+                                    {{ sp.player_name }}
+                                </span>
+                                {% if sp.player %}
+                                <span class="badge bg-secondary">{{ sp.player.get_position_display }}</span>
+                                {% elif sp.external_player %}
+                                <span class="badge bg-secondary">{{ sp.external_player.get_position_display }}</span>
+                                {% endif %}
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-muted text-center">No substitutes</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approve / Reject buttons -->
+            {% if squad.status == 'submitted' %}
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit" class="btn btn-success btn-lg px-5 me-3">
+                            <i class="fas fa-check-circle me-2"></i>Approve Squad
+                        </button>
+                    </form>
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reject">
+                        <button type="submit" class="btn btn-danger btn-lg px-5">
+                            <i class="fas fa-undo me-2"></i>Send Back for Revision
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

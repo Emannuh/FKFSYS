@@ -11,6 +11,8 @@ from .models import (
     TournamentCard,
     ExternalTeam,
     ExternalPlayer,
+    TournamentMatchdaySquad,
+    TournamentSquadPlayer,
 )
 
 
@@ -47,8 +49,9 @@ class TournamentPlayerRegistrationAdmin(admin.ModelAdmin):
 
 @admin.register(TournamentMatch)
 class TournamentMatchAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'tournament', 'stage', 'status', 'match_date']
+    list_display = ['__str__', 'tournament', 'stage', 'status', 'match_date', 'match_duration']
     list_filter = ['tournament', 'stage', 'status']
+    list_editable = ['match_duration']
 
 
 @admin.register(TournamentGoal)
@@ -84,3 +87,15 @@ class ExternalPlayerAdmin(admin.ModelAdmin):
 class TournamentMatchOfficialsAdmin(admin.ModelAdmin):
     list_display = ['match', 'main_referee', 'status', 'appointed_at']
     list_filter = ['status']
+
+
+class TournamentSquadPlayerInline(admin.TabularInline):
+    model = TournamentSquadPlayer
+    extra = 0
+
+
+@admin.register(TournamentMatchdaySquad)
+class TournamentMatchdaySquadAdmin(admin.ModelAdmin):
+    list_display = ['team_registration', 'match', 'status', 'submitted_at']
+    list_filter = ['status', 'match__tournament']
+    inlines = [TournamentSquadPlayerInline]

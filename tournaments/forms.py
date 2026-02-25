@@ -162,6 +162,13 @@ class MatchResultForm(forms.ModelForm):
 #  EXTERNAL TEAM REGISTRATION  (for teams NOT in the league)
 # ---------------------------------------------------------------------------
 class ExternalTeamForm(forms.ModelForm):
+    manager_password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Create a password for your portal'}),
+        help_text='A portal account will be created so you can manage your team, register players, and view fixtures.',
+        label='Portal Password',
+    )
+
     class Meta:
         model = ExternalTeam
         fields = [
@@ -173,12 +180,21 @@ class ExternalTeamForm(forms.ModelForm):
             'team_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Team name'}),
             'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Nairobi, Kenya'}),
             'home_ground': forms.TextInput(attrs={'class': 'form-control'}),
-            'contact_person': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_person': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full name of team manager'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+254712345678'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'manager@example.com (used as login)'}),
             'home_jersey_color': forms.TextInput(attrs={'class': 'form-control', 'type': 'color'}),
             'away_jersey_color': forms.TextInput(attrs={'class': 'form-control', 'type': 'color'}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        # If no email provided, password field is irrelevant
+        password = cleaned.get('manager_password')
+        email = cleaned.get('email')
+        if password and not email:
+            self.add_error('email', 'Email is required to create a portal account.')
+        return cleaned
 
 
 # ---------------------------------------------------------------------------

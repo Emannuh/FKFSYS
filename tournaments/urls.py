@@ -44,4 +44,15 @@ urlpatterns = [
     path('match/<int:match_pk>/officials/', views.appoint_officials, name='appoint_officials'),
     path('<slug:slug>/matches-needing-officials/', views.matches_needing_officials,
          name='matches_needing_officials'),
+
+    # ── Admin: edit match time / duration ─────────────────────────────────
+    path('match/<int:match_pk>/edit/', views.edit_tournament_match, name='edit_tournament_match'),
+
+    # ── Team manager: tournament matches & squad ──────────────────────────
+    path('my-matches/', views.tournament_team_matches, name='tournament_team_matches'),
+    path('match/<int:match_pk>/squad/', views.tournament_submit_squad, name='tournament_submit_squad'),
+
+    # ── Referee: tournament squad approval ────────────────────────────────
+    path('referee/squads/', views.tournament_referee_squad_list, name='tournament_referee_squad_list'),
+    path('squad/<int:squad_pk>/approve/', views.tournament_approve_squad, name='tournament_approve_squad'),
 ]

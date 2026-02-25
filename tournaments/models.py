@@ -415,6 +415,20 @@ class TournamentMatch(models.Model):
     kickoff_time = models.CharField(max_length=5, blank=True, null=True)
     venue = models.CharField(max_length=200, blank=True)
 
+    # Match duration – tournaments may differ from standard 90 minutes
+    match_duration = models.PositiveIntegerField(
+        default=90,
+        help_text="Total match duration in minutes (e.g. 60, 70, 80, 90)."
+    )
+    half_duration = models.PositiveIntegerField(
+        default=45,
+        help_text="Duration of each half in minutes."
+    )
+    extra_time_duration = models.PositiveIntegerField(
+        default=30,
+        help_text="Extra time duration (if applicable) in minutes."
+    )
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
     start_time = models.DateTimeField(null=True, blank=True)
 
@@ -589,3 +603,117 @@ class TournamentMatchOfficials(models.Model):
 
     def __str__(self):
         return f"Officials for {self.match}"
+
+
+# ---------------------------------------------------------------------------
+#  TOURNAMENT MATCHDAY SQUAD  (mirrors league MatchdaySquad)
+# ---------------------------------------------------------------------------
+class TournamentMatchdaySquad(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending Submission'),
+        ('submitted', 'Submitted – Awaiting Referee Approval'),
+        ('approved', 'Approved by Referee'),
+        ('locked', 'Locked (Match Started)'),
+    ]
+
+    match = models.ForeignKey(
+        TournamentMatch, on_delete=models.CASCADE,
+        related_name='matchday_squads'
+    )
+    team_registration = models.ForeignKey(
+        TournamentTeamRegistration, on_delete=models.CASCADE,
+        related_name='matchday_squads'
+    )
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='tournament_submitted_squads'
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        'referees.Referee', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='tournament_approved_squads'
+    )
+    locked_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('match', 'team_registration')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.team_registration.display_name} – {self.match} ({self.get_status_display()})"
+
+    def is_locked(self):
+        if self.status == 'locked':
+            return True
+        if not self.match.match_date:
+            return False
+        try:
+            kickoff = self.match.kickoff_time
+            if kickoff:
+                if isinstance(kickoff, str):
+                    from datetime import datetime as _dt
+                    kickoff = _dt.strptime(kickoff, '%H:%M').time()
+                match_dt = timezone.make_aware(
+                    timezone.datetime.combine(self.match.match_date.date(), kickoff)
+                )
+            else:
+                match_dt = self.match.match_date
+            return timezone.now() >= match_dt
+        except (ValueError, TypeError):
+            return False
+
+    def can_edit(self):
+        return self.status in ('pending', 'submitted') and not self.is_locked()
+
+    def can_view_only(self):
+        return self.status in ('approved', 'locked') and self.is_locked()
+
+    def get_starting_eleven(self):
+        return self.squad_players.filter(is_starting=True).order_by('position_order')
+
+    def get_substitutes(self):
+        return self.squad_players.filter(is_starting=False).order_by('jersey_number')
+
+
+class TournamentSquadPlayer(models.Model):
+    squad = models.ForeignKey(
+        TournamentMatchdaySquad, on_delete=models.CASCADE,
+        related_name='squad_players'
+    )
+
+    # For league players
+    player = models.ForeignKey(
+        'teams.Player', on_delete=models.CASCADE,
+        null=True, blank=True, related_name='tournament_squad_entries'
+    )
+    # For external players
+    external_player = models.ForeignKey(
+        ExternalPlayer, on_delete=models.CASCADE,
+        null=True, blank=True, related_name='tournament_squad_entries'
+    )
+
+    is_starting = models.BooleanField(default=False)
+    position_order = models.IntegerField(default=0)
+    jersey_number = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ['-is_starting', 'position_order', 'jersey_number']
+
+    @property
+    def player_name(self):
+        if self.player:
+            return self.player.full_name
+        if self.external_player:
+            return self.external_player.full_name
+        return 'Unknown'
+
+    def __str__(self):
+        status = 'Starting' if self.is_starting else 'Substitute'
+        return f"{self.player_name} #{self.jersey_number} ({status})"

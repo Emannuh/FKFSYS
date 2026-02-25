@@ -8,6 +8,8 @@ from datetime import timedelta
 import random
 import math
 
+from django.contrib.auth import login as auth_login
+
 from .models import (
     Tournament,
     TournamentTeamRegistration,
@@ -20,6 +22,8 @@ from .models import (
     TournamentCard,
     ExternalTeam,
     ExternalPlayer,
+    TournamentMatchdaySquad,
+    TournamentSquadPlayer,
 )
 from .forms import (
     TournamentForm,
@@ -207,7 +211,8 @@ def register_external_team(request, slug):
     """
     Public portal for external teams to register for a tournament.
     Creates an ExternalTeam + TournamentTeamRegistration.
-    Optionally creates a user account for the team manager.
+    Creates a portal account for the team manager so they can manage
+    their team, register players, and view fixtures.
     """
     tournament = get_object_or_404(Tournament, slug=slug)
 
@@ -228,8 +233,52 @@ def register_external_team(request, slug):
         if form.is_valid():
             ext_team = form.save(commit=False)
             ext_team.tournament = tournament
+
+            manager_user = None
+            password = form.cleaned_data.get('manager_password')
+            email = form.cleaned_data.get('email')
+
             if request.user.is_authenticated:
-                ext_team.manager_user = request.user
+                # Already logged in — link to existing account
+                manager_user = request.user
+            elif email:
+                # Check if user with this email already exists
+                import re as _re
+                existing = User.objects.filter(email=email).first()
+                if existing:
+                    manager_user = existing
+                else:
+                    # Build a unique username from the team name
+                    base_username = _re.sub(r'[^a-zA-Z0-9]', '', ext_team.team_name.lower())[:20]
+                    username = base_username or 'team'
+                    counter = 1
+                    while User.objects.filter(username=username).exists():
+                        username = f"{base_username}{counter}"
+                        counter += 1
+
+                    final_password = password if password else f"{username}123"
+                    names = form.cleaned_data.get('contact_person', '').split()
+                    manager_user = User.objects.create_user(
+                        username=username,
+                        email=email,
+                        password=final_password,
+                        first_name=names[0] if names else '',
+                        last_name=' '.join(names[1:]) if len(names) > 1 else '',
+                        is_active=True,
+                    )
+                    # Add to Team Managers group so they get dashboard access
+                    tm_group, _ = Group.objects.get_or_create(name='Team Managers')
+                    manager_user.groups.add(tm_group)
+
+                    if not password:
+                        messages.info(
+                            request,
+                            f'A portal account has been created for you. '
+                            f'Username: {username} | Default password: {final_password} '
+                            f'— please change it after login.'
+                        )
+
+            ext_team.manager_user = manager_user
             ext_team.save()
 
             # Create tournament registration
@@ -237,8 +286,14 @@ def register_external_team(request, slug):
                 tournament=tournament,
                 external_team=ext_team,
                 team_type='external',
-                registered_by=request.user if request.user.is_authenticated else None,
+                registered_by=manager_user,
             )
+
+            # Auto-login the new user if they were not already logged in
+            if manager_user and not request.user.is_authenticated:
+                from django.contrib.auth import login as auth_login
+                auth_login(request, manager_user)
+
             messages.success(
                 request,
                 f'✅ {ext_team.team_name} registered for {tournament.name}. '
@@ -778,6 +833,289 @@ def _update_group_standing(match):
         standing.goals_for = gf
         standing.goals_against = ga
         standing.save()
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  TEAM MANAGER: TOURNAMENT MATCHES & SQUAD SUBMISSION
+# ══════════════════════════════════════════════════════════════════════════
+
+@login_required
+def tournament_team_matches(request):
+    """
+    Team manager sees all tournament matches for their team(s) –
+    both league teams and external teams they manage.
+    """
+    # League team
+    team = None
+    if hasattr(request.user, 'managed_teams'):
+        team = request.user.managed_teams.first()
+
+    league_regs = TournamentTeamRegistration.objects.filter(
+        team=team, status='approved'
+    ).select_related('tournament') if team else TournamentTeamRegistration.objects.none()
+
+    ext_regs = TournamentTeamRegistration.objects.filter(
+        external_team__manager_user=request.user, status='approved'
+    ).select_related('tournament', 'external_team')
+
+    all_regs = list(league_regs) + list(ext_regs)
+
+    matches_data = []
+    for reg in all_regs:
+        matches = TournamentMatch.objects.filter(
+            Q(home_team=reg) | Q(away_team=reg),
+            status='scheduled',
+        ).select_related('tournament', 'home_team', 'away_team').order_by('match_date')
+
+        for m in matches:
+            squad = TournamentMatchdaySquad.objects.filter(
+                match=m, team_registration=reg
+            ).first()
+            matches_data.append({
+                'match': m,
+                'reg': reg,
+                'squad': squad,
+                'starting_count': squad.squad_players.filter(is_starting=True).count() if squad else 0,
+                'subs_count': squad.squad_players.filter(is_starting=False).count() if squad else 0,
+            })
+
+    context = {'matches_data': matches_data}
+    return render(request, 'tournaments/team_tournament_matches.html', context)
+
+
+@login_required
+def tournament_submit_squad(request, match_pk):
+    """Team manager submits matchday squad for a tournament match."""
+    match = get_object_or_404(TournamentMatch, pk=match_pk)
+
+    # Identify which team registration belongs to this user
+    reg = _get_user_team_registration(request.user, match)
+    if not reg:
+        messages.error(request, 'Your team is not playing in this match.')
+        return redirect('tournaments:tournament_team_matches')
+
+    squad, _ = TournamentMatchdaySquad.objects.get_or_create(
+        match=match, team_registration=reg
+    )
+
+    can_edit = squad.can_edit()
+
+    # Get eligible players
+    if reg.team_type == 'league' and reg.team:
+        eligible_players = reg.team.players.filter(
+            is_suspended=False
+        ).order_by('position', 'jersey_number')
+        player_field = 'player'
+    elif reg.team_type == 'external' and reg.external_team:
+        eligible_players = reg.external_team.players.all().order_by(
+            'position', 'jersey_number'
+        )
+        player_field = 'external_player'
+    else:
+        eligible_players = []
+        player_field = None
+
+    selected_starting = list(
+        squad.squad_players.filter(is_starting=True).values_list(
+            f'{player_field}_id' if player_field else 'id', flat=True
+        )
+    )
+    selected_subs = list(
+        squad.squad_players.filter(is_starting=False).values_list(
+            f'{player_field}_id' if player_field else 'id', flat=True
+        )
+    )
+
+    if request.method == 'POST' and can_edit:
+        starting_ids = request.POST.getlist('starting_players')
+        sub_ids = request.POST.getlist('substitute_players')
+
+        # Basic validation
+        if len(starting_ids) < 7:
+            messages.error(request, f'Select at least 7 starting players. You selected {len(starting_ids)}.')
+        elif len(starting_ids) > 11:
+            messages.error(request, f'Max 11 starting players. You selected {len(starting_ids)}.')
+        elif len(sub_ids) > 14:
+            messages.error(request, f'Max 14 substitutes. You selected {len(sub_ids)}.')
+        elif set(starting_ids) & set(sub_ids):
+            messages.error(request, 'A player cannot be in both starting and substitutes.')
+        else:
+            # Clear and re-create
+            squad.squad_players.all().delete()
+
+            if player_field == 'player':
+                from teams.models import Player as _P
+                for i, pid in enumerate(starting_ids):
+                    p = _P.objects.get(pk=pid)
+                    TournamentSquadPlayer.objects.create(
+                        squad=squad, player=p, is_starting=True,
+                        position_order=i, jersey_number=p.jersey_number,
+                    )
+                for pid in sub_ids:
+                    p = _P.objects.get(pk=pid)
+                    TournamentSquadPlayer.objects.create(
+                        squad=squad, player=p, is_starting=False,
+                        jersey_number=p.jersey_number,
+                    )
+            else:
+                for i, pid in enumerate(starting_ids):
+                    ep = ExternalPlayer.objects.get(pk=pid)
+                    TournamentSquadPlayer.objects.create(
+                        squad=squad, external_player=ep, is_starting=True,
+                        position_order=i, jersey_number=ep.jersey_number,
+                    )
+                for pid in sub_ids:
+                    ep = ExternalPlayer.objects.get(pk=pid)
+                    TournamentSquadPlayer.objects.create(
+                        squad=squad, external_player=ep, is_starting=False,
+                        jersey_number=ep.jersey_number,
+                    )
+
+            squad.status = 'submitted'
+            squad.submitted_at = timezone.now()
+            squad.submitted_by = request.user
+            squad.save()
+
+            messages.success(request, 'Squad submitted! Awaiting referee approval.')
+            return redirect('tournaments:tournament_team_matches')
+
+    context = {
+        'match': match,
+        'squad': squad,
+        'reg': reg,
+        'eligible_players': eligible_players,
+        'selected_starting': selected_starting,
+        'selected_subs': selected_subs,
+        'can_edit': can_edit,
+        'player_field': player_field,
+    }
+    return render(request, 'tournaments/tournament_submit_squad.html', context)
+
+
+def _get_user_team_registration(user, match):
+    """Return the TournamentTeamRegistration for the user in this match."""
+    for treg in [match.home_team, match.away_team]:
+        if treg is None:
+            continue
+        if treg.team_type == 'league' and treg.team:
+            if hasattr(user, 'managed_teams') and user.managed_teams.filter(pk=treg.team.pk).exists():
+                return treg
+        elif treg.team_type == 'external' and treg.external_team:
+            if treg.external_team.manager_user == user:
+                return treg
+    return None
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  REFEREE: TOURNAMENT SQUAD APPROVAL
+# ══════════════════════════════════════════════════════════════════════════
+
+@login_required
+def tournament_referee_squad_list(request):
+    """Referee sees tournament matches where they are appointed and squads need approval."""
+    try:
+        referee = request.user.referee_profile
+    except Exception:
+        messages.error(request, 'You are not registered as a referee.')
+        return redirect('dashboard')
+
+    # Matches where this referee is assigned
+    appointed_matches = TournamentMatch.objects.filter(
+        Q(officials__main_referee=referee) |
+        Q(officials__assistant_1=referee) |
+        Q(officials__assistant_2=referee) |
+        Q(officials__fourth_official=referee),
+        status='scheduled',
+    ).distinct().select_related('tournament')
+
+    matches_data = []
+    for m in appointed_matches:
+        squads = m.matchday_squads.all().select_related('team_registration')
+        pending = squads.filter(status='submitted').count()
+        matches_data.append({
+            'match': m,
+            'squads': squads,
+            'pending_count': pending,
+        })
+
+    context = {'matches_data': matches_data}
+    return render(request, 'tournaments/tournament_referee_squads.html', context)
+
+
+@login_required
+def tournament_approve_squad(request, squad_pk):
+    """Referee approves a tournament matchday squad."""
+    squad = get_object_or_404(TournamentMatchdaySquad, pk=squad_pk)
+
+    try:
+        referee = request.user.referee_profile
+    except Exception:
+        messages.error(request, 'You are not registered as a referee.')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'approve':
+            squad.status = 'approved'
+            squad.approved_at = timezone.now()
+            squad.approved_by = referee
+            squad.save()
+            messages.success(
+                request,
+                f'Squad for {squad.team_registration.display_name} approved.'
+            )
+        elif action == 'reject':
+            squad.status = 'pending'
+            squad.save()
+            messages.warning(
+                request,
+                f'Squad for {squad.team_registration.display_name} sent back for revision.'
+            )
+        return redirect('tournaments:tournament_referee_squad_list')
+
+    starting = squad.get_starting_eleven()
+    subs = squad.get_substitutes()
+    context = {
+        'squad': squad,
+        'match': squad.match,
+        'starting': starting,
+        'subs': subs,
+    }
+    return render(request, 'tournaments/tournament_approve_squad.html', context)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  ADMIN: EDIT MATCH TIME / DURATION
+# ══════════════════════════════════════════════════════════════════════════
+
+@login_required
+@user_passes_test(admin_required)
+def edit_tournament_match(request, match_pk):
+    """Admin edits match time, venue, and duration settings."""
+    match = get_object_or_404(TournamentMatch, pk=match_pk)
+
+    if request.method == 'POST':
+        match.venue = request.POST.get('venue', match.venue)
+        match.kickoff_time = request.POST.get('kickoff_time', match.kickoff_time)
+        match.match_duration = int(request.POST.get('match_duration', match.match_duration))
+        match.half_duration = int(request.POST.get('half_duration', match.half_duration))
+        match.extra_time_duration = int(request.POST.get('extra_time_duration', match.extra_time_duration))
+        match.notes = request.POST.get('notes', match.notes)
+
+        date_str = request.POST.get('match_date')
+        if date_str:
+            from datetime import datetime as _dt
+            try:
+                match.match_date = timezone.make_aware(_dt.strptime(date_str, '%Y-%m-%dT%H:%M'))
+            except ValueError:
+                pass
+
+        match.save()
+        messages.success(request, f'Match #{match.match_number} updated.')
+        return redirect('tournaments:tournament_fixtures', slug=match.tournament.slug)
+
+    context = {'match': match, 'tournament': match.tournament}
+    return render(request, 'tournaments/edit_tournament_match.html', context)
 
 
 # ══════════════════════════════════════════════════════════════════════════

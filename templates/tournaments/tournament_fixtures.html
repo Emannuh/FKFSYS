@@ -73,8 +73,11 @@
                         {% if request.user.is_superuser or request.user.groups.all|length %}
                         <td>
                             {% if m.status != 'completed' %}
-                            <a href="{% url 'tournaments:record_result' m.pk %}" class="btn btn-sm btn-outline-success">
-                                <i class="fas fa-edit"></i>
+                            <a href="{% url 'tournaments:record_result' m.pk %}" class="btn btn-sm btn-outline-success" title="Record Result">
+                                <i class="fas fa-futbol"></i>
+                            </a>
+                            <a href="{% url 'tournaments:edit_tournament_match' m.pk %}" class="btn btn-sm btn-outline-primary" title="Edit Match">
+                                <i class="fas fa-cog"></i>
                             </a>
                             {% endif %}
                         </td>

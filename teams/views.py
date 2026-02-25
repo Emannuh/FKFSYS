@@ -181,6 +181,7 @@ def registration_success(request):
 def team_dashboard(request, team_id=None):
     from matches.models import Match
     from referees.models import MatchdaySquad
+    from tournaments.models import Tournament, TournamentTeamRegistration, ExternalTeam
     from django.utils import timezone
     from datetime import timedelta
     import logging
@@ -290,13 +291,39 @@ def team_dashboard(request, team_id=None):
     
     logger.info(f"Prepared {len(matches_data)} matches with squad info. Current round: {current_round}")
     logger.info(f"Active match: {active_match}")
-    
+
+    # ── Tournament data ─────────────────────────────────────────────────
+    # Tournaments this league team is registered in
+    team_tournament_regs = TournamentTeamRegistration.objects.filter(
+        team=team
+    ).select_related('tournament')
+
+    # Tournaments the logged-in user's external teams are registered in
+    external_tournament_regs = TournamentTeamRegistration.objects.none()
+    if request.user.is_authenticated:
+        ext_teams = ExternalTeam.objects.filter(manager_user=request.user)
+        if ext_teams.exists():
+            external_tournament_regs = TournamentTeamRegistration.objects.filter(
+                external_team__in=ext_teams
+            ).select_related('tournament', 'external_team')
+
+    # Open tournaments the team can still register for
+    open_tournaments = Tournament.objects.filter(
+        status='registration',
+        registration_deadline__gte=timezone.now(),
+    ).exclude(
+        registrations__team=team
+    )
+
     return render(request, 'teams/dashboard.html', {
         'team': team,
         'players': players,
         'payments': payments,
         'upcoming_matches': matches_data,
         'current_round': current_round,
+        'team_tournament_regs': team_tournament_regs,
+        'external_tournament_regs': external_tournament_regs,
+        'open_tournaments': open_tournaments,
     })
 
 def all_teams(request):

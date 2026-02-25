@@ -200,14 +200,22 @@
             <div class="alert alert-success">
                 <i class="fas fa-clipboard-check me-1"></i>
                 Registration is open until {{ tournament.registration_deadline|date:"d M Y, H:i" }}.
-                <a href="{% url 'tournaments:register_team' tournament.slug %}" class="btn btn-success btn-sm ms-2">
-                    <i class="fas fa-futbol me-1"></i>Register League Team
-                </a>
-                {% if tournament.allow_external_teams %}
-                <a href="{% url 'tournaments:register_external_team' tournament.slug %}" class="btn btn-info btn-sm ms-1">
-                    <i class="fas fa-plus-circle me-1"></i>Register External Team
-                </a>
-                {% endif %}
+                <div class="mt-2">
+                    {% if request.user.is_authenticated %}
+                    <a href="{% url 'tournaments:register_team' tournament.slug %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-futbol me-1"></i>Register League Team
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}?next={% url 'tournaments:register_team' tournament.slug %}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login to Register League Team
+                    </a>
+                    {% endif %}
+                    {% if tournament.allow_external_teams %}
+                    <a href="{% url 'tournaments:register_external_team' tournament.slug %}" class="btn btn-info btn-sm ms-1">
+                        <i class="fas fa-plus-circle me-1"></i>Register External Team
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
 

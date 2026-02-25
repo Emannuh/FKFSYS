@@ -7,6 +7,7 @@ from django.http import JsonResponse, HttpResponse
 from datetime import timedelta
 from matches.models import Match
 from .models import MatchOfficials, MatchReport, SquadEditRequest
+from tournaments.models import TournamentMatchOfficials, TournamentMatch
 
 def referees_manager_required(user):
     """Check if user is in Referees Manager group or is staff"""
@@ -423,7 +424,68 @@ def referee_dashboard(request):
             squad__match_id__in=match_ids,
             status='pending'
         ).select_related('squad', 'squad__match', 'squad__team')
-        
+
+        # ── Tournament appointments ──────────────────────────────────────
+        tournament_appointments = TournamentMatchOfficials.objects.filter(
+            Q(main_referee=referee) | Q(assistant_1=referee) |
+            Q(assistant_2=referee) | Q(fourth_official=referee) |
+            Q(match_commissioner=referee)
+        ).select_related(
+            'match', 'match__tournament',
+            'match__home_team__team', 'match__home_team__external_team',
+            'match__away_team__team', 'match__away_team__external_team',
+        ).order_by('match__match_date')
+
+        tournament_upcoming = []
+        tournament_completed = []
+        for t_appt in tournament_appointments:
+            t_match = t_appt.match
+            t_role = 'Unknown'
+            if t_appt.main_referee == referee:
+                t_role = 'REFEREE'
+            elif t_appt.assistant_1 == referee:
+                t_role = 'AR1'
+            elif t_appt.assistant_2 == referee:
+                t_role = 'AR2'
+            elif t_appt.fourth_official == referee:
+                t_role = 'RESERVE'
+            elif t_appt.match_commissioner == referee:
+                t_role = 'COMMISSIONER'
+
+            def _get_name(official):
+                if not official:
+                    return None
+                if hasattr(official, 'user') and official.user:
+                    return official.user.get_full_name() or f"{official.first_name} {official.last_name}"
+                return f"{official.first_name} {official.last_name}"
+
+            t_officials_data = {
+                'main_referee': _get_name(t_appt.main_referee),
+                'assistant_1': _get_name(t_appt.assistant_1),
+                'assistant_2': _get_name(t_appt.assistant_2),
+                'fourth_official': _get_name(t_appt.fourth_official),
+                'match_commissioner': _get_name(t_appt.match_commissioner),
+            }
+
+            t_match_date = t_match.match_date.date() if t_match.match_date and hasattr(t_match.match_date, 'date') else t_match.match_date
+
+            t_info = {
+                'match': t_match,
+                'role': t_role,
+                'appointment': t_appt,
+                'officials_data': t_officials_data,
+                'match_date': t_match_date,
+                'home_name': t_match.home_team.display_name if t_match.home_team else 'TBD',
+                'away_name': t_match.away_team.display_name if t_match.away_team else 'TBD',
+                'tournament_name': t_match.tournament.name,
+                'tournament_slug': t_match.tournament.slug,
+            }
+
+            if t_match_date and t_match_date >= today:
+                tournament_upcoming.append(t_info)
+            else:
+                tournament_completed.append(t_info)
+
         context = {
             'referee': referee,
             'current_matches': current_matches,
@@ -440,6 +502,9 @@ def referee_dashboard(request):
             'suspension_reason': suspension_reason,
             'total_appointments': appointments.count(),
             'is_manager': is_manager,
+            # Tournament
+            'tournament_upcoming': tournament_upcoming,
+            'tournament_completed': tournament_completed,
         }
         return render(request, 'referees/dashboard.html', context)
     
@@ -1006,6 +1071,27 @@ def matches_needing_officials(request):
                 appointed_matches.append(match)
                 confirmed_matches.append(match)
     
+    # ── Tournament matches needing officials ─────────────────────────────
+    t_needs_officials = TournamentMatch.objects.filter(
+        Q(officials__isnull=True) | Q(officials__status='PENDING'),
+        status='scheduled',
+        match_date__gte=timezone.now(),
+    ).select_related(
+        'tournament',
+        'home_team__team', 'home_team__external_team',
+        'away_team__team', 'away_team__external_team',
+    ).order_by('match_date')
+
+    t_appointed = TournamentMatch.objects.filter(
+        officials__status__in=['APPOINTED', 'CONFIRMED'],
+        status='scheduled',
+        match_date__gte=timezone.now(),
+    ).select_related(
+        'tournament', 'officials',
+        'home_team__team', 'home_team__external_team',
+        'away_team__team', 'away_team__external_team',
+    ).order_by('match_date')
+
     context = {
         'needs_officials': needs_officials,
         'appointed_matches': appointed_matches,
@@ -1016,6 +1102,9 @@ def matches_needing_officials(request):
         'today': timezone.now().date(),
         'four_days_later': four_days_from_now.date(),
         'OFFICIAL_ROLES': MatchOfficials.OFFICIAL_ROLES,
+        # Tournament
+        't_needs_officials': t_needs_officials,
+        't_appointed': t_appointed,
     }
     
     return render(request, 'referees/matches_needing_officials.html', context)
@@ -1328,19 +1417,20 @@ def api_manager_stats(request):
     today = timezone.now().date()
     tomorrow = today + timedelta(days=1)
     next_week = today + timedelta(days=7)
+    now = timezone.now()
     
     # Matches needing officials (within 4 days)
-    four_days_from_now = timezone.now() + timedelta(days=4)
+    four_days_from_now = now + timedelta(days=4)
     needs_officials = Match.objects.filter(
         match_date__lte=four_days_from_now,
-        match_date__gte=today,
+        match_date__gte=now,
         status='scheduled'
     ).exclude(officials__status='CONFIRMED').count()
     
     # Matches pending confirmation
     pending_confirmation = Match.objects.filter(
         officials__status='APPOINTED',
-        match_date__gte=today
+        match_date__gte=now
     ).count()
     
     # Available referees
@@ -1361,7 +1451,7 @@ def api_manager_stats(request):
     # Deadlines
     appointed_matches = Match.objects.filter(
         officials__status='APPOINTED',
-        match_date__gte=today
+        match_date__gte=now
     ).select_related('officials')
 
     deadline_today = 0

@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block title %}{% if can_edit %}Submit{% else %}View{% endif %} Tournament Squad{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2">
+                <i class="fas fa-clipboard-list text-success"></i>
+                {% if can_edit %}Submit{% else %}View{% endif %} Tournament Squad
+            </h1>
+            <p class="text-muted mb-0">
+                {{ match.tournament.name }} &bull;
+                {% if match.home_team %}{{ match.home_team.display_name }}{% else %}TBD{% endif %}
+                vs
+                {% if match.away_team %}{{ match.away_team.display_name }}{% else %}TBD{% endif %}
+                – {{ match.match_date|date:"d/m/Y"|default:"TBD" }}
+            </p>
+        </div>
+        <a href="{% url 'tournaments:tournament_team_matches' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Matches
+        </a>
+    </div>
+
+    <!-- Squad Status -->
+    <div class="alert {% if squad.status == 'approved' %}alert-success{% elif squad.status == 'submitted' %}alert-info{% elif squad.status == 'locked' %}alert-dark{% else %}alert-warning{% endif %} mb-4">
+        <strong>Squad Status:</strong> {{ squad.get_status_display }}
+        {% if squad.submitted_at %}
+            | Submitted: {{ squad.submitted_at|date:"d/m/Y H:i" }}
+        {% endif %}
+        {% if squad.approved_at %}
+            | Approved: {{ squad.approved_at|date:"d/m/Y H:i" }}
+        {% endif %}
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Match duration info -->
+    <div class="alert alert-light border mb-4">
+        <i class="fas fa-stopwatch text-primary me-1"></i>
+        <strong>Match Duration:</strong> {{ match.match_duration }} minutes
+        ({{ match.half_duration }} + {{ match.half_duration }})
+        {% if match.extra_time_duration %}| Extra Time: {{ match.extra_time_duration }} min{% endif %}
+        {% if match.venue %}| <i class="fas fa-map-marker-alt me-1"></i>{{ match.venue }}{% endif %}
+    </div>
+
+    {% if can_edit %}
+    <form method="post" id="squadForm">
+        {% csrf_token %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Starting 11 -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-running me-2"></i>Starting XI (7–11 players)
+                        <span class="badge bg-white text-success float-end" id="startingCount">0/11</span>
+                    </h5>
+                    <small>Must include at least 1 goalkeeper | Minimum 7 players required</small>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% regroup eligible_players by get_position_display as position_groups %}
+                    {% for position in position_groups %}
+                        <h6 class="text-primary mt-3">{{ position.grouper }}s</h6>
+                        {% for player in position.list %}
+                            <div class="form-check mb-2 p-2 border rounded hover-highlight" style="cursor: pointer;">
+                                <input class="form-check-input starting-checkbox"
+                                       type="checkbox"
+                                       name="starting_players"
+                                       value="{{ player.id }}"
+                                       id="starting_{{ player.id }}"
+                                       data-position="{{ player.position }}"
+                                       {% if player.id in selected_starting %}checked{% endif %}
+                                       {% if not can_edit %}disabled{% endif %}
+                                       style="width: 20px; height: 20px; cursor: pointer;">
+                                <label class="form-check-label ms-2" for="starting_{{ player.id }}" style="cursor: pointer;">
+                                    <strong>#{{ player.jersey_number }}</strong> {{ player.full_name }}
+                                    <span class="badge bg-secondary">{{ player.get_position_display }}</span>
+                                </label>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Substitutes -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Substitutes (up to 14)
+                        <span class="badge bg-white text-info float-end" id="subsCount">0/14</span>
+                    </h5>
+                    <small>Optional – select substitute players</small>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% regroup eligible_players by get_position_display as position_groups %}
+                    {% for position in position_groups %}
+                        <h6 class="text-primary mt-3">{{ position.grouper }}s</h6>
+                        {% for player in position.list %}
+                            <div class="form-check mb-2 p-2 border rounded hover-highlight" style="cursor: pointer;">
+                                <input class="form-check-input sub-checkbox"
+                                       type="checkbox"
+                                       name="substitute_players"
+                                       value="{{ player.id }}"
+                                       id="sub_{{ player.id }}"
+                                       {% if player.id in selected_subs %}checked{% endif %}
+                                       {% if not can_edit %}disabled{% endif %}
+                                       style="width: 20px; height: 20px; cursor: pointer;">
+                                <label class="form-check-label ms-2" for="sub_{{ player.id }}" style="cursor: pointer;">
+                                    <strong>#{{ player.jersey_number }}</strong> {{ player.full_name }}
+                                    <span class="badge bg-secondary">{{ player.get_position_display }}</span>
+                                </label>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit -->
+    {% if can_edit %}
+    <div class="card shadow">
+        <div class="card-body text-center">
+            <button type="submit" class="btn btn-success btn-lg px-5" id="submitBtn" disabled>
+                <i class="fas fa-check-circle me-2"></i>Submit Squad
+            </button>
+            <a href="{% url 'tournaments:tournament_team_matches' %}" class="btn btn-secondary btn-lg px-5">
+                <i class="fas fa-times me-2"></i>Cancel
+            </a>
+        </div>
+    </div>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startingCheckboxes = document.querySelectorAll('.starting-checkbox');
+    const subCheckboxes = document.querySelectorAll('.sub-checkbox');
+    const startingCount = document.getElementById('startingCount');
+    const subsCount = document.getElementById('subsCount');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Clickable rows
+    document.querySelectorAll('.hover-highlight').forEach(div => {
+        div.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'INPUT') {
+                const cb = this.querySelector('input[type="checkbox"]');
+                if (cb && !cb.disabled) {
+                    cb.checked = !cb.checked;
+                    cb.dispatchEvent(new Event('change'));
+                }
+            }
+        });
+        div.addEventListener('mouseenter', function() { this.style.backgroundColor = '#f8f9fa'; });
+        div.addEventListener('mouseleave', function() { this.style.backgroundColor = ''; });
+    });
+
+    function updateCounts() {
+        const sc = document.querySelectorAll('.starting-checkbox:checked').length;
+        const subc = document.querySelectorAll('.sub-checkbox:checked').length;
+
+        startingCount.textContent = sc + '/11';
+        subsCount.textContent = subc + '/14';
+
+        startingCount.className = (sc >= 7 && sc <= 11)
+            ? 'badge bg-white text-success float-end'
+            : 'badge bg-white text-warning float-end';
+        subsCount.className = subc <= 14
+            ? 'badge bg-white text-info float-end'
+            : 'badge bg-white text-danger float-end';
+
+        // At least one GK in starting
+        const gkCount = document.querySelectorAll('.starting-checkbox:checked[data-position="GK"]').length;
+        const valid = sc >= 7 && sc <= 11 && subc <= 14 && gkCount >= 1;
+
+        if (submitBtn) {
+            submitBtn.disabled = !valid;
+            submitBtn.className = valid
+                ? 'btn btn-success btn-lg px-5'
+                : 'btn btn-secondary btn-lg px-5';
+        }
+
+        // Visual highlighting
+        document.querySelectorAll('.starting-checkbox, .sub-checkbox').forEach(cb => {
+            const p = cb.closest('.hover-highlight');
+            if (p) {
+                p.style.backgroundColor = cb.checked ? '#d4edda' : '';
+                p.style.borderColor = cb.checked ? '#28a745' : '#dee2e6';
+            }
+        });
+    }
+
+    function preventDuplicates(checkbox) {
+        const pid = checkbox.value;
+        if (checkbox.checked) {
+            if (checkbox.classList.contains('starting-checkbox')) {
+                const other = document.getElementById('sub_' + pid);
+                if (other) other.checked = false;
+            } else {
+                const other = document.getElementById('starting_' + pid);
+                if (other) other.checked = false;
+            }
+        }
+        updateCounts();
+    }
+
+    startingCheckboxes.forEach(cb => cb.addEventListener('change', function() { preventDuplicates(this); }));
+    subCheckboxes.forEach(cb => cb.addEventListener('change', function() { preventDuplicates(this); }));
+
+    updateCounts();
+});
+</script>
+{% endblock %}

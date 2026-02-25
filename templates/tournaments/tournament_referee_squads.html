@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Tournament Squad Approval{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-user-shield text-warning me-2"></i>Tournament Squad Approval</h2>
+            <p class="text-muted mb-0">Review and approve submitted squads for your assigned tournament matches</p>
+        </div>
+        <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Referee Dashboard
+        </a>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if matches_data %}
+    {% for item in matches_data %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span>
+                <i class="fas fa-trophy me-1"></i>{{ item.match.tournament.name }}
+                – {{ item.match.get_stage_display }} #{{ item.match.match_number }}
+            </span>
+            {% if item.pending_count > 0 %}
+            <span class="badge bg-warning text-dark">{{ item.pending_count }} pending</span>
+            {% else %}
+            <span class="badge bg-success">All reviewed</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <!-- Match info -->
+            <div class="text-center mb-3">
+                <h5>
+                    {% if item.match.home_team %}{{ item.match.home_team.display_name }}{% else %}TBD{% endif %}
+                    <span class="text-muted mx-2">vs</span>
+                    {% if item.match.away_team %}{{ item.match.away_team.display_name }}{% else %}TBD{% endif %}
+                </h5>
+                <p class="text-muted small mb-0">
+                    {{ item.match.match_date|date:"l, d M Y"|default:"TBD" }}
+                    {% if item.match.kickoff_time %} | {{ item.match.kickoff_time }}{% endif %}
+                    {% if item.match.venue %} | {{ item.match.venue }}{% endif %}
+                    | {{ item.match.match_duration }} min
+                </p>
+            </div>
+
+            <!-- Squads table -->
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Team</th>
+                            <th>Starting</th>
+                            <th>Subs</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for squad in item.squads %}
+                        <tr>
+                            <td class="fw-bold">{{ squad.team_registration.display_name }}</td>
+                            <td>{{ squad.get_starting_eleven.count }}/11</td>
+                            <td>{{ squad.get_substitutes.count }}/14</td>
+                            <td>
+                                {% if squad.status == 'pending' %}
+                                <span class="badge bg-secondary">Not Submitted</span>
+                                {% elif squad.status == 'submitted' %}
+                                <span class="badge bg-warning text-dark">Awaiting Approval</span>
+                                {% elif squad.status == 'approved' %}
+                                <span class="badge bg-success">Approved</span>
+                                {% elif squad.status == 'locked' %}
+                                <span class="badge bg-info">Locked</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ squad.submitted_at|date:"d/m/Y H:i"|default:"–" }}</td>
+                            <td class="text-end">
+                                {% if squad.status == 'submitted' %}
+                                <a href="{% url 'tournaments:tournament_approve_squad' squad.pk %}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-check-double me-1"></i>Review
+                                </a>
+                                {% elif squad.status == 'approved' or squad.status == 'locked' %}
+                                <a href="{% url 'tournaments:tournament_approve_squad' squad.pk %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">Waiting…</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No tournament squads to review</h5>
+            <p class="text-muted">You have no assigned tournament matches with pending squads.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
