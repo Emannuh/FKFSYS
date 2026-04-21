@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Request Substitution - {{ team.name }}{% endblock %}
@@ -32,7 +32,7 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>New Substitution Request</h5>
                 </div>
                 <div class="card-body">
@@ -154,7 +154,7 @@
             <!-- Pending Requests -->
             {% if pending_requests %}
             <div class="card shadow mb-4">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;">
                     <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Pending Requests ({{ pending_requests.count }})</h6>
                 </div>
                 <div class="card-body p-0">
@@ -181,7 +181,7 @@
             <!-- Completed Substitutions -->
             {% if completed_subs %}
             <div class="card shadow">
-                <div class="card-header bg-success text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                     <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Completed ({{ completed_subs.count }})</h6>
                 </div>
                 <div class="card-body p-0">
@@ -192,11 +192,11 @@
                                 <div>
                                     <strong>{{ sub.minute }}'</strong><br>
                                     <small>
-                                        <span class="text-danger">{{ sub.player_out.full_name }}</span> → 
+                                        <span class="text-danger">{{ sub.player_out.full_name }}</span> â†’ 
                                         <span class="text-success">{{ sub.player_in.full_name }}</span>
                                     </small>
                                 </div>
-                                <span class="badge bg-success">✓</span>
+                                <span class="badge bg-success">âœ“</span>
                             </div>
                         </div>
                         {% endfor %}
@@ -208,3 +208,4 @@
     </div>
 </div>
 {% endblock %}
+

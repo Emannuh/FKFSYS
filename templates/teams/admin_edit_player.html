@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Edit Player - {{ player.full_name }}{% endblock %}
 
@@ -19,7 +19,7 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h5><i class="fas fa-user-edit"></i> Player Details</h5>
                 </div>
                 <div class="card-body">
@@ -142,22 +142,22 @@
                             
                             <div class="row">
                                 <div class="col-md-3 mb-3">
-                                    <label for="goals_scored" class="form-label">⚽ Goals Scored</label>
+                                    <label for="goals_scored" class="form-label">âš½ Goals Scored</label>
                                     <input type="number" class="form-control" id="goals_scored" name="goals_scored" 
                                            value="{{ player.goals_scored }}" min="0">
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="yellow_cards" class="form-label">🟨 Yellow Cards</label>
+                                    <label for="yellow_cards" class="form-label">ðŸŸ¨ Yellow Cards</label>
                                     <input type="number" class="form-control" id="yellow_cards" name="yellow_cards" 
                                            value="{{ player.yellow_cards }}" min="0">
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="red_cards" class="form-label">🟥 Red Cards</label>
+                                    <label for="red_cards" class="form-label">ðŸŸ¥ Red Cards</label>
                                     <input type="number" class="form-control" id="red_cards" name="red_cards" 
                                            value="{{ player.red_cards }}" min="0">
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="matches_played" class="form-label">📊 Matches Played</label>
+                                    <label for="matches_played" class="form-label">ðŸ“Š Matches Played</label>
                                     <input type="number" class="form-control" id="matches_played" name="matches_played" 
                                            value="{{ player.matches_played }}" min="0">
                                 </div>
@@ -183,7 +183,7 @@
         <!-- Player Info Card -->
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header bg-info text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h5><i class="fas fa-info-circle"></i> Current Player Info</h5>
                 </div>
                 <div class="card-body text-center">
@@ -209,15 +209,15 @@
                     <div class="row text-center">
                         <div class="col-4">
                             <strong>Goals</strong>
-                            <p>⚽ {{ player.goals_scored }}</p>
+                            <p>âš½ {{ player.goals_scored }}</p>
                         </div>
                         <div class="col-4">
                             <strong>Yellow</strong>
-                            <p>🟨 {{ player.yellow_cards }}</p>
+                            <p>ðŸŸ¨ {{ player.yellow_cards }}</p>
                         </div>
                         <div class="col-4">
                             <strong>Red</strong>
-                            <p>🟥 {{ player.red_cards }}</p>
+                            <p>ðŸŸ¥ {{ player.red_cards }}</p>
                         </div>
                     </div>
                     <hr>
@@ -266,3 +266,4 @@
     }
 </style>
 {% endblock %}
+

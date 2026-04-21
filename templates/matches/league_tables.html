@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}League Tables - FKF Meru League{% endblock %}
@@ -179,7 +179,7 @@
 <div class="row mt-5">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header card-header-custom">
+            <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
                 <h5 class="mb-0">Top Scorers</h5>
             </div>
             <div class="card-body">
@@ -199,7 +199,7 @@
                                 {% endif %}
                                 <div>
                                     <h6 class="mb-0">{{ player.full_name }}</h6>
-                                    <small class="text-muted">{{ player.team.team_name }} • {{ player.position }}</small>
+                                    <small class="text-muted">{{ player.team.team_name }} â€¢ {{ player.position }}</small>
                                 </div>
                             </div>
                             <div class="text-end">
@@ -219,7 +219,7 @@
     
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header card-header-custom">
+            <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
                 <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Top Goalkeepers</h5>
             </div>
             <div class="card-body">

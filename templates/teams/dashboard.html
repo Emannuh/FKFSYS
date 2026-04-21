@@ -1,4 +1,4 @@
-<!-- templates/teams/dashboard.html -->
+﻿<!-- templates/teams/dashboard.html -->
 {% extends 'base.html' %}
 
 {% block title %}Team Dashboard - {{ team.team_name }}{% endblock %}
@@ -43,7 +43,7 @@
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header bg-light">
+                <div class="card-header" style="background:linear-gradient(90deg,#f0f4f8,#e8ecf0);border-bottom:1px solid #e0e6ec;">
                     <h5 class="mb-0"><i class="fas fa-info-circle"></i> Team Details</h5>
                 </div>
                 <div class="card-body">
@@ -58,7 +58,7 @@
         
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header bg-light">
+                <div class="card-header" style="background:linear-gradient(90deg,#f0f4f8,#e8ecf0);border-bottom:1px solid #e0e6ec;">
                     <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Quick Stats</h5>
                 </div>
                 <div class="card-body text-center">
@@ -89,7 +89,7 @@
 
     <!-- Tournaments Section -->
     <div class="card mb-4">
-        <div class="card-header bg-success text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
             <h5 class="mb-0"><i class="fas fa-trophy"></i> Tournaments</h5>
         </div>
         <div class="card-body">
@@ -110,7 +110,7 @@
                                     {{ reg.get_status_display }}
                                 </span>
                             </td>
-                            <td>{{ reg.tournament.start_date|date:"d M" }} – {{ reg.tournament.end_date|date:"d M Y" }}</td>
+                            <td>{{ reg.tournament.start_date|date:"d M" }} â€“ {{ reg.tournament.end_date|date:"d M Y" }}</td>
                             <td class="text-end">
                                 <a href="{% url 'tournaments:tournament_detail' reg.tournament.slug %}" class="btn btn-sm btn-outline-success">
                                     <i class="fas fa-eye me-1"></i>View
@@ -132,7 +132,7 @@
                                     {{ reg.get_status_display }}
                                 </span>
                             </td>
-                            <td>{{ reg.tournament.start_date|date:"d M" }} – {{ reg.tournament.end_date|date:"d M Y" }}</td>
+                            <td>{{ reg.tournament.start_date|date:"d M" }} â€“ {{ reg.tournament.end_date|date:"d M Y" }}</td>
                             <td class="text-end">
                                 <a href="{% url 'tournaments:tournament_detail' reg.tournament.slug %}" class="btn btn-sm btn-outline-success">
                                     <i class="fas fa-eye me-1"></i>View
@@ -151,7 +151,7 @@
             {% endif %}
 
             {% if open_tournaments %}
-            <h6 class="text-muted mb-3"><i class="fas fa-door-open me-1"></i>Open Tournaments – Register Now</h6>
+            <h6 class="text-muted mb-3"><i class="fas fa-door-open me-1"></i>Open Tournaments â€“ Register Now</h6>
             <div class="row">
                 {% for t in open_tournaments %}
                 <div class="col-md-6 col-lg-4 mb-3">
@@ -193,7 +193,7 @@
 
     <!-- Matchday Squad Selection -->
     <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
             <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Matchday Squad Selection - Upcoming Matches</h5>
         </div>
         <div class="card-body">
@@ -330,7 +330,7 @@
 
     <!-- Players -->
     <div class="card mb-4">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex" style="background:linear-gradient(90deg,#f0f4f8,#e8ecf0);border-bottom:1px solid #e0e6ec;"<!-- justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-users"></i> Team Players ({{ players.count }})</h5>
             <a href="{% url 'teams:add_players_approved' %}" class="btn btn-sm btn-primary">
                 <i class="fas fa-plus"></i> Add Player
@@ -356,7 +356,7 @@
                                 <div>
                                     <h6 class="mb-1">{{ player.first_name }} {{ player.last_name }}</h6>
                                     <small class="text-muted d-block">
-                                        #{{ player.jersey_number }} • {{ player.get_position_display }}
+                                        #{{ player.jersey_number }} â€¢ {{ player.get_position_display }}
                                     </small>
                                     {% if player.is_captain %}
                                     <span class="badge bg-warning mt-1">Captain</span>

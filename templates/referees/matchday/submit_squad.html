@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{% if can_edit %}Submit{% else %}View{% endif %} Matchday Squad - {{ team.team_name }}{% endblock %}
@@ -44,7 +44,7 @@
             <!-- Starting 11 -->
             <div class="col-md-6">
                 <div class="card shadow mb-4">
-                    <div class="card-header bg-success text-white">
+                    <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                         <h5 class="mb-0">
                             <i class="fas fa-running me-2"></i>Starting XI (7-11 players)
                             <span class="badge bg-white text-success float-end" id="startingCount">0/11</span>
@@ -80,7 +80,7 @@
             <!-- Substitutes -->
             <div class="col-md-6">
                 <div class="card shadow mb-4">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                         <h5 class="mb-0">
                             <i class="fas fa-users me-2"></i>Substitutes (up to 14 players)
                             <span class="badge bg-white text-info float-end" id="subsCount">0/14</span>
@@ -253,3 +253,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+

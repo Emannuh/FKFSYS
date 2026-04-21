@@ -1,183 +1,223 @@
-{% extends "base.html" %}
-{% block title %}League Admin Dashboard{% endblock %}
+﻿{% extends "base.html" %}
+{% block title %}League Admin Dashboard — FKF Meru League{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-hero {
+        background: linear-gradient(135deg, #c1121f 0%, #1a1a2e 100%);
+        border-radius: 18px; padding: 2rem; color: white;
+        position: relative; overflow: hidden; margin-bottom: 1.5rem;
+    }
+    .admin-hero::after {
+        content: ''; position: absolute; right: -40px; top: -40px;
+        width: 200px; height: 200px; border-radius: 50%;
+        background: rgba(255,255,255,0.04);
+    }
+    .mgmt-card {
+        background: white; border-radius: 14px;
+        border: 1px solid #f0f4f8; transition: all 0.25s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%;
+        overflow: hidden;
+    }
+    .mgmt-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
+    .mgmt-card-icon {
+        width: 52px; height: 52px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; color: white; margin-bottom: 1rem;
+    }
+    .reg-toggle-card {
+        border-radius: 14px; border: none; text-align: center;
+        background: #f8fafc; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h1>League Admin Dashboard</h1>
-    <p>Welcome, {{ user.username }}!</p>
-    
+<div class="container-fluid px-3">
+
+    <!-- Hero Banner -->
+    <div class="admin-hero" data-aos="fade-down">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="mb-2">
+                    <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:3px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;">
+                        <i class="fas fa-shield-alt me-1"></i> League Administrator
+                    </span>
+                </div>
+                <h1 style="font-size:1.7rem;margin-bottom:6px;">Welcome, {{ user.get_full_name|default:user.username }}</h1>
+                <p style="opacity:0.8;margin:0;">Manage the league — teams, players, matches, officials &amp; registration controls.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'matches:manage_matches' %}" class="btn" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:10px;">
+                    <i class="fas fa-futbol me-1"></i> Matches
+                </a>
+                <a href="{% url 'teams:dashboard' %}" class="btn" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:10px;">
+                    <i class="fas fa-users me-1"></i> Teams
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Management Quick Links -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-users"></i> Team Management</h5>
-                    <p class="text-muted small">Manage teams and approvals</p>
-                    <a href="{% url 'teams:dashboard' %}" class="btn btn-primary w-100">Manage Teams</a>
+    <div class="row g-3 mb-4" data-aos="fade-up">
+        <div class="col-6 col-md-3">
+            <div class="mgmt-card p-3">
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4361ee,#3a0ca3);">
+                    <i class="fas fa-users"></i>
                 </div>
+                <h6 class="fw-bold mb-1">Team Management</h6>
+                <p class="text-muted small mb-3">Manage teams and approvals</p>
+                <a href="{% url 'teams:dashboard' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:8px;">
+                    Manage Teams
+                </a>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-user-friends"></i> Player Management</h5>
-                    <p class="text-muted small">Manage player registrations</p>
-                    <a href="{% url 'teams:admin_manage_players' %}" class="btn btn-success w-100">Manage Players</a>
+        <div class="col-6 col-md-3">
+            <div class="mgmt-card p-3">
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#2dc653,#198754);">
+                    <i class="fas fa-user-friends"></i>
                 </div>
+                <h6 class="fw-bold mb-1">Player Management</h6>
+                <p class="text-muted small mb-3">Manage player registrations</p>
+                <a href="{% url 'teams:admin_manage_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;border-radius:8px;">
+                    Manage Players
+                </a>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-user-tie"></i> Officials Management</h5>
-                    <p class="text-muted small">Manage team officials</p>
-                    <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-info w-100">Manage Officials</a>
+        <div class="col-6 col-md-3">
+            <div class="mgmt-card p-3">
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4cc9f0,#4361ee);">
+                    <i class="fas fa-user-tie"></i>
                 </div>
+                <h6 class="fw-bold mb-1">Officials Management</h6>
+                <p class="text-muted small mb-3">Manage team officials</p>
+                <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4cc9f0,#4361ee);color:white;border-radius:8px;">
+                    Manage Officials
+                </a>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-futbol"></i> Match Management</h5>
-                    <p class="text-muted small">Manage fixtures & matches</p>
-                    <a href="{% url 'matches:manage_matches' %}" class="btn btn-warning w-100">Manage Matches</a>
+        <div class="col-6 col-md-3">
+            <div class="mgmt-card p-3">
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#f4a261,#e76f51);">
+                    <i class="fas fa-futbol"></i>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- User Management (Super Admin Only) -->
-    {% if user.is_staff or user.is_superuser %}
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card border-danger">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-user-shield"></i> User Management</h5>
-                    <p class="text-muted">Create and manage League Admin accounts</p>
-                    <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-danger">
-                        <i class="fas fa-users-cog"></i> Manage League Admins
-                    </a>
-                </div>
+                <h6 class="fw-bold mb-1">Match Management</h6>
+                <p class="text-muted small mb-3">Manage fixtures &amp; matches</p>
+                <a href="{% url 'matches:manage_matches' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;border-radius:8px;">
+                    Manage Matches
+                </a>
             </div>
         </div>
     </div>
-    {% endif %}
-    
-    <!-- Transfer Management Quick Links -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-exchange-alt"></i> Pending Transfers
-                        {% if pending_transfers > 0 %}
-                        <span class="badge bg-warning">{{ pending_transfers }}</span>
-                        {% endif %}
-                    </h5>
-                    <p class="text-muted">Transfer requests awaiting parent club decision</p>
-                    <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-warning">
-                        View Transfers
-                    </a>
+
+    <!-- Transfer Management + User Management -->
+    <div class="row g-3 mb-4" data-aos="fade-up">
+        <div class="col-md-4">
+            <div class="mgmt-card p-3">
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#f4a261,#f72585);">
+                    <i class="fas fa-exchange-alt"></i>
                 </div>
+                <h6 class="fw-bold mb-1">Pending Transfers
+                    {% if pending_transfers > 0 %}<span class="badge bg-warning text-dark ms-1">{{ pending_transfers }}</span>{% endif %}
+                </h6>
+                <p class="text-muted small mb-3">Awaiting parent club decision</p>
+                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#f72585);color:white;border-radius:8px;">
+                    View Transfers
+                </a>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-times-circle"></i> Rejected Transfers
-                        {% if rejected_transfers > 0 %}
-                        <span class="badge bg-danger">{{ rejected_transfers }}</span>
-                        {% endif %}
-                    </h5>
-                    <p class="text-muted">Transfers that may need admin review/override</p>
-                    <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-danger">
-                        Review Rejections
-                    </a>
+        <div class="col-md-4">
+            <div class="mgmt-card p-3">
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#e63946,#c1121f);">
+                    <i class="fas fa-times-circle"></i>
                 </div>
+                <h6 class="fw-bold mb-1">Rejected Transfers
+                    {% if rejected_transfers > 0 %}<span class="badge bg-danger ms-1">{{ rejected_transfers }}</span>{% endif %}
+                </h6>
+                <p class="text-muted small mb-3">Transfers needing admin review</p>
+                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;border-radius:8px;">
+                    Review Rejections
+                </a>
             </div>
         </div>
+        {% if user.is_staff or user.is_superuser %}
+        <div class="col-md-4">
+            <div class="mgmt-card p-3">
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#7b2d8b,#c1121f);">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h6 class="fw-bold mb-1">User Management</h6>
+                <p class="text-muted small mb-3">Create &amp; manage League Admin accounts</p>
+                <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#7b2d8b,#c1121f);color:white;border-radius:8px;">
+                    <i class="fas fa-users-cog me-1"></i> Manage Admins
+                </a>
+            </div>
+        </div>
+        {% endif %}
     </div>
-    
+
     <!-- Registration Window Controls -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-cog"></i> Registration Controls</h5>
+    <div class="card shadow-sm mb-4" data-aos="fade-up">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+            <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Registration Window Controls</h5>
         </div>
         <div class="card-body">
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-md-4">
-                    <div class="card border-{% if league_settings.team_registration_open %}success{% else %}danger{% endif %}">
-                        <div class="card-body text-center">
-                            <h6>Team Registration</h6>
-                            <div class="mb-2">
-                                {% if league_settings.team_registration_open %}
-                                <span class="badge bg-success fs-5">OPEN</span>
-                                {% else %}
-                                <span class="badge bg-danger fs-5">CLOSED</span>
-                                {% endif %}
-                            </div>
-                            <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="window_type" value="team">
-                                <button type="submit" class="btn btn-sm btn-{% if league_settings.team_registration_open %}danger{% else %}success{% endif %}">
-                                    {% if league_settings.team_registration_open %}
-                                    <i class="fas fa-lock"></i> Close
-                                    {% else %}
-                                    <i class="fas fa-unlock"></i> Open
-                                    {% endif %}
-                                </button>
-                            </form>
+                    <div class="reg-toggle-card p-3">
+                        <h6 class="fw-bold">Team Registration</h6>
+                        <div class="mb-2">
+                            {% if league_settings.team_registration_open %}
+                            <span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
+                            {% else %}
+                            <span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>
+                            {% endif %}
                         </div>
+                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="window_type" value="team">
+                            <button type="submit" class="btn btn-sm {% if league_settings.team_registration_open %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
+                                {% if league_settings.team_registration_open %}<i class="fas fa-lock"></i> Close{% else %}<i class="fas fa-unlock"></i> Open{% endif %}
+                            </button>
+                        </form>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card border-{% if league_settings.player_registration_open %}success{% else %}danger{% endif %}">
-                        <div class="card-body text-center">
-                            <h6>Player Registration</h6>
-                            <div class="mb-2">
-                                {% if league_settings.player_registration_open %}
-                                <span class="badge bg-success fs-5">OPEN</span>
-                                {% else %}
-                                <span class="badge bg-danger fs-5">CLOSED</span>
-                                {% endif %}
-                            </div>
-                            <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="window_type" value="player">
-                                <button type="submit" class="btn btn-sm btn-{% if league_settings.player_registration_open %}danger{% else %}success{% endif %}">
-                                    {% if league_settings.player_registration_open %}
-                                    <i class="fas fa-lock"></i> Close
-                                    {% else %}
-                                    <i class="fas fa-unlock"></i> Open
-                                    {% endif %}
-                                </button>
-                            </form>
+                    <div class="reg-toggle-card p-3">
+                        <h6 class="fw-bold">Player Registration</h6>
+                        <div class="mb-2">
+                            {% if league_settings.player_registration_open %}
+                            <span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
+                            {% else %}
+                            <span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>
+                            {% endif %}
                         </div>
+                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="window_type" value="player">
+                            <button type="submit" class="btn btn-sm {% if league_settings.player_registration_open %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
+                                {% if league_settings.player_registration_open %}<i class="fas fa-lock"></i> Close{% else %}<i class="fas fa-unlock"></i> Open{% endif %}
+                            </button>
+                        </form>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card border-{% if league_settings.transfer_window_open %}success{% else %}danger{% endif %}">
-                        <div class="card-body text-center">
-                            <h6>Transfer Window</h6>
-                            <div class="mb-2">
-                                {% if league_settings.transfer_window_open %}
-                                <span class="badge bg-success fs-5">OPEN</span>
-                                {% else %}
-                                <span class="badge bg-danger fs-5">CLOSED</span>
-                                {% endif %}
-                            </div>
-                            <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="window_type" value="transfer">
-                                <button type="submit" class="btn btn-sm btn-{% if league_settings.transfer_window_open %}danger{% else %}success{% endif %}">
-                                    {% if league_settings.transfer_window_open %}
-                                    <i class="fas fa-lock"></i> Close
-                                    {% else %}
-                                    <i class="fas fa-unlock"></i> Open
-                                    {% endif %}
-                                </button>
-                            </form>
+                    <div class="reg-toggle-card p-3">
+                        <h6 class="fw-bold">Transfer Window</h6>
+                        <div class="mb-2">
+                            {% if league_settings.transfer_window_open %}
+                            <span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
+                            {% else %}
+                            <span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>
+                            {% endif %}
                         </div>
+                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="window_type" value="transfer">
+                            <button type="submit" class="btn btn-sm {% if league_settings.transfer_window_open %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
+                                {% if league_settings.transfer_window_open %}<i class="fas fa-lock"></i> Close{% else %}<i class="fas fa-unlock"></i> Open{% endif %}
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -185,39 +225,40 @@
     </div>
 
     <!-- Deadline Controls -->
-    <div class="card mb-4">
-        <div class="card-header bg-dark text-white">
-            <h5 class="mb-0"><i class="fas fa-hourglass-half"></i> Set/Update Deadlines (Countdown)</h5>
+    <div class="card shadow-sm mb-4" data-aos="fade-up">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+            <h5 class="mb-0"><i class="fas fa-hourglass-half me-2"></i>Set / Update Deadlines</h5>
         </div>
         <div class="card-body">
             <form method="post" action="{% url 'admin_dashboard:update_deadlines' %}">
                 {% csrf_token %}
                 <div class="row g-3 align-items-end">
                     <div class="col-md-4">
-                        <label class="form-label">Team Registration Deadline</label>
+                        <label class="form-label fw-semibold">Team Registration Deadline</label>
                         <input type="datetime-local" name="team_deadline" class="form-control"
-                               value="{% if league_settings.team_registration_deadline %}{{ league_settings.team_registration_deadline|date:'Y-m-d\\TH:i' }}{% endif %}">
+                               value="{% if league_settings.team_registration_deadline %}{{ league_settings.team_registration_deadline|date:'Y-m-d\TH:i' }}{% endif %}">
                         <small class="text-muted">Leave blank to clear.</small>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Player Registration Deadline</label>
+                        <label class="form-label fw-semibold">Player Registration Deadline</label>
                         <input type="datetime-local" name="player_deadline" class="form-control"
-                               value="{% if league_settings.player_registration_deadline %}{{ league_settings.player_registration_deadline|date:'Y-m-d\\TH:i' }}{% endif %}">
+                               value="{% if league_settings.player_registration_deadline %}{{ league_settings.player_registration_deadline|date:'Y-m-d\TH:i' }}{% endif %}">
                         <small class="text-muted">Leave blank to clear.</small>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Transfer Window Deadline</label>
+                        <label class="form-label fw-semibold">Transfer Window Deadline</label>
                         <input type="datetime-local" name="transfer_deadline" class="form-control"
-                               value="{% if league_settings.transfer_window_deadline %}{{ league_settings.transfer_window_deadline|date:'Y-m-d\\TH:i' }}{% endif %}">
+                               value="{% if league_settings.transfer_window_deadline %}{{ league_settings.transfer_window_deadline|date:'Y-m-d\TH:i' }}{% endif %}">
                         <small class="text-muted">Leave blank to clear.</small>
                     </div>
                 </div>
-                <div class="mt-3 d-flex justify-content-between align-items-center">
-                    <div class="text-muted">Deadlines auto-close their windows when reached. Use toggles above for instant close/open.</div>
-                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Deadlines</button>
+                <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <p class="text-muted mb-0 small"><i class="fas fa-info-circle me-1"></i> Deadlines auto-close their windows when reached.</p>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i> Save Deadlines</button>
                 </div>
             </form>
         </div>
     </div>
+
 </div>
 {% endblock %}

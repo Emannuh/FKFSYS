@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Manage Suspensions - Admin Dashboard{% endblock %}
@@ -20,7 +20,7 @@
 
 <!-- Red Card Suspensions -->
 <div class="card mb-4">
-    <div class="card-header card-header-custom">
+    <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
         <h5 class="mb-0">Direct Red Card Suspensions (3 Match Ban)</h5>
     </div>
     <div class="card-body">
@@ -48,7 +48,7 @@
                                 {% endif %}
                                 <div>
                                     <strong>{{ player.full_name }}</strong><br>
-                                    <small>#{{ player.jersey_number }} • {{ player.position }}</small>
+                                    <small>#{{ player.jersey_number }} â€¢ {{ player.position }}</small>
                                 </div>
                             </div>
                         </td>
@@ -90,7 +90,7 @@
 
 <!-- Two Yellow Cards Suspensions -->
 <div class="card mb-4">
-    <div class="card-header card-header-custom">
+    <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
         <h5 class="mb-0">Two Yellow Cards Suspensions (2 Match Ban)</h5>
     </div>
     <div class="card-body">
@@ -117,7 +117,7 @@
                                 {% endif %}
                                 <div>
                                     <strong>{{ player.full_name }}</strong><br>
-                                    <small>#{{ player.jersey_number }} • {{ player.position }}</small>
+                                    <small>#{{ player.jersey_number }} â€¢ {{ player.position }}</small>
                                 </div>
                             </div>
                         </td>
@@ -152,7 +152,7 @@
 
 <!-- Accumulated Yellow Cards Suspensions -->
 <div class="card">
-    <div class="card-header card-header-custom">
+    <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
         <h5 class="mb-0">Accumulated Yellow Cards (6 Cards = 1 Match Ban)</h5>
     </div>
     <div class="card-body">
@@ -179,7 +179,7 @@
                                 {% endif %}
                                 <div>
                                     <strong>{{ player.full_name }}</strong><br>
-                                    <small>#{{ player.jersey_number }} • {{ player.position }}</small>
+                                    <small>#{{ player.jersey_number }} â€¢ {{ player.position }}</small>
                                 </div>
                             </div>
                         </td>

@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}Edit Match #{{ match.match_number }} – {{ tournament.name }}{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Edit Match #{{ match.match_number }} â€“ {{ tournament.name }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -8,7 +8,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3><i class="fas fa-edit text-primary me-2"></i>Edit Match Details</h3>
-                    <p class="text-muted mb-0">{{ tournament.name }} – {{ match.get_stage_display }} #{{ match.match_number }}</p>
+                    <p class="text-muted mb-0">{{ tournament.name }} â€“ {{ match.get_stage_display }} #{{ match.match_number }}</p>
                 </div>
                 <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-arrow-left me-1"></i>Back to Fixtures
@@ -37,7 +37,7 @@
 
             <!-- Edit form -->
             <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h6 class="mb-0"><i class="fas fa-cog me-1"></i>Match Settings</h6>
                 </div>
                 <div class="card-body">
@@ -87,7 +87,7 @@
                                 <label for="extra_time_duration" class="form-label">Extra Time (min)</label>
                                 <input type="number" name="extra_time_duration" id="extra_time_duration" class="form-control"
                                        value="{{ match.extra_time_duration }}" min="0" max="60">
-                                <div class="form-text">Standard: 30 (2×15)</div>
+                                <div class="form-text">Standard: 30 (2Ã—15)</div>
                             </div>
                         </div>
 
@@ -110,3 +110,4 @@
     </div>
 </div>
 {% endblock %}
+

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Confirm Appointment{% endblock %}
@@ -19,7 +19,7 @@
                     </nav>
                 </div>
                 <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-outline-secondary">
-                    ← Back to Dashboard
+                    â† Back to Dashboard
                 </a>
             </div>
 
@@ -28,14 +28,14 @@
                 <div class="card-header bg-{% if already_confirmed %}success{% else %}warning{% endif %} text-white">
                     <h4 class="mb-0">
                         <i class="fas {% if already_confirmed %}fa-check-circle{% else %}fa-exclamation-triangle{% endif %} me-2"></i>
-                        {% if already_confirmed %}✅ Appointment Confirmed{% else %}⚠️ Confirm Your Appointment{% endif %}
+                        {% if already_confirmed %}âœ… Appointment Confirmed{% else %}âš ï¸ Confirm Your Appointment{% endif %}
                     </h4>
                 </div>
                 
                 <div class="card-body">
                     <!-- Match Details Card -->
                     <div class="card mb-4">
-                        <div class="card-header bg-light">
+                        <div class="card-header" style="background:linear-gradient(90deg,#f0f4f8,#e8ecf0);border-bottom:1px solid #e0e6ec;">
                             <h5 class="mb-0">Match Details</h5>
                         </div>
                         <div class="card-body">
@@ -96,7 +96,7 @@
                                 <i class="fas fa-check-circle fa-2x"></i>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h5 class="alert-heading">✅ Already Confirmed</h5>
+                                <h5 class="alert-heading">âœ… Already Confirmed</h5>
                                 <p class="mb-1">You have already confirmed your appointment for this match.</p>
                                 <p class="mb-0"><strong>Confirmed on:</strong> {{ officials.main_confirmed_at|date:"F j, Y H:i" }}</p>
                             </div>
@@ -137,7 +137,7 @@
                                     <div class="d-grid">
                                         <button type="submit" class="btn btn-success btn-lg py-3">
                                             <i class="fas fa-check-circle me-2"></i>
-                                            ✅ Confirm My Appointment
+                                            âœ… Confirm My Appointment
                                         </button>
                                     </div>
                                 </form>
@@ -149,7 +149,7 @@
 
                     <!-- Match Officials -->
                     <div class="card mt-4">
-                        <div class="card-header bg-light">
+                        <div class="card-header" style="background:linear-gradient(90deg,#f0f4f8,#e8ecf0);border-bottom:1px solid #e0e6ec;">
                             <h5 class="mb-0">Match Officials</h5>
                         </div>
                         <div class="card-body">
@@ -193,9 +193,9 @@
                                             </td>
                                             <td>
                                                 {% if official.confirmed %}
-                                                <span class="badge bg-success">✅ Confirmed</span>
+                                                <span class="badge bg-success">âœ… Confirmed</span>
                                                 {% elif official.referee %}
-                                                <span class="badge bg-warning">⏳ Pending</span>
+                                                <span class="badge bg-warning">â³ Pending</span>
                                                 {% else %}
                                                 <span class="badge bg-secondary">Not appointed</span>
                                                 {% endif %}
@@ -233,7 +233,7 @@
 
             <!-- Important Notes -->
             <div class="card mt-4">
-                <div class="card-header bg-info text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Important Notes</h5>
                 </div>
                 <div class="card-body">

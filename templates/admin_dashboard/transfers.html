@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Manage Transfers{% endblock %}
 
 {% block content %}
@@ -16,7 +16,7 @@
     <!-- Rejected Transfers (Admin Override) -->
     {% if rejected_transfers %}
     <div class="card mb-4">
-        <div class="card-header bg-danger text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
             <h5 class="mb-0"><i class="fas fa-times-circle"></i> Rejected Transfers ({{ rejected_transfers.count }})</h5>
         </div>
         <div class="card-body">
@@ -26,7 +26,7 @@
                     <thead>
                         <tr>
                             <th>Player</th>
-                            <th>From → To</th>
+                            <th>From â†’ To</th>
                             <th>Rejected By</th>
                             <th>Reason</th>
                             <th>Date</th>
@@ -37,7 +37,7 @@
                         {% for transfer in rejected_transfers %}
                         <tr>
                             <td><strong>{{ transfer.player.full_name }}</strong></td>
-                            <td>{{ transfer.from_team.team_name }} → {{ transfer.to_team.team_name }}</td>
+                            <td>{{ transfer.from_team.team_name }} â†’ {{ transfer.to_team.team_name }}</td>
                             <td>{{ transfer.parent_decision_by.username }}</td>
                             <td>
                                 <button class="btn btn-sm btn-outline-info" 
@@ -90,7 +90,7 @@
                     <thead>
                         <tr>
                             <th>Player</th>
-                            <th>From → To</th>
+                            <th>From â†’ To</th>
                             <th>Requested By</th>
                             <th>Request Date</th>
                             <th>Status</th>
@@ -101,10 +101,10 @@
                         {% for transfer in pending_transfers %}
                         <tr>
                             <td><strong>{{ transfer.player.full_name }}</strong></td>
-                            <td>{{ transfer.from_team.team_name }} → {{ transfer.to_team.team_name }}</td>
+                            <td>{{ transfer.from_team.team_name }} â†’ {{ transfer.to_team.team_name }}</td>
                             <td>{{ transfer.requested_by.username }}</td>
                             <td>{{ transfer.request_date|date:"M d, Y" }}</td>
-                            <td><span class="badge bg-warning">⏳ Pending</span></td>
+                            <td><span class="badge bg-warning">â³ Pending</span></td>
                             <td>
                                 <a href="{% url 'admin_dashboard:override_transfer' transfer.id %}" 
                                    class="btn btn-sm btn-success">
@@ -123,7 +123,7 @@
     <!-- Recent Approved Transfers -->
     {% if approved_transfers %}
     <div class="card">
-        <div class="card-header bg-success text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
             <h5 class="mb-0"><i class="fas fa-check-circle"></i> Recent Approved Transfers (Last 20)</h5>
         </div>
         <div class="card-body">
@@ -132,7 +132,7 @@
                     <thead>
                         <tr>
                             <th>Player</th>
-                            <th>From → To</th>
+                            <th>From â†’ To</th>
                             <th>Approved By</th>
                             <th>Override?</th>
                             <th>Date</th>
@@ -142,7 +142,7 @@
                         {% for transfer in approved_transfers %}
                         <tr>
                             <td><strong>{{ transfer.player.full_name }}</strong></td>
-                            <td>{{ transfer.from_team.team_name }} → {{ transfer.to_team.team_name }}</td>
+                            <td>{{ transfer.from_team.team_name }} â†’ {{ transfer.to_team.team_name }}</td>
                             <td>
                                 {% if transfer.admin_override %}
                                 {{ transfer.admin_override_by.username }} (Admin)
@@ -180,3 +180,4 @@
     {% endif %}
 </div>
 {% endblock %}
+

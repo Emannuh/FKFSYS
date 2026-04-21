@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load crispy_forms_tags crispy_forms_filters %}
 
 {% block title %}Match Report Details - FKF Meru League{% endblock %}
@@ -33,7 +33,7 @@
 
             <!-- Match Info Header -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h4 class="mb-0"><i class="fas fa-futbol"></i> Match Information</h4>
                 </div>
                 <div class="card-body">
@@ -82,7 +82,7 @@
             <!-- Goals Section -->
             {% if goals %}
             <div class="card shadow mb-4">
-                <div class="card-header bg-success text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                     <h5 class="mb-0"><i class="fas fa-star"></i> Goals ({{ goals.count }})</h5>
                 </div>
                 <div class="card-body">
@@ -125,7 +125,7 @@
             <!-- Cautions Section -->
             {% if cautions %}
             <div class="card shadow mb-4">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;">
                     <h5 class="mb-0"><i class="fas fa-flag"></i> Cautions ({{ cautions.count }})</h5>
                 </div>
                 <div class="card-body">
@@ -159,7 +159,7 @@
 
             <!-- Incidents & Comments -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;">
                     <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Incidents & Comments</h5>
                 </div>
                 <div class="card-body">
@@ -207,3 +207,4 @@
     </div>
 </div>
 {% endblock %}
+

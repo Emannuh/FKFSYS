@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load crispy_forms_tags crispy_forms_filters %}
 
 {% block title %}Approve Report - FKF Meru League{% endblock %}
@@ -18,7 +18,7 @@
         <div class="col-lg-10 mx-auto">
             <!-- Match Info Card -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h5 class="mb-0"><i class="fas fa-futbol"></i> Match Details</h5>
                 </div>
                 <div class="card-body">
@@ -60,7 +60,7 @@
 
             <!-- Report Summary -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-info text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h5 class="mb-0"><i class="fas fa-clipboard"></i> Report Summary</h5>
                 </div>
                 <div class="card-body">
@@ -90,7 +90,7 @@
             <!-- Goals -->
             {% if match.matchgoal_set.all %}
             <div class="card shadow mb-4">
-                <div class="card-header bg-success text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                     <h5 class="mb-0"><i class="fas fa-star"></i> Goals ({{ match.matchgoal_set.count }})</h5>
                 </div>
                 <div class="card-body">
@@ -125,7 +125,7 @@
             <!-- Cautions -->
             {% if match.caution_set.all %}
             <div class="card shadow mb-4">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;">
                     <h5 class="mb-0"><i class="fas fa-flag"></i> Cautions ({{ match.caution_set.count }})</h5>
                 </div>
                 <div class="card-body">
@@ -157,7 +157,7 @@
 
             <!-- Approval Form -->
             <div class="card shadow">
-                <div class="card-header bg-success text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                     <h5 class="mb-0"><i class="fas fa-check-circle"></i> Approve This Report</h5>
                 </div>
                 <div class="card-body">
@@ -181,3 +181,4 @@
     </div>
 </div>
 {% endblock %}
+

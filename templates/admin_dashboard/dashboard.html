@@ -1,281 +1,348 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Super Admin Dashboard - FKF Meru League{% endblock %}
+{% block title %}Super Admin Dashboard — FKF Meru League{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dash-welcome {
+        background: linear-gradient(135deg, #c1121f 0%, #1a1a2e 100%);
+        border-radius: 18px;
+        padding: 2rem 2.5rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    .dash-welcome::after {
+        content: '\f3c5';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+        font-size: 8rem; opacity: 0.06; color: white;
+    }
+    .dash-welcome h1 { font-size: 1.8rem; margin-bottom: 4px; }
+    .dash-welcome p { opacity: 0.82; margin: 0; font-size: 0.95rem; }
+    .dash-welcome .badge-role {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white; padding: 4px 14px; border-radius: 20px;
+        font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    .quick-action-btn {
+        display: flex; align-items: center; gap: 12px;
+        padding: 13px 16px; border-radius: 12px;
+        background: white; border: 1.5px solid #e8ecf0;
+        color: #2d3748; text-decoration: none;
+        transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+        font-weight: 500; font-size: 0.875rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .quick-action-btn:hover {
+        background: linear-gradient(135deg,#e63946,#c1121f);
+        color: white; border-color: transparent;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(230,57,70,0.3);
+    }
+    .quick-action-btn .qa-icon {
+        width: 36px; height: 36px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.95rem; flex-shrink: 0;
+    }
+    .quick-action-btn:hover .qa-icon { background: rgba(255,255,255,0.2) !important; color: white !important; }
+    .match-result-card {
+        background: white; border-radius: 12px; padding: 14px;
+        border: 1px solid #f0f4f8; transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .match-result-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+    .score-badge {
+        background: linear-gradient(135deg,#1a1a2e,#2d3748);
+        color: white; border-radius: 8px; padding: 6px 14px;
+        font-weight: 800; font-size: 1.1rem; letter-spacing: 2px;
+    }
+    .live-badge { background: #e63946; color: white; border-radius: 20px; padding: 3px 10px; font-size: 0.7rem; font-weight: 700; animation: pulse-red 1.5s infinite; }
+    @keyframes pulse-red { 0%,100% { box-shadow: 0 0 0 0 rgba(230,57,70,0.4); } 50% { box-shadow: 0 0 0 8px rgba(230,57,70,0); } }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="text-danger"><i class="fas fa-user-shield"></i> Super Admin Dashboard</h2>
-        <p class="lead">FKF Meru County League Management System - Full Administrative Access</p>
+
+<!-- Welcome Banner -->
+<div class="dash-welcome" data-aos="fade-down">
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <span class="badge-role"><i class="fas fa-shield-alt me-1"></i> Super Admin</span>
     </div>
+    <h1><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
+    <p>FKF Meru County League Management System — Full Administrative Access</p>
 </div>
 
-<!-- Quick Stats -->
-<div class="row mb-4">
-    <div class="col-md-3 col-sm-6 mb-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Total Teams</h6>
-                        <h2 class="mb-0">{{ total_teams }}</h2>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-users fa-3x opacity-50"></i>
-                    </div>
-                </div>
-                <p class="mb-0 mt-2">
-                    <small>{{ registered_teams }} Approved • {{ pending_teams }} Pending</small>
-                </p>
-            </div>
+<!-- Stats Row 1 -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="0">
+        <div class="stat-card stat-gradient-blue">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <h6>Total Teams</h6>
+            <h2>{{ total_teams|default:"0" }}</h2>
+            <small>{{ registered_teams|default:"0" }} approved &bull; {{ pending_teams|default:"0" }} pending</small>
         </div>
     </div>
-    
-    <div class="col-md-3 col-sm-6 mb-3">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Total Revenue</h6>
-                        <h2 class="mb-0">KSh {{ total_revenue }}</h2>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-money-bill-wave fa-3x opacity-50"></i>
-                    </div>
-                </div>
-                <p class="mb-0 mt-2">
-                    <small>{{ total_payments }} Completed Payments</small>
-                </p>
-            </div>
+    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="80">
+        <div class="stat-card stat-gradient-green">
+            <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <h6>Total Revenue</h6>
+            <h2 style="font-size:1.6rem;">KSh {{ total_revenue|default:"0" }}</h2>
+            <small>{{ total_payments|default:"0" }} payments completed</small>
         </div>
     </div>
-    
-    <div class="col-md-3 col-sm-6 mb-3">
-        <div class="card bg-warning text-dark">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Pending Approvals</h6>
-                        <h2 class="mb-0">{{ pending_reports }}</h2>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-clipboard-check fa-3x opacity-50"></i>
-                    </div>
-                </div>
-                <p class="mb-0 mt-2">
-                    <small>Match Reports • {{ pending_registrations }} Teams</small>
-                </p>
-            </div>
+    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="160">
+        <div class="stat-card stat-gradient-orange">
+            <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
+            <h6>Pending Approvals</h6>
+            <h2>{{ pending_reports|default:"0" }}</h2>
+            <small>Reports &bull; {{ pending_registrations|default:"0" }} registrations</small>
         </div>
     </div>
-    
-    <div class="col-md-3 col-sm-6 mb-3">
-        <div class="card bg-danger text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Matches Played</h6>
-                        <h2 class="mb-0">{{ completed_matches }}</h2>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-futbol fa-3x opacity-50"></i>
-                    </div>
-                </div>
-                <p class="mb-0 mt-2">
-                    <small>{{ total_matches }} Total • {{ total_players }} Players</small>
-                </p>
-            </div>
+    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="240">
+        <div class="stat-card stat-gradient-red">
+            <div class="stat-icon"><i class="fas fa-futbol"></i></div>
+            <h6>Matches Played</h6>
+            <h2>{{ completed_matches|default:"0" }}</h2>
+            <small>{{ total_matches|default:"0" }} total &bull; {{ total_players|default:"0" }} players</small>
         </div>
     </div>
 </div>
 
-<!-- Quick Actions -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header card-header-custom bg-danger text-white">
-                <h5 class="mb-0"><i class="fas fa-user-shield"></i> Super Admin Actions</h5>
+<!-- Stats Row 2 -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6" data-aos="fade-up">
+        <div class="stat-card stat-gradient-purple">
+            <div class="stat-icon"><i class="fas fa-whistle"></i></div>
+            <h6>Referees</h6>
+            <h2>{{ total_referees|default:"0" }}</h2>
+            <small>{{ pending_referee_approvals|default:"0" }} pending approval</small>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="80">
+        <div class="stat-card stat-gradient-teal">
+            <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+            <h6>Tournaments</h6>
+            <h2>{{ total_tournaments|default:"0" }}</h2>
+            <small>Active competitions</small>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="160">
+        <div class="stat-card" style="background:linear-gradient(135deg,#f72585,#b5179e);color:white;">
+            <div class="stat-icon"><i class="fas fa-ban"></i></div>
+            <h6>Suspensions</h6>
+            <h2>{{ active_suspensions|default:"0" }}</h2>
+            <small>Active suspensions</small>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="240">
+        <div class="stat-card" style="background:linear-gradient(135deg,#06d6a0,#118577);color:white;">
+            <div class="stat-icon"><i class="fas fa-exchange-alt"></i></div>
+            <h6>Pending Transfers</h6>
+            <h2>{{ pending_transfers|default:"0" }}</h2>
+            <small>Awaiting action</small>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions + Recent Matches -->
+<div class="row g-4 mb-4">
+    <!-- Quick Actions -->
+    <div class="col-lg-5" data-aos="fade-right">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2" style="background:linear-gradient(90deg,#c1121f,#1a1a2e);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+                <i class="fas fa-bolt"></i><span class="fw-bold">Quick Actions</span>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <!-- User Management (Super Admin Only) -->
-                    <div class="col-md-12 mb-4">
-                        <div class="alert alert-danger">
-                            <h5><i class="fas fa-users-cog"></i> User Management</h5>
-                            <p class="mb-2">Create and manage system users, assign roles, and control access.</p>
-                            <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-danger">
-                                <i class="fas fa-user-shield"></i> Manage Users & Roles
+            <div class="card-body p-3">
+                <div class="alert alert-danger d-flex align-items-center gap-3 mb-3" style="border-radius:12px;">
+                    <i class="fas fa-users-cog fa-lg"></i>
+                    <div>
+                        <strong>User Management</strong>
+                        <div class="mt-1">
+                            <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-danger btn-sm">
+                                <i class="fas fa-user-shield me-1"></i>Manage Users &amp; Roles
                             </a>
                         </div>
                     </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'admin_dashboard:approve_registrations' %}" class="btn btn-primary-custom btn-block">
-                            <i class="fas fa-user-check"></i> Approve Registrations
-                            {% if pending_registrations > 0 %}
-                            <span class="badge bg-white text-danger">{{ pending_registrations }}</span>
-                            {% endif %}
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'admin_dashboard:assign_zones' %}" class="btn btn-success btn-block">
-                            <i class="fas fa-map-marker-alt"></i> Assign Zones
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'admin_dashboard:view_suspensions' %}" class="btn btn-danger btn-block">
-                            <i class="fas fa-ban"></i> Manage Suspensions
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'teams:dashboard' %}" class="btn btn-info btn-block">
-                            <i class="fas fa-cogs"></i> League Management
-                        </a>
-                    </div>
-                    {% if request.user.is_staff %}
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'admin_dashboard:generate_fixtures_admin' %}" class="btn btn-info btn-block">
-                            <i class="fas fa-random"></i> Generate Fixtures
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="btn btn-warning btn-block">
-                            <i class="fas fa-calendar-alt"></i> Reschedule Fixtures
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'matches:manage_matches' %}" class="btn btn-primary btn-block">
-                            <i class="fas fa-futbol"></i> Manage Matches
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'teams:all_teams' %}" class="btn btn-primary btn-block">
-                            <i class="fas fa-users"></i> Manage Players
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'admin_dashboard:activity_logs' %}" class="btn btn-secondary btn-block">
-                            <i class="fas fa-history"></i> Activity Logs
-                        </a>
-                    </div>
-                    {% endif %}
                 </div>
+                <div class="d-flex flex-column gap-2">
+                    <a href="{% url 'admin_dashboard:approve_registrations' %}" class="quick-action-btn">
+                        <span class="qa-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-user-check"></i></span>
+                        <span class="flex-grow-1">Approve Registrations</span>
+                        {% if pending_registrations > 0 %}<span class="badge bg-danger">{{ pending_registrations }}</span>{% endif %}
+                    </a>
+                    <a href="{% url 'admin_dashboard:assign_zones' %}" class="quick-action-btn">
+                        <span class="qa-icon bg-success bg-opacity-10 text-success"><i class="fas fa-map-marker-alt"></i></span>
+                        <span>Assign Zones</span>
+                    </a>
+                    <a href="{% url 'admin_dashboard:manage_transfers' %}" class="quick-action-btn">
+                        <span class="qa-icon" style="background:rgba(244,162,97,0.15);color:#e76f51;"><i class="fas fa-exchange-alt"></i></span>
+                        <span class="flex-grow-1">Manage Transfers</span>
+                        {% if pending_transfers > 0 %}<span class="badge bg-warning text-dark">{{ pending_transfers }}</span>{% endif %}
+                    </a>
+                    <a href="{% url 'admin_dashboard:view_suspensions' %}" class="quick-action-btn">
+                        <span class="qa-icon bg-danger bg-opacity-10 text-danger"><i class="fas fa-ban"></i></span>
+                        <span>Manage Suspensions</span>
+                    </a>
+                    <a href="{% url 'admin_dashboard:generate_fixtures_admin' %}" class="quick-action-btn">
+                        <span class="qa-icon" style="background:rgba(67,97,238,0.1);color:#4361ee;"><i class="fas fa-random"></i></span>
+                        <span>Generate Fixtures</span>
+                    </a>
+                    <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="quick-action-btn">
+                        <span class="qa-icon" style="background:rgba(114,9,183,0.1);color:#7209b7;"><i class="fas fa-calendar-alt"></i></span>
+                        <span>Reschedule Fixtures</span>
+                    </a>
+                    <a href="{% url 'matches:manage_matches' %}" class="quick-action-btn">
+                        <span class="qa-icon" style="background:rgba(6,214,160,0.12);color:#118577;"><i class="fas fa-futbol"></i></span>
+                        <span>Manage Matches</span>
+                    </a>
+                    <a href="{% url 'referees:pending_reports' %}" class="quick-action-btn">
+                        <span class="qa-icon" style="background:rgba(247,37,133,0.1);color:#f72585;"><i class="fas fa-clipboard-check"></i></span>
+                        <span class="flex-grow-1">Approve Match Reports</span>
+                        {% if pending_reports > 0 %}<span class="badge bg-danger">{{ pending_reports }}</span>{% endif %}
+                    </a>
+                    <a href="{% url 'admin_dashboard:activity_logs' %}" class="quick-action-btn">
+                        <span class="qa-icon bg-secondary bg-opacity-10 text-secondary"><i class="fas fa-history"></i></span>
+                        <span>Activity Logs</span>
+                    </a>
+                    <a href="{% url 'admin_dashboard:statistics_dashboard' %}" class="quick-action-btn">
+                        <span class="qa-icon" style="background:rgba(0,119,182,0.12);color:#023e8a;"><i class="fas fa-chart-bar"></i></span>
+                        <span>Statistics Dashboard</span>
+                    </a>
+                    <a href="{% url 'admin:index' %}" class="quick-action-btn">
+                        <span class="qa-icon bg-dark bg-opacity-10 text-dark"><i class="fas fa-tools"></i></span>
+                        <span>Django Admin Panel</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Matches -->
+    <div class="col-lg-7" data-aos="fade-left">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center justify-content-between" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+                <div class="d-flex align-items-center gap-2"><i class="fas fa-futbol"></i><span class="fw-bold">Recent Matches</span></div>
+                <a href="{% url 'matches:manage_matches' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border-radius:8px;font-size:0.8rem;">View All</a>
+            </div>
+            <div class="card-body p-3">
+                {% if recent_matches %}
+                <div class="d-flex flex-column gap-3">
+                    {% for match in recent_matches %}
+                    <div class="match-result-card">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-light text-dark" style="font-size:0.72rem;">{{ match.zone.name|default:"League" }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if match.status == 'live' %}<span class="live-badge">LIVE</span>{% endif %}
+                                <small class="text-muted">{{ match.match_date|date:"M d, Y" }}</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="fw-bold text-truncate" style="max-width:120px;">{{ match.home_team }}</span>
+                            <span class="score-badge">{{ match.home_score }} — {{ match.away_score }}</span>
+                            <span class="fw-bold text-truncate text-end" style="max-width:120px;">{{ match.away_team }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-futbol fa-3x mb-3 opacity-25"></i>
+                    <p>No recent matches yet</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Recent Activities -->
-<div class="row">
-    <div class="col-md-6">
+<!-- Payments + Referee Grid -->
+<div class="row g-4">
+    <div class="col-lg-6" data-aos="fade-up">
         <div class="card">
-            <div class="card-header card-header-custom">
-                <h5 class="mb-0">Recent Payments</h5>
+            <div class="card-header" style="background:linear-gradient(90deg,#198754,#0f5132);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+                <div class="d-flex align-items-center gap-2"><i class="fas fa-money-bill-wave"></i><span class="fw-bold">Recent Payments</span></div>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 {% if recent_payments %}
                 <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Team</th>
-                                <th>Amount</th>
-                                <th>Date</th>
-                                <th>Receipt</th>
-                            </tr>
-                        </thead>
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>Team</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
                         <tbody>
                             {% for payment in recent_payments %}
                             <tr>
-                                <td>{{ payment.team.team_name|truncatechars:15 }}</td>
-                                <td class="text-success">KSh {{ payment.amount }}</td>
-                                <td>{{ payment.transaction_date|date:"M d" }}</td>
-                                <td>
-                                    {% if payment.mpesa_receipt_number %}
-                                    <span class="badge bg-success">{{ payment.mpesa_receipt_number|slice:":8" }}...</span>
-                                    {% else %}
-                                    <span class="badge bg-warning text-dark">Pending</span>
-                                    {% endif %}
-                                </td>
+                                <td class="fw-500">{{ payment.team.team_name|truncatechars:18 }}</td>
+                                <td class="text-success fw-bold">KSh {{ payment.amount }}</td>
+                                <td class="text-muted small">{{ payment.transaction_date|date:"M d, Y" }}</td>
+                                <td>{% if payment.mpesa_receipt_number %}<span class="badge bg-success">Confirmed</span>{% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 {% else %}
-                <p class="text-center text-muted py-3">No recent payments</p>
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-receipt fa-3x mb-3 opacity-25"></i>
+                    <p>No recent payments</p>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
-    
-    <div class="col-md-6">
+
+    <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
         <div class="card">
-            <div class="card-header card-header-custom">
-                <h5 class="mb-0">Recent Matches</h5>
+            <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+                <div class="d-flex align-items-center gap-2"><i class="fas fa-whistle"></i><span class="fw-bold">Referee &amp; Tournament</span></div>
             </div>
             <div class="card-body">
-                {% if recent_matches %}
-                <div class="list-group">
-                    {% for match in recent_matches %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">
-                                {{ match.home_team }} vs {{ match.away_team }}
-                                {% if match.status == 'live' %}
-                                <span class="badge bg-danger blink-live ms-1">● LIVE</span>
-                                {% endif %}
-                            </h6>
-                            <small>{{ match.match_date|date:"M d" }}</small>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="badge bg-primary">{{ match.home_score }} - {{ match.away_score }}</span>
-                            {% if match.status == 'live' and match.start_time %}
-                            <span class="badge bg-danger live-timer" data-start="{{ match.start_time|date:'c' }}"></span>
-                            {% endif %}
-                            <small class="text-muted">{{ match.zone.name }}</small>
-                        </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <a href="{% url 'referees:pending_referees' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
+                            <i class="fas fa-user-clock fa-2x text-warning mb-2"></i>
+                            <span style="font-size:0.8rem;font-weight:600;">Pending Referees</span>
+                            {% if pending_referee_approvals > 0 %}<span class="badge bg-warning text-dark mt-1">{{ pending_referee_approvals }}</span>{% endif %}
+                        </a>
                     </div>
-                    {% endfor %}
+                    <div class="col-6">
+                        <a href="{% url 'referees:all_referees' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
+                            <i class="fas fa-list fa-2x text-primary mb-2"></i>
+                            <span style="font-size:0.8rem;font-weight:600;">All Referees</span>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'referees:matches_needing_officials' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
+                            <i class="fas fa-user-tie fa-2x text-success mb-2"></i>
+                            <span style="font-size:0.8rem;font-weight:600;">Appoint Officials</span>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'tournaments:admin_dashboard' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
+                            <i class="fas fa-trophy fa-2x text-warning mb-2"></i>
+                            <span style="font-size:0.8rem;font-weight:600;">Tournament Admin</span>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'teams:admin_manage_players' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
+                            <i class="fas fa-users fa-2x text-danger mb-2"></i>
+                            <span style="font-size:0.8rem;font-weight:600;">Manage Players</span>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'tournaments:create_tournament' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
+                            <i class="fas fa-plus-circle fa-2x text-info mb-2"></i>
+                            <span style="font-size:0.8rem;font-weight:600;">Create Tournament</span>
+                        </a>
+                    </div>
                 </div>
-                {% else %}
-                <p class="text-center text-muted py-3">No recent matches</p>
-                {% endif %}
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_css %}
-<style>
-.blink-live {
-    animation: blink 1s steps(2, start) infinite;
-}
-@keyframes blink {
-    to { visibility: hidden; }
-}
-</style>
 {% endblock %}
-
-{% block extra_js %}
-<script>
-function updateLiveTimers() {
-    document.querySelectorAll('.live-timer').forEach(el => {
-        const start = new Date(el.dataset.start);
-        const now = new Date();
-        const diff = Math.floor((now - start) / 1000);
-        const mins = Math.floor(diff / 60);
-        const secs = diff % 60;
-        el.textContent = mins + "'" + (secs < 10 ? '0' : '') + secs + '"';
-    });
-}
-updateLiveTimers();
-setInterval(updateLiveTimers, 1000);
-</script>
-{% endblock %}
-            <div class="card-body">
-                <div class="list-group">
-                    <a href="{% url 'teams:team_registration' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-users me-2"></i> Team Registration     

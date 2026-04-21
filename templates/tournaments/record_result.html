@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}Record Result – Match #{{ match.match_number }}{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Record Result â€“ Match #{{ match.match_number }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -15,7 +15,7 @@
             <!-- Match Info Card -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body text-center">
-                    <span class="badge bg-info mb-2">{{ match.get_stage_display }} – Match #{{ match.match_number }}</span>
+                    <span class="badge bg-info mb-2">{{ match.get_stage_display }} â€“ Match #{{ match.match_number }}</span>
                     <div class="d-flex justify-content-center align-items-center gap-4 my-3">
                         <div class="text-end" style="min-width: 150px">
                             <h5 class="mb-0">{% if match.home_team %}{{ match.home_team.display_name }}{% else %}TBD{% endif %}</h5>
@@ -25,13 +25,13 @@
                             <h5 class="mb-0">{% if match.away_team %}{{ match.away_team.display_name }}{% else %}TBD{% endif %}</h5>
                         </div>
                     </div>
-                    <p class="text-muted mb-0">{{ match.match_date|date:"l, d F Y – H:i" }} | {{ match.venue|default:match.tournament.venue }}</p>
+                    <p class="text-muted mb-0">{{ match.match_date|date:"l, d F Y â€“ H:i" }} | {{ match.venue|default:match.tournament.venue }}</p>
                 </div>
             </div>
 
             <!-- Result Form -->
             <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                     <h6 class="mb-0"><i class="fas fa-edit me-1"></i>Enter Result</h6>
                 </div>
                 <div class="card-body">
@@ -93,3 +93,4 @@
     </div>
 </div>
 {% endblock %}
+

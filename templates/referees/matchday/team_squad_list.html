@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Matchday Squads - {{ team.name }}{% endblock %}
@@ -32,7 +32,7 @@
     <!-- Upcoming Matches -->
     {% if matches_data %}
     <div class="card shadow">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
             <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Upcoming Matches</h5>
         </div>
         <div class="card-body p-0">
@@ -119,3 +119,4 @@
     {% endif %}
 </div>
 {% endblock %}
+

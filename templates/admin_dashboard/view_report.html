@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -13,7 +13,7 @@
     </nav>
 
     <div class="card">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
             <h2 class="mb-0">Match Report #{{ report.id }}</h2>
         </div>
         <div class="card-body">
@@ -86,10 +86,10 @@
                                 {% if report.referee %}
                                     {{ report.referee.full_name }}
                                     {% if not report.referee.user %}
-                                        <small class="text-danger d-block">⚠️ No user account linked - referee cannot login</small>
+                                        <small class="text-danger d-block">âš ï¸ No user account linked - referee cannot login</small>
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-danger">❌ No referee assigned</span>
+                                    <span class="text-danger">âŒ No referee assigned</span>
                                 {% endif %}
                             </td>
                         </tr>

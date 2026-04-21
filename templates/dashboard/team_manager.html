@@ -1,11 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Team Manager Dashboard - {{ team.team_name }}{% endblock %}
+{% block title %}{{ team.team_name }} — Team Manager Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .team-hero {
+        background: linear-gradient(135deg, #198754 0%, #1a1a2e 100%);
+        border-radius: 18px; padding: 2rem 2.5rem;
+        color: white; position: relative; overflow: hidden; margin-bottom: 1.5rem;
+    }
+    .team-hero h1 { font-size: 1.7rem; margin-bottom: 4px; }
+    .team-hero p { opacity: 0.82; margin: 0; font-size: 0.95rem; }
+    .kit-preview { display: flex; gap: 6px; }
+    .kit-swatch { width: 28px; height: 28px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.4); }
+    .mgmt-card { border: none; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.07); overflow: hidden; transition: all 0.25s ease; height: 100%; }
+    .mgmt-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(0,0,0,0.13); }
+    .mgmt-card .card-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin: 0 auto 14px; }
+    .match-row:hover { background: #f0fdf4; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-2">
     <!-- Messages Display -->
     {% if messages %}
-    <div class="messages-container mb-3">
+    <div class="mb-3">
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {{ message|safe }}
@@ -14,37 +32,50 @@
         {% endfor %}
     </div>
     {% endif %}
-    
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-        <div>
-            <h1 class="mb-1">{{ team.team_name }} Manager Dashboard</h1>
-            <p class="lead mb-0">Welcome, {{ team.contact_person }}!</p>
+
+    <!-- Hero Header -->
+    <div class="team-hero" data-aos="fade-down">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3">
+            <div>
+                <div class="mb-2">
+                    <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;">
+                        <i class="fas fa-shield-alt me-1"></i> Team Manager
+                    </span>
+                </div>
+                <h1><i class="fas fa-futbol me-2"></i>{{ team.team_name }}</h1>
+                <p>Welcome back, <strong>{{ team.contact_person }}</strong>!</p>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    {% if team.zone %}<span style="background:rgba(255,255,255,0.18);color:white;padding:3px 12px;border-radius:20px;font-size:0.8rem;"><i class="fas fa-map-marker-alt me-1"></i>{{ team.zone.name }}</span>{% endif %}
+                    <span style="background:{% if team.payment_status %}rgba(45,198,83,0.3){% else %}rgba(230,57,70,0.3){% endif %};color:white;padding:3px 12px;border-radius:20px;font-size:0.8rem;">
+                        <i class="fas fa-{% if team.payment_status %}check-circle{% else %}times-circle{% endif %} me-1"></i>
+                        {% if team.payment_status %}Paid{% else %}Unpaid{% endif %}
+                    </span>
+                    <span style="background:rgba(255,255,255,0.18);color:white;padding:3px 12px;border-radius:20px;font-size:0.8rem;"><i class="fas fa-users me-1"></i>{{ player_count }} Players</span>
+                </div>
+            </div>
+            <div class="d-flex flex-column gap-2">
+                <a href="{% url 'teams:select_kit_colors' %}" class="btn" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:10px;">
+                    <i class="fas fa-tshirt me-1"></i> Edit Kits
+                </a>
+                <a href="{% url 'teams:team_officials' %}" class="btn" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:10px;">
+                    <i class="fas fa-user-tie me-1"></i> Officials
+                </a>
+            </div>
         </div>
-        <a href="{% url 'teams:select_kit_colors' %}" class="btn btn-outline-success align-self-start">
-            <i class="fas fa-tshirt"></i> Edit Kits
-        </a>
     </div>
-    
+
     <!-- Kit Reminder -->
     {% if show_kit_prompt %}
-    <div class="alert alert-warning">
-        <h5><i class="fas fa-exclamation-triangle"></i> Complete Kit Setup</h5>
-        <p class="mb-0">
-            Please complete your team kit colors selection to unlock all features.
-            <a href="{% url 'teams:select_kit_colors' %}" class="alert-link">Select Kit Colors Now</a>
-        </p>
+    <div class="alert alert-warning" data-aos="fade-up">
+        <div class="d-flex align-items-center gap-3">
+            <i class="fas fa-exclamation-triangle fa-lg"></i>
+            <div>
+                <strong>Complete Kit Setup</strong> — Please select your team kit colors to unlock all features.
+                <a href="{% url 'teams:select_kit_colors' %}" class="alert-link ms-2">Select Kit Colors Now &rarr;</a>
+            </div>
+        </div>
     </div>
     {% endif %}
-    
-    <!-- Team Status -->
-    <div class="alert alert-success">
-        <h5><i class="fas fa-check-circle"></i> Team Status: Approved</h5>
-        <p class="mb-0">
-            Zone: {% if team.zone %}<span class="badge bg-info">{{ team.zone.name }}</span>{% else %}Not assigned{% endif %} | 
-            Payment: {% if team.payment_status %}<span class="badge bg-success">Paid</span>{% else %}<span class="badge bg-danger">Unpaid</span>{% endif %} |
-            Players: <span class="badge bg-primary">{{ player_count }}</span>
-        </p>
-    </div>
     
     <!-- Incoming Transfer Requests Notifications -->
     {% if incoming_transfers %}
@@ -66,151 +97,145 @@
     </div>
     {% endif %}
     
-    <!-- Deadline Alerts (Player Registration & Transfer Window) -->
-    <div class="row mb-4">
-        <div class="col-md-6 mb-3">
-            <div class="card border-{% if league_settings.player_registration_open %}success{% else %}danger{% endif %}">
-                <div class="card-body">
-                    <h6 class="card-title">
-                        <i class="fas fa-user-plus"></i> Player Registration
-                        {% if league_settings.player_registration_open %}
-                        <span class="badge bg-success">OPEN</span>
-                        {% else %}
-                        <span class="badge bg-danger">CLOSED</span>
+    <!-- Deadline/Window Cards -->
+    <div class="row g-3 mb-4" data-aos="fade-up">
+        <div class="col-md-6">
+            <div class="card border-0" style="border-left: 4px solid {% if league_settings.player_registration_open %}#2dc653{% else %}#e63946{% endif %} !important; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.07);">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div style="width:48px;height:48px;border-radius:12px;background:{% if league_settings.player_registration_open %}linear-gradient(135deg,#2dc653,#198754){% else %}linear-gradient(135deg,#e63946,#c1121f){% endif %};display:flex;align-items:center;justify-content:center;color:white;font-size:1.3rem;flex-shrink:0;">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h6 class="mb-0 fw-bold">Player Registration</h6>
+                            <span class="badge {% if league_settings.player_registration_open %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if league_settings.player_registration_open %}OPEN{% else %}CLOSED{% endif %}
+                            </span>
+                        </div>
+                        {% if league_settings.player_registration_open and league_settings.player_registration_deadline %}
+                            <small class="text-muted">Closes: {{ league_settings.player_registration_deadline|date:"M d, Y H:i" }}</small>
+                            <div class="countdown-timer text-danger fw-bold mt-1 small" data-deadline="{{ league_settings.player_registration_deadline|date:'c' }}"></div>
+                        {% elif not league_settings.player_registration_open and league_settings.player_registration_closed_date %}
+                            <small class="text-muted">Closed on: {{ league_settings.player_registration_closed_date|date:"M d, Y" }}</small>
                         {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0" style="border-left: 4px solid {% if league_settings.transfer_window_open %}#2dc653{% else %}#e63946{% endif %} !important; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.07);">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div style="width:48px;height:48px;border-radius:12px;background:{% if league_settings.transfer_window_open %}linear-gradient(135deg,#2dc653,#198754){% else %}linear-gradient(135deg,#e63946,#c1121f){% endif %};display:flex;align-items:center;justify-content:center;color:white;font-size:1.3rem;flex-shrink:0;">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h6 class="mb-0 fw-bold">Transfer Window</h6>
+                            <span class="badge {% if league_settings.transfer_window_open %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if league_settings.transfer_window_open %}OPEN{% else %}CLOSED{% endif %}
+                            </span>
+                        </div>
+                        {% if league_settings.transfer_window_open and league_settings.transfer_window_deadline %}
+                            <small class="text-muted">Closes: {{ league_settings.transfer_window_deadline|date:"M d, Y H:i" }}</small>
+                            <div class="countdown-timer text-danger fw-bold mt-1 small" data-deadline="{{ league_settings.transfer_window_deadline|date:'c' }}"></div>
+                        {% elif not league_settings.transfer_window_open and league_settings.transfer_window_closed_date %}
+                            <small class="text-muted">Closed on: {{ league_settings.transfer_window_closed_date|date:"M d, Y" }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4" data-aos="fade-up">
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-gradient-blue">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <h6>Players</h6>
+                <h2>{{ player_count }}</h2>
+                <small>Registered</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-gradient-green">
+                <div class="stat-icon"><i class="fas fa-star"></i></div>
+                <h6>Captain</h6>
+                <h2 style="font-size:1rem;margin-top:4px;">{{ captain_name|default:"—" }}</h2>
+                <small>Team Leader</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-gradient-orange">
+                <div class="stat-icon"><i class="fas fa-tshirt"></i></div>
+                <h6>Kit Status</h6>
+                <h2>{% if kit_complete %}<i class="fas fa-check"></i>{% else %}<i class="fas fa-times"></i>{% endif %}</h2>
+                <small>{% if kit_complete %}Complete{% else %}Incomplete{% endif %}</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-gradient-red">
+                <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+                <h6>Zone</h6>
+                <h2 style="font-size:1rem;margin-top:4px;">{{ team.zone.name|default:"Pending" }}</h2>
+                <small>League Zone</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Cards -->
+    <div class="row g-3 mb-4" data-aos="fade-up">
+        <div class="col-6 col-md-3">
+            <div class="mgmt-card card">
+                <div class="card-body text-center p-3">
+                    <div class="card-icon" style="background:linear-gradient(135deg,#4361ee,#3a0ca3);color:white;"><i class="fas fa-users"></i></div>
+                    <h6 class="fw-bold mb-1">Players</h6>
+                    <p class="text-muted small mb-2">Manage squad</p>
+                    <a href="/teams/add-players-approved/" class="btn btn-sm w-100" style="background:linear-gradient(135deg,#4361ee,#3a0ca3);color:white;border:none;border-radius:8px;">Add Players</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="mgmt-card card">
+                <div class="card-body text-center p-3">
+                    <div class="card-icon" style="background:linear-gradient(135deg,#2dc653,#198754);color:white;"><i class="fas fa-tshirt"></i></div>
+                    <h6 class="fw-bold mb-1">Kit Colors</h6>
+                    <p class="text-muted small mb-2">Home & Away kits</p>
+                    <a href="{% url 'teams:select_kit_colors' %}" class="btn btn-sm w-100" style="background:linear-gradient(135deg,#2dc653,#198754);color:white;border:none;border-radius:8px;">Edit Kits</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="mgmt-card card">
+                <div class="card-body text-center p-3">
+                    <div class="card-icon" style="background:linear-gradient(135deg,#0077b6,#023e8a);color:white;"><i class="fas fa-user-tie"></i></div>
+                    <h6 class="fw-bold mb-1">Officials</h6>
+                    <p class="text-muted small mb-2">Coaches & staff</p>
+                    <a href="{% url 'teams:team_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(135deg,#0077b6,#023e8a);color:white;border:none;border-radius:8px;">Manage</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="mgmt-card card">
+                <div class="card-body text-center p-3">
+                    <div class="card-icon" style="background:linear-gradient(135deg,#f4a261,#e76f51);color:white;"><i class="fas fa-exchange-alt"></i></div>
+                    <h6 class="fw-bold mb-1">Transfers</h6>
+                    <p class="text-muted small mb-2">Request transfers</p>
+                    <a href="{% url 'teams:search_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(135deg,#f4a261,#e76f51);color:white;border:none;border-radius:8px;">Search</a>
+                </div>
+            </div>
+        </div>
+    </div>
                     </h6>
                     {% if league_settings.player_registration_open and league_settings.player_registration_deadline %}
                         <small class="text-muted">Closes on: {{ league_settings.player_registration_deadline|date:"M d, Y H:i" }}</small>
                         <div class="countdown-timer text-danger fw-bold mt-2" 
                              data-deadline="{{ league_settings.player_registration_deadline|date:'c' }}"></div>
                     {% elif not league_settings.player_registration_open and league_settings.player_registration_closed_date %}
-                        <small class="text-muted">Closed on: {{ league_settings.player_registration_closed_date|date:"M d, Y H:i" }}</small>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6 mb-3">
-            <div class="card border-{% if league_settings.transfer_window_open %}success{% else %}danger{% endif %}">
-                <div class="card-body">
-                    <h6 class="card-title">
-                        <i class="fas fa-exchange-alt"></i> Transfer Window
-                        {% if league_settings.transfer_window_open %}
-                        <span class="badge bg-success">OPEN</span>
-                        {% else %}
-                        <span class="badge bg-danger">CLOSED</span>
-                        {% endif %}
-                    </h6>
-                    {% if league_settings.transfer_window_open and league_settings.transfer_window_deadline %}
-                        <small class="text-muted">Closes on: {{ league_settings.transfer_window_deadline|date:"M d, Y H:i" }}</small>
-                        <div class="countdown-timer text-danger fw-bold mt-2" 
-                             data-deadline="{{ league_settings.transfer_window_deadline|date:'c' }}"></div>
-                    {% elif not league_settings.transfer_window_open and league_settings.transfer_window_closed_date %}
-                        <small class="text-muted">Closed on: {{ league_settings.transfer_window_closed_date|date:"M d, Y H:i" }}</small>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <h6 class="card-title">Total Players</h6>
-                    <h2 class="mb-0">{{ player_count }}</h2>
-                    <small>Registered Players</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h6 class="card-title">Team Captain</h6>
-                    <h5 class="mb-0">{{ captain_name|default:"Not set" }}</h5>
-                    <small>Team Leader</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body text-center">
-                    <h6 class="card-title">Kit Status</h6>
-                    <h2 class="mb-0">{% if kit_complete %}✅{% else %}❌{% endif %}</h2>
-                    <small>{% if kit_complete %}Complete{% else %}Incomplete{% endif %}</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h6 class="card-title">Zone</h6>
-                    <h5 class="mb-0">{{ team.zone.name|default:"Pending" }}</h5>
-                    <small>League Zone</small>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Management Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-users fa-2x text-primary mb-2"></i>
-                    <h5>Manage Players</h5>
-                    <p class="small">Add, view, and edit team players</p>
-                    <a href="/teams/add-players-approved/" class="btn btn-primary btn-sm w-100">Add Players</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-tshirt fa-2x text-success mb-2"></i>
-                    <h5>Kit Colors</h5>
-                    <p class="small">Set team and goalkeeper kits</p>
-                    <a href="{% url 'teams:select_kit_colors' %}" class="btn btn-success btn-sm w-100">Edit Kits</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-user-tie fa-2x text-info mb-2"></i>
-                    <h5>Team Officials</h5>
-                    <p class="small">Manage coaches and staff</p>
-                    <a href="{% url 'teams:team_officials' %}" class="btn btn-info btn-sm w-100">Manage Officials</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-exchange-alt fa-2x text-warning mb-2"></i>
-                    <h5>Transfers</h5>
-                    <p class="small">Request and manage transfers</p>
-                    <a href="{% url 'teams:search_players' %}" class="btn btn-warning btn-sm w-100">Search Players</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-clipboard-list fa-2x text-info mb-2"></i>
-                    <h5>Match Squad</h5>
-                    <p class="small">Select match day squad</p>
-                    <a href="#" class="btn btn-info btn-sm w-100">Select Squad</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Matchday Squad Selection -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Matchday Squad Selection - Upcoming Matches</h5>
+        <!-- Matchday Squad Selection -->
+    <div class="card mb-4" data-aos="fade-up">
+        <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+            <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Matchday Squad Selection</h5>
         </div>
         <div class="card-body">
             {% if upcoming_matches %}
@@ -367,11 +392,11 @@
     </div>
     
     <!-- Recent Players -->
-    <div class="card mb-4">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-users"></i> Recent Players ({{ player_count }})</h5>
-            <a href="{% url 'teams:add_players_approved' %}" class="btn btn-sm btn-primary">
-                <i class="fas fa-user-plus"></i> Add New Player
+    <div class="card mb-4" data-aos="fade-up">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+            <div class="d-flex align-items-center gap-2"><i class="fas fa-users"></i><span class="fw-bold">Squad ({{ player_count }} players)</span></div>
+            <a href="{% url 'teams:add_players_approved' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border-radius:8px;">
+                <i class="fas fa-user-plus me-1"></i>Add Player
             </a>
         </div>
         <div class="card-body">
@@ -422,9 +447,9 @@
     </div>
 
     <!-- Tournaments Section -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0"><i class="fas fa-trophy me-1"></i> Tournaments</h5>
+    <div class="card mb-4" data-aos="fade-up">
+        <div class="card-header" style="background:linear-gradient(90deg,#198754,#0f5132);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+            <div class="d-flex align-items-center gap-2"><i class="fas fa-trophy"></i><span class="fw-bold">Tournaments</span></div>
         </div>
         <div class="card-body">
             {% if team_tournament_regs or external_tournament_regs %}
@@ -573,9 +598,9 @@
     {% endif %}
 
     <!-- Quick Actions -->
-    <div class="card">
-        <div class="card-header bg-light">
-            <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+    <div class="card" data-aos="fade-up">
+        <div class="card-header" style="background:linear-gradient(90deg,#c1121f,#1a1a2e);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+            <div class="d-flex align-items-center gap-2"><i class="fas fa-bolt"></i><span class="fw-bold">Quick Actions</span></div>
         </div>
         <div class="card-body">
             <div class="d-flex flex-wrap gap-2">

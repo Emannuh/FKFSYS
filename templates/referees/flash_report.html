@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
 {% block title %}Flash Match Report - {{ match }}{% endblock %}
@@ -19,7 +19,7 @@
         {% include 'referees/_cautions_section.html' %}
         <!-- Goalkeeper Data & Top Scorers -->
         <div class="card mb-4">
-            <div class="card-header card-header-custom">
+            <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
                 <h4 class="mb-0">Goalkeeper Data & Top Scorers</h4>
             </div>
             <div class="card-body">
@@ -203,3 +203,4 @@ $(document).ready(function() {
 });
 </script>
 {% endblock %}
+

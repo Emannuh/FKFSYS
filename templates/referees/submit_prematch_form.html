@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Pre-Match Meeting Form{% endblock %}
@@ -7,7 +7,7 @@
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-md-12">
-            <h1 class="h3 mb-3">📋 PRE-MATCH MEETING FORM</h1>
+            <h1 class="h3 mb-3">ðŸ“‹ PRE-MATCH MEETING FORM</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{% url 'referees:referee_dashboard' %}">Dashboard</a></li>
@@ -20,7 +20,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h5 class="mb-0">Match Details</h5>
                 </div>
                 <div class="card-body">
@@ -50,7 +50,7 @@
         
         <!-- Match Officials Section -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-secondary text-white">
+            <div class="card-header" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;">
                 <h5 class="mb-0">Match Officials</h5>
             </div>
             <div class="card-body">
@@ -163,7 +163,7 @@
 
         <!-- Home Team Officials -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-info text-white">
+            <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                 <h5 class="mb-0">Home Team Officials - {{ match.home_team }}</h5>
             </div>
             <div class="card-body">
@@ -279,7 +279,7 @@
 
         <!-- Uniforms Section -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-success text-white">
+            <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                 <h5 class="mb-0">Team Uniforms</h5>
             </div>
             <div class="card-body">
@@ -420,7 +420,7 @@
 
         <!-- Management of the Match -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                 <h5 class="mb-0">Management of the Match</h5>
             </div>
             <div class="card-body">
@@ -473,7 +473,7 @@
 
         <!-- Medical Ground -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-danger text-white">
+            <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
                 <h5 class="mb-0">Medical Ground</h5>
             </div>
             <div class="card-body">
@@ -581,7 +581,7 @@
 
         <!-- Security -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white">
+            <div class="card-header" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;">
                 <h5 class="mb-0">Security</h5>
             </div>
             <div class="card-body">
@@ -642,7 +642,7 @@
 
         <!-- Additional Notes -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-secondary text-white">
+            <div class="card-header" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;">
                 <h5 class="mb-0">Additional Notes</h5>
             </div>
             <div class="card-body">
@@ -706,3 +706,4 @@
     }
 </style>
 {% endblock %}
+

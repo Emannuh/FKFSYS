@@ -1,124 +1,92 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Referees Manager Dashboard - FKF Meru League{% endblock %}
 
-{% block content %}
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="text-success"><i class="fas fa-whistle"></i> Referees Manager Dashboard</h2>
-            <p class="lead">Manage referee appointments, approvals, and match officials</p>
-        </div>
-    </div>
+{% block extra_css %}
+<style>
+    .rm-hero {
+        background: linear-gradient(135deg, #198754 0%, #1a1a2e 100%);
+        border-radius: 18px; padding: 2rem; color: white;
+        position: relative; overflow: hidden; margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
 
-    <!-- Action Buttons -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="btn-group" role="group">
-                <a href="{% url 'referees:matches_needing_officials' %}" class="btn btn-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Matches Needing Officials
+{% block content %}
+<div class="container-fluid px-3">
+
+    <!-- Hero Header -->
+    <div class="rm-hero" data-aos="fade-down">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="mb-2">
+                    <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:3px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;">
+                        <i class="fas fa-whistle me-1"></i> Referees Manager
+                    </span>
+                </div>
+                <h1 style="font-size:1.7rem;margin-bottom:6px;">Referees Manager Dashboard</h1>
+                <p style="opacity:0.8;margin:0;">Manage referee appointments, approvals, and match officials.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'referees:matches_needing_officials' %}" class="btn" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:10px;">
+                    <i class="fas fa-exclamation-triangle me-1"></i> Needs Officials
                 </a>
-                <a href="{% url 'referees:pending_referees' %}" class="btn btn-danger">
-                    <i class="fas fa-user-clock me-2"></i>Pending Approvals
+                <a href="{% url 'referees:pending_referees' %}" class="btn" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:10px;">
+                    <i class="fas fa-user-clock me-1"></i> Pending
                 </a>
-                <a href="{% url 'referees:all_referees' %}" class="btn btn-success">
-                    <i class="fas fa-users me-2"></i>All Referees
+                <a href="{% url 'referees:all_referees' %}" class="btn" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:10px;">
+                    <i class="fas fa-users me-1"></i> All Referees
                 </a>
-                <a href="{% url 'referees:weekly_report_display' %}" class="btn btn-primary">
-                    <i class="fas fa-chart-line me-2"></i>Weekly Report
+                <a href="{% url 'referees:weekly_report_display' %}" class="btn" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:10px;">
+                    <i class="fas fa-chart-line me-1"></i> Report
                 </a>
             </div>
         </div>
     </div>
 
     <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card bg-danger text-white shadow">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title text-white-50 mb-1">Pending Approvals</h6>
-                            <h2 class="mb-0">{{ pending_referees_count|default:0 }}</h2>
-                            <p class="mb-0 mt-2">
-                                <small><a href="{% url 'referees:pending_referees' %}" class="text-white text-decoration-underline">View Pending →</a></small>
-                            </p>
-                        </div>
-                        <div>
-                            <i class="fas fa-user-clock fa-3x opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
+    <div class="row g-3 mb-4" data-aos="fade-up">
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-gradient-red">
+                <div class="stat-icon"><i class="fas fa-user-clock"></i></div>
+                <h6>Pending Approvals</h6>
+                <h2>{{ pending_referees_count|default:0 }}</h2>
+                <small><a href="{% url 'referees:pending_referees' %}" class="text-white">View Pending &rarr;</a></small>
             </div>
         </div>
-        
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card bg-warning text-dark shadow">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title mb-1">Needs Officials</h6>
-                            <h2 class="mb-0" id="needsOfficialsCount">0</h2>
-                            <p class="mb-0 mt-2">
-                                <small><a href="{% url 'referees:matches_needing_officials' %}" class="text-dark text-decoration-underline">View All →</a></small>
-                            </p>
-                        </div>
-                        <div>
-                            <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-gradient-orange">
+                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <h6>Needs Officials</h6>
+                <h2 id="needsOfficialsCount">0</h2>
+                <small><a href="{% url 'referees:matches_needing_officials' %}" class="text-white">View All &rarr;</a></small>
             </div>
         </div>
-        
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card bg-info text-white shadow">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title text-white-50 mb-1">Pending Confirmation</h6>
-                            <h2 class="mb-0" id="pendingConfirmationCount">0</h2>
-                            <p class="mb-0 mt-2">
-                                <small><a href="{% url 'referees:matches_needing_officials' %}" class="text-white text-decoration-underline">View All →</a></small>
-                            </p>
-                        </div>
-                        <div>
-                            <i class="fas fa-clock fa-3x opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-gradient-blue">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <h6>Pending Confirmation</h6>
+                <h2 id="pendingConfirmationCount">0</h2>
+                <small><a href="{% url 'referees:matches_needing_officials' %}" class="text-white">View All &rarr;</a></small>
             </div>
         </div>
-        
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card bg-success text-white shadow">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title text-white-50 mb-1">Available Referees</h6>
-                            <h2 class="mb-0" id="availableRefereesCount">0</h2>
-                            <p class="mb-0 mt-2">
-                                <small><a href="{% url 'referees:all_referees' %}" class="text-white text-decoration-underline">View All →</a></small>
-                            </p>
-                        </div>
-                        <div>
-                            <i class="fas fa-user-check fa-3x opacity-50"></i>
-                        </div>
-                    </div>
-                </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stat-gradient-green">
+                <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                <h6>Available Referees</h6>
+                <h2 id="availableRefereesCount">0</h2>
+                <small><a href="{% url 'referees:all_referees' %}" class="text-white">View All &rarr;</a></small>
             </div>
         </div>
     </div>
-
     <!-- Two Column Layout -->
     <div class="row">
         <!-- Left Column: Main Content -->
         <div class="col-lg-8">
             <!-- Matches Needing Officials (URGENT) -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-warning text-dark py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
                     <h5 class="mb-0">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         Urgent: Matches Needing Officials
@@ -153,7 +121,7 @@
 
             <!-- All Appointed Matches -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
                     <h5 class="mb-0">
                         <i class="fas fa-users-cog me-2"></i>All Appointments
                     </h5>
@@ -228,7 +196,7 @@
 
             <!-- Available Referees Today -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-success text-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
                     <h5 class="mb-0">
                         <i class="fas fa-user-check me-2"></i>Available Today
                     </h5>
@@ -450,7 +418,7 @@ function loadAppointedMatches() {
                             <span class="badge ${statusClass}">
                                 <i class="fas fa-${statusIcon}"></i> ${match.status_display}
                             </span>
-                            ${match.match_status === 'live' ? '<span class="badge bg-danger blink-live ms-1">● LIVE</span>' : ''}
+                            ${match.match_status === 'live' ? '<span class="badge bg-danger blink-live ms-1">â— LIVE</span>' : ''}
                             ${match.match_status === 'live' && match.start_time ? '<br><span class="badge bg-danger live-timer" data-start="' + match.start_time + '"></span>' : ''}
                         </td>
                         <td>
@@ -613,3 +581,4 @@ function updateLiveTimers() {
 setInterval(updateLiveTimers, 1000);
 </script>
 {% endblock %}
+

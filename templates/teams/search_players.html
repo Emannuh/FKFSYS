@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Request Player Transfer{% endblock %}
 
 {% block content %}
@@ -58,7 +58,7 @@
     
     {% if selected_team_id and selected_players %}
     <div class="card">
-        <div class="card-header bg-light">
+        <div class="card-header" style="background:linear-gradient(90deg,#f0f4f8,#e8ecf0);border-bottom:1px solid #e0e6ec;">
             <h5 class="mb-0">Available Players from Selected Team</h5>
         </div>
         <div class="card-body">
@@ -142,3 +142,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+

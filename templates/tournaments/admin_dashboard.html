@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Tournament Dashboard{% endblock %}
 
 {% block content %}
@@ -63,7 +63,7 @@
 
     <!-- Tournament Table -->
     <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;">
             <h6 class="mb-0">All Tournaments</h6>
         </div>
         <div class="table-responsive">
@@ -94,8 +94,8 @@
                             </span>
                         </td>
                         <td>{{ t.registered_teams_count }} / {{ t.max_teams }}</td>
-                        <td class="text-muted small">{{ t.start_date|date:"d M Y" }} – {{ t.end_date|date:"d M Y" }}</td>
-                        <td>{{ t.zone|default:"—" }}</td>
+                        <td class="text-muted small">{{ t.start_date|date:"d M Y" }} â€“ {{ t.end_date|date:"d M Y" }}</td>
+                        <td>{{ t.zone|default:"â€”" }}</td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
                                 <a href="{% url 'tournaments:manage_registrations' t.slug %}" class="btn btn-outline-primary" title="Registrations">
@@ -124,3 +124,4 @@
     </div>
 </div>
 {% endblock %}
+

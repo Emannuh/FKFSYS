@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
 {% block title %}Manage Substitutions - {{ match }}{% endblock %}
@@ -20,7 +20,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-primary">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h4 class="mb-0">
                         <i class="fas fa-futbol me-2"></i>{{ match.home_team }} vs {{ match.away_team }}
                     </h4>
@@ -63,7 +63,7 @@
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-success text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                     <h6 class="mb-0">
                         <i class="fas fa-home me-2"></i>{{ match.home_team }} - Substitution Opportunities
                     </h6>
@@ -83,7 +83,7 @@
         </div>
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
                     <h6 class="mb-0">
                         <i class="fas fa-plane me-2"></i>{{ match.away_team }} - Substitution Opportunities
                     </h6>
@@ -224,7 +224,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-danger">
-                <div class="card-header bg-danger text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
                     <h5 class="mb-0">
                         <i class="fas fa-ambulance me-2"></i>Activate Concussion Substitute (6th Sub)
                     </h5>
@@ -285,7 +285,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header bg-success text-white">
+                <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                     <h5 class="mb-0">
                         <i class="fas fa-check-circle me-2"></i>Completed Substitutions
                         <span class="badge bg-light text-dark float-end">{{ completed_subs|length }}</span>

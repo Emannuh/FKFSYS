@@ -1,10 +1,10 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Delete {{ tournament.name }}{% endblock %}
 
 {% block content %}
 <div class="container py-4" style="max-width:600px;">
     <div class="card border-danger shadow">
-        <div class="card-header bg-danger text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
             <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Delete Tournament</h5>
         </div>
         <div class="card-body text-center">
@@ -24,3 +24,4 @@
     </div>
 </div>
 {% endblock %}
+

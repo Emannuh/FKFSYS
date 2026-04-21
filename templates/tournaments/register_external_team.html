@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}Register External Team – {{ tournament.name }}{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}Register External Team â€“ {{ tournament.name }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -14,7 +14,7 @@
 
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-1"></i>
-                <strong>External Team Registration</strong> – This form is for teams that are <strong>not</strong>
+                <strong>External Team Registration</strong> â€“ This form is for teams that are <strong>not</strong>
                 currently part of the FKF County League. A portal account will be created for you so you can
                 manage your team, register players, and track fixtures.
                 {% if not request.user.is_authenticated %}
@@ -24,8 +24,8 @@
             </div>
 
             <div class="card shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0">{{ tournament.name }} – New Team Registration</h6>
+                <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;">
+                    <h6 class="mb-0">{{ tournament.name }} â€“ New Team Registration</h6>
                 </div>
                 <div class="card-body">
                     {% if messages %}
@@ -100,3 +100,4 @@
     </div>
 </div>
 {% endblock %}
+

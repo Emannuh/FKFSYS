@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Pending Match Reports - FKF Meru League{% endblock %}
@@ -100,7 +100,7 @@
     {% if approved_reports %}
     <!-- Approved Reports -->
     <div class="card shadow mb-4">
-        <div class="card-header bg-success text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
             <h5 class="mb-0"><i class="fas fa-check-circle"></i> Approved Reports ({{ approved_count }})</h5>
         </div>
         <div class="card-body">
@@ -142,7 +142,7 @@
     {% if rejected_reports %}
     <!-- Rejected Reports -->
     <div class="card shadow mb-4">
-        <div class="card-header bg-danger text-white">
+        <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
             <h5 class="mb-0"><i class="fas fa-times-circle"></i> Rejected Reports ({{ rejected_count }})</h5>
         </div>
         <div class="card-body">
@@ -182,3 +182,4 @@
     {% endif %}
 </div>
 {% endblock %}
+

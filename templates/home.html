@@ -1,298 +1,293 @@
-{% extends 'base.html' %}
+﻿{% extends "base.html" %}
 
 {% block title %}FKF Meru County League Management System{% endblock %}
 
+{% block extra_css %}
+<style>
+    .home-hero {
+        background: linear-gradient(135deg, #c1121f 0%, #1a1a2e 70%, #0f2027 100%);
+        border-radius: 18px; padding: 3rem 2rem; color: white;
+        position: relative; overflow: hidden; margin-bottom: 2rem;
+    }
+    .home-hero::before {
+        content: ''; position: absolute; right: -60px; top: -60px;
+        width: 260px; height: 260px; border-radius: 50%;
+        background: rgba(255,255,255,0.04);
+    }
+    .home-hero::after {
+        content: ''; position: absolute; right: 60px; bottom: -80px;
+        width: 200px; height: 200px; border-radius: 50%;
+        background: rgba(255,255,255,0.03);
+    }
+    .feature-card {
+        background: white; border-radius: 16px;
+        border: 1px solid #f0f4f8;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        transition: all 0.25s ease; height: 100%; overflow: hidden;
+    }
+    .feature-card:hover { transform: translateY(-5px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+    .feature-card-icon {
+        width: 60px; height: 60px; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem; color: white; margin-bottom: 1rem;
+    }
+    .sidebar-card {
+        background: white; border-radius: 14px;
+        border: 1px solid #f0f4f8; overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 1.25rem;
+    }
+    .sidebar-header {
+        padding: 0.85rem 1.25rem;
+        color: white;
+    }
+    .stat-num { font-size: 2rem; font-weight: 800; }
+    .countdown-small { font-size: 0.85rem; color: #e63946; font-weight: 700; margin-top: 4px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="jumbotron bg-light p-5 rounded">
-            <h1 class="display-4 text-primary">FKF Meru County League</h1>
-            <p class="lead">Official Football Kenya Federation Meru County League Management System</p>
-            <hr class="my-4">
-            <p>Register your team, manage matches, track statistics, and follow the league standings all in one place.</p>
-            <div class="mt-4">
-                <a class="btn btn-primary-custom btn-lg" href="{% url 'teams:team_registration' %}" role="button">
-                    <i class="fas fa-user-plus"></i> Register Your Team
-                </a>
-                <a class="btn btn-outline-primary btn-lg" href="{% url 'teams:all_teams' %}" role="button">
-                    <i class="fas fa-users"></i> View All Teams
-                </a>
-                <a class="btn btn-outline-success btn-lg" href="{% url 'matches:league_tables' %}" role="button">
-                    <i class="fas fa-table"></i> League Tables
-                </a>
+<div class="row g-4">
+    <!-- Main Column -->
+    <div class="col-lg-8">
+
+        <!-- Hero Banner -->
+        <div class="home-hero" data-aos="fade-down">
+            <div class="position-relative" style="z-index:1;">
+                <div class="mb-3">
+                    <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:4px 16px;border-radius:20px;font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;">
+                        <i class="fas fa-futbol me-1"></i> FKF Meru County — Official Platform
+                    </span>
+                </div>
+                <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:0.75rem;line-height:1.2;">FKF Meru County<br>League Management</h1>
+                <p style="opacity:0.85;font-size:1.05rem;max-width:500px;margin-bottom:1.75rem;">
+                    Register your team, manage matches, track statistics, and follow league standings — all in one place.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'teams:team_registration' %}" class="btn btn-lg" style="background:white;color:#c1121f;font-weight:700;border-radius:12px;padding:0.6rem 1.4rem;">
+                        <i class="fas fa-user-plus me-2"></i>Register Your Team
+                    </a>
+                    <a href="{% url 'teams:all_teams' %}" class="btn btn-lg" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.35);border-radius:12px;padding:0.6rem 1.4rem;">
+                        <i class="fas fa-users me-2"></i>View All Teams
+                    </a>
+                    <a href="{% url 'matches:league_tables' %}" class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:0.6rem 1.4rem;">
+                        <i class="fas fa-table me-2"></i>League Tables
+                    </a>
+                </div>
             </div>
         </div>
-        
+
         <!-- Feature Cards -->
-        <div class="row mt-5 g-4">
-            <div class="col-md-6">
-                <div class="card h-100 shadow-sm hover-card">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon mb-3">
-                            <i class="fas fa-futbol fa-3x text-primary"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Team Management</h5>
-                        <p class="card-text text-muted">Register your team, manage players, and track team performance throughout the season</p>
-                        <a href="{% url 'teams:team_registration' %}" class="btn btn-outline-primary">
-                            <i class="fas fa-arrow-right me-2"></i>Register Team
-                        </a>
+        <div class="row g-3 mb-4" data-aos="fade-up">
+            <div class="col-sm-6">
+                <div class="feature-card p-4">
+                    <div class="feature-card-icon" style="background:linear-gradient(135deg,#4361ee,#3a0ca3);">
+                        <i class="fas fa-futbol"></i>
                     </div>
+                    <h5 class="fw-bold mb-2">Team Management</h5>
+                    <p class="text-muted small mb-3">Register your team, manage players, and track performance throughout the season.</p>
+                    <a href="{% url 'teams:team_registration' %}" class="btn btn-sm" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:8px;">
+                        <i class="fas fa-arrow-right me-1"></i> Register Team
+                    </a>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card h-100 shadow-sm hover-card">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon mb-3">
-                            <i class="fas fa-trophy fa-3x text-warning"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">League Standings</h5>
-                        <p class="card-text text-muted">View real-time league tables, match results, and zone rankings</p>
-                        <a href="{% url 'matches:league_tables' %}" class="btn btn-outline-warning">
-                            <i class="fas fa-arrow-right me-2"></i>View Tables
-                        </a>
+            <div class="col-sm-6">
+                <div class="feature-card p-4">
+                    <div class="feature-card-icon" style="background:linear-gradient(135deg,#f4a261,#e76f51);">
+                        <i class="fas fa-trophy"></i>
                     </div>
+                    <h5 class="fw-bold mb-2">League Standings</h5>
+                    <p class="text-muted small mb-3">View real-time league tables, match results, and zone rankings.</p>
+                    <a href="{% url 'matches:league_tables' %}" class="btn btn-sm" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;border-radius:8px;">
+                        <i class="fas fa-arrow-right me-1"></i> View Tables
+                    </a>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card h-100 shadow-sm hover-card">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon mb-3">
-                            <i class="fas fa-calendar-alt fa-3x text-success"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Match Fixtures</h5>
-                        <p class="card-text text-muted">Check upcoming fixtures, match schedules, and venue information</p>
-                        <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-success">
-                            <i class="fas fa-arrow-right me-2"></i>View Fixtures
-                        </a>
+            <div class="col-sm-6">
+                <div class="feature-card p-4">
+                    <div class="feature-card-icon" style="background:linear-gradient(135deg,#2dc653,#198754);">
+                        <i class="fas fa-calendar-alt"></i>
                     </div>
+                    <h5 class="fw-bold mb-2">Match Fixtures</h5>
+                    <p class="text-muted small mb-3">Check upcoming fixtures, match schedules, and venue information.</p>
+                    <a href="{% url 'matches:fixtures' %}" class="btn btn-sm" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;border-radius:8px;">
+                        <i class="fas fa-arrow-right me-1"></i> View Fixtures
+                    </a>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card h-100 shadow-sm hover-card">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon mb-3">
-                            <i class="fas fa-chart-line fa-3x text-danger"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Statistics & Rankings</h5>
-                        <p class="card-text text-muted">Track top scorers, player statistics, and team performance metrics</p>
-                        <a href="{% url 'matches:top_scorers' %}" class="btn btn-outline-danger">
-                            <i class="fas fa-arrow-right me-2"></i>View Stats
-                        </a>
+            <div class="col-sm-6">
+                <div class="feature-card p-4">
+                    <div class="feature-card-icon" style="background:linear-gradient(135deg,#e63946,#c1121f);">
+                        <i class="fas fa-chart-line"></i>
                     </div>
+                    <h5 class="fw-bold mb-2">Statistics &amp; Rankings</h5>
+                    <p class="text-muted small mb-3">Track top scorers, player stats, and team performance metrics.</p>
+                    <a href="{% url 'matches:top_scorers' %}" class="btn btn-sm" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;border-radius:8px;">
+                        <i class="fas fa-arrow-right me-1"></i> View Stats
+                    </a>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <!-- Registration Deadlines Card -->
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+
+        <!-- Registration Deadlines -->
         {% if league_settings %}
-        <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="fas fa-clock"></i> Registration Deadlines</h5>
+        <div class="sidebar-card" data-aos="fade-left">
+            <div class="sidebar-header" style="background:linear-gradient(90deg,#f4a261,#e76f51);">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-clock me-2"></i>Registration Deadlines</h6>
             </div>
-            <div class="card-body">
+            <div class="p-3">
                 <!-- Team Registration -->
-                <div class="mb-3">
-                    <h6 class="text-primary">
-                        <i class="fas fa-users"></i> Team Registration
+                <div class="mb-3 pb-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold small"><i class="fas fa-users me-1 text-primary"></i> Team Registration</span>
                         {% if league_settings.team_registration_open %}
                         <span class="badge bg-success">OPEN</span>
                         {% else %}
                         <span class="badge bg-danger">CLOSED</span>
                         {% endif %}
-                    </h6>
+                    </div>
                     {% if league_settings.team_registration_open and league_settings.team_registration_deadline %}
-                        <small class="text-muted">Closes on: {{ league_settings.team_registration_deadline|date:"M d, Y H:i" }}</small>
-                        <div class="countdown-small" 
-                             data-deadline="{{ league_settings.team_registration_deadline|date:'c' }}"></div>
+                        <div class="text-muted" style="font-size:0.8rem;">Closes: {{ league_settings.team_registration_deadline|date:"M d, Y H:i" }}</div>
+                        <div class="countdown-small" data-deadline="{{ league_settings.team_registration_deadline|date:'c' }}"></div>
                     {% elif not league_settings.team_registration_open and league_settings.team_registration_closed_date %}
-                        <small class="text-muted">Closed on: {{ league_settings.team_registration_closed_date|date:"M d, Y H:i" }}</small>
+                        <div class="text-muted" style="font-size:0.8rem;">Closed: {{ league_settings.team_registration_closed_date|date:"M d, Y H:i" }}</div>
                     {% endif %}
                 </div>
-
                 <!-- Player Registration -->
-                <div class="mb-3">
-                    <h6 class="text-success">
-                        <i class="fas fa-user-plus"></i> Player Registration
+                <div class="mb-3 pb-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold small"><i class="fas fa-user-plus me-1 text-success"></i> Player Registration</span>
                         {% if league_settings.player_registration_open %}
                         <span class="badge bg-success">OPEN</span>
                         {% else %}
                         <span class="badge bg-danger">CLOSED</span>
                         {% endif %}
-                    </h6>
+                    </div>
                     {% if league_settings.player_registration_open and league_settings.player_registration_deadline %}
-                        <small class="text-muted">Closes on: {{ league_settings.player_registration_deadline|date:"M d, Y H:i" }}</small>
-                        <div class="countdown-small" 
-                             data-deadline="{{ league_settings.player_registration_deadline|date:'c' }}"></div>
+                        <div class="text-muted" style="font-size:0.8rem;">Closes: {{ league_settings.player_registration_deadline|date:"M d, Y H:i" }}</div>
+                        <div class="countdown-small" data-deadline="{{ league_settings.player_registration_deadline|date:'c' }}"></div>
                     {% elif not league_settings.player_registration_open and league_settings.player_registration_closed_date %}
-                        <small class="text-muted">Closed on: {{ league_settings.player_registration_closed_date|date:"M d, Y H:i" }}</small>
+                        <div class="text-muted" style="font-size:0.8rem;">Closed: {{ league_settings.player_registration_closed_date|date:"M d, Y H:i" }}</div>
                     {% endif %}
                 </div>
-
                 <!-- Transfer Window -->
                 <div class="mb-0">
-                    <h6 class="text-info">
-                        <i class="fas fa-exchange-alt"></i> Transfer Window
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold small"><i class="fas fa-exchange-alt me-1 text-info"></i> Transfer Window</span>
                         {% if league_settings.transfer_window_open %}
                         <span class="badge bg-success">OPEN</span>
                         {% else %}
                         <span class="badge bg-danger">CLOSED</span>
                         {% endif %}
-                    </h6>
+                    </div>
                     {% if league_settings.transfer_window_open and league_settings.transfer_window_deadline %}
-                        <small class="text-muted">Closes on: {{ league_settings.transfer_window_deadline|date:"M d, Y H:i" }}</small>
-                        <div class="countdown-small" 
-                             data-deadline="{{ league_settings.transfer_window_deadline|date:'c' }}"></div>
+                        <div class="text-muted" style="font-size:0.8rem;">Closes: {{ league_settings.transfer_window_deadline|date:"M d, Y H:i" }}</div>
+                        <div class="countdown-small" data-deadline="{{ league_settings.transfer_window_deadline|date:'c' }}"></div>
                     {% elif not league_settings.transfer_window_open and league_settings.transfer_window_closed_date %}
-                        <small class="text-muted">Closed on: {{ league_settings.transfer_window_closed_date|date:"M d, Y H:i" }}</small>
+                        <div class="text-muted" style="font-size:0.8rem;">Closed: {{ league_settings.transfer_window_closed_date|date:"M d, Y H:i" }}</div>
                     {% endif %}
                 </div>
             </div>
         </div>
         {% endif %}
 
-        <div class="card">
-            <div class="card-header card-header-custom">
-                <h5 class="mb-0">Latest News</h5>
+        <!-- Quick Stats -->
+        <div class="sidebar-card" data-aos="fade-left" data-aos-delay="100">
+            <div class="sidebar-header" style="background:linear-gradient(90deg,#e63946,#c1121f);">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-chart-bar me-2"></i>Quick Stats</h6>
             </div>
-            <div class="card-body">
-                <div class="list-group">
-                    <a href="{% url 'teams:team_registration' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Registration Open</h6>
-                            <small>Now</small>
-                        </div>
-                        <p class="mb-1">Team registration for 2025/2026 season is now open.</p>
-                    </a>
-                    <a href="{% url 'matches:fixtures' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Fixtures Released</h6>
-                            <small>Coming soon</small>
-                        </div>
-                        <p class="mb-1">First round fixtures  released .</p>
-                    </a>
-                    <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Referee Registration</h6>
-                            <small>Now</small>
-                        </div>
-                        <p class="mb-1">Referee registration is now open.</p>
-                    </a>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card mt-4">
-            <div class="card-header card-header-custom">
-                <h5 class="mb-0">Quick Stats</h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
+            <div class="p-3">
+                <div class="row text-center g-2">
                     <div class="col-6">
-                        <h2 class="text-primary">{{ total_teams|default:"0" }}</h2>
-                        <p class="text-muted">Teams Registered</p>
+                        <div style="background:#f8fafc;border-radius:10px;padding:14px 8px;">
+                            <div class="stat-num text-primary">{{ total_teams|default:"0" }}</div>
+                            <div class="text-muted small">Teams</div>
+                        </div>
                     </div>
                     <div class="col-6">
-                        <h2 class="text-success">{{ completed_matches|default:"0" }}</h2>
-                        <p class="text-muted">Matches Played</p>
+                        <div style="background:#f8fafc;border-radius:10px;padding:14px 8px;">
+                            <div class="stat-num text-success">{{ completed_matches|default:"0" }}</div>
+                            <div class="text-muted small">Matches Played</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <div class="card mt-4">
-            <div class="card-header card-header-custom">
-                <h5 class="mb-0">Quick Links</h5>
+
+        <!-- Latest News -->
+        <div class="sidebar-card" data-aos="fade-left" data-aos-delay="150">
+            <div class="sidebar-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-newspaper me-2"></i>Latest News</h6>
             </div>
-            <div class="card-body">
-                <div class="list-group">
-                    <a href="{% url 'matches:top_scorers' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-futbol text-primary me-2"></i> Top Scorers
-                    </a>
-                    <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-whistle text-success me-2"></i> Become a Referee
-                    </a>
-                    <a href="{% url 'frontend:rules' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-book text-danger me-2"></i> League Rules
-                    </a>
-                    <a href="{% url 'frontend:contact' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-envelope text-warning me-2"></i> Contact Us
-                    </a>
-                </div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'teams:team_registration' %}" class="list-group-item list-group-item-action border-0 py-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold small">Registration Open</span>
+                        <span class="badge bg-success-subtle text-success" style="font-size:0.7rem;">Now</span>
+                    </div>
+                    <p class="text-muted mb-0" style="font-size:0.82rem;">Team registration for 2025/2026 season is now open.</p>
+                </a>
+                <a href="{% url 'matches:fixtures' %}" class="list-group-item list-group-item-action border-0 py-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold small">Fixtures Released</span>
+                        <span class="badge bg-warning-subtle text-warning" style="font-size:0.7rem;">Soon</span>
+                    </div>
+                    <p class="text-muted mb-0" style="font-size:0.82rem;">First round fixtures released.</p>
+                </a>
+                <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action border-0 py-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold small">Referee Registration</span>
+                        <span class="badge bg-success-subtle text-success" style="font-size:0.7rem;">Now</span>
+                    </div>
+                    <p class="text-muted mb-0" style="font-size:0.82rem;">Referee registration is now open.</p>
+                </a>
             </div>
         </div>
+
+        <!-- Quick Links -->
+        <div class="sidebar-card" data-aos="fade-left" data-aos-delay="200">
+            <div class="sidebar-header" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-bolt me-2"></i>Quick Links</h6>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'matches:top_scorers' %}" class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-futbol text-primary me-2"></i> Top Scorers
+                </a>
+                <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-whistle text-success me-2"></i> Become a Referee
+                </a>
+                <a href="{% url 'frontend:rules' %}" class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-book text-danger me-2"></i> League Rules
+                </a>
+                <a href="{% url 'frontend:contact' %}" class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-envelope text-warning me-2"></i> Contact Us
+                </a>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<style>
-.countdown-small {
-    font-size: 0.9rem;
-    color: #dc3545;
-    font-weight: bold;
-    margin-top: 5px;
-}
-
-.hover-card {
-    transition: all 0.3s ease;
-    border: none;
-}
-
-.hover-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-}
-
-.feature-icon {
-    transition: transform 0.3s ease;
-}
-
-.hover-card:hover .feature-icon {
-    transform: scale(1.1);
-}
-
-.card-title {
-    color: #212529;
-}
-
-.card-text {
-    font-size: 0.95rem;
-}
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const countdowns = document.querySelectorAll('.countdown-small');
-    
-    countdowns.forEach(function(el) {
+    document.querySelectorAll('.countdown-small').forEach(function(el) {
         const deadline = el.getAttribute('data-deadline');
         if (!deadline) return;
-        
         const target = Date.parse(deadline);
         if (Number.isNaN(target)) return;
-        
         function update() {
-            const now = new Date().getTime();
-            const diff = target - now;
-            
-            if (diff <= 0) {
-                // Auto-close when deadline arrives - refresh to see closed status
-                el.textContent = 'Deadline reached - Please refresh page';
-                el.classList.add('text-warning');
-                el.classList.remove('text-danger');
-                return;
-            }
-            
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-            
-            el.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s remaining`;
+            const diff = target - new Date().getTime();
+            if (diff <= 0) { el.textContent = 'Deadline reached — please refresh.'; return; }
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            el.textContent = d + 'd ' + h + 'h ' + m + 'm ' + s + 's remaining';
         }
-        
-        update();
-        setInterval(update, 1000);
+        update(); setInterval(update, 1000);
     });
 });
 </script>

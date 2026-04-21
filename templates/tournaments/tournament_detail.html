@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}{{ tournament.name }} – FKF Meru League{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}{{ tournament.name }} â€“ FKF Meru League{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -66,7 +66,7 @@
     <div class="alert alert-warning d-flex justify-content-between align-items-center shadow-sm mb-4">
         <div>
             <i class="fas fa-eye-slash me-1"></i>
-            <strong>This tournament is in Draft mode</strong> — it is not visible to teams.
+            <strong>This tournament is in Draft mode</strong> â€” it is not visible to teams.
             Open registration to make it public and allow teams to sign up.
         </div>
         <form method="post" action="{% url 'tournaments:change_status' tournament.slug %}" class="d-inline">
@@ -126,13 +126,13 @@
             <div class="row">
                 <div class="col-md-6 mb-4">
                     <div class="card shadow-sm h-100">
-                        <div class="card-header bg-success text-white"><h6 class="mb-0"><i class="fas fa-gavel me-1"></i>Rules</h6></div>
+                        <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;"><h6 class="mb-0"><i class="fas fa-gavel me-1"></i>Rules</h6></div>
                         <div class="card-body">{{ tournament.rules|linebreaksbr|default:"Rules not published yet." }}</div>
                     </div>
                 </div>
                 <div class="col-md-6 mb-4">
                     <div class="card shadow-sm h-100">
-                        <div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-medal me-1"></i>Prizes</h6></div>
+                        <div class="card-header" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;"><h6 class="mb-0"><i class="fas fa-medal me-1"></i>Prizes</h6></div>
                         <div class="card-body">{{ tournament.prize_info|linebreaksbr|default:"Prize info will be announced." }}</div>
                     </div>
                 </div>
@@ -180,7 +180,7 @@
                                 {% if m.away_team %}{{ m.away_team.display_name }}{% else %}TBD{% endif %}
                             </td>
                             <td class="fw-bold">
-                                {{ m.home_score }} – {{ m.away_score }}
+                                {{ m.home_score }} â€“ {{ m.away_score }}
                                 {% if m.home_penalties is not None %}
                                 <small class="text-muted">({{ m.home_penalties }}-{{ m.away_penalties }} pens)</small>
                                 {% endif %}
@@ -249,3 +249,4 @@
     </div>
 </div>
 {% endblock %}
+
