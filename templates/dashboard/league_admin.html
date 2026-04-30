@@ -1,59 +1,66 @@
-﻿{% extends "base.html" %}
+{% extends "base_dashboard.html" %}
 {% block title %}League Admin Dashboard — FKF Meru League{% endblock %}
+{% block page_title %}<i class="fas fa-shield-alt me-2" style="color:#e63946;"></i> League Admin Dashboard{% endblock %}
+{% block nav_active_dashboard %}active{% endblock %}
 
 {% block extra_css %}
 <style>
-    .admin-hero {
+    .hero-banner {
         background: linear-gradient(135deg, #c1121f 0%, #1a1a2e 100%);
-        border-radius: 18px; padding: 2rem; color: white;
+        border-radius: 16px; padding: 1.6rem 2rem; color: white;
         position: relative; overflow: hidden; margin-bottom: 1.5rem;
     }
-    .admin-hero::after {
-        content: ''; position: absolute; right: -40px; top: -40px;
-        width: 200px; height: 200px; border-radius: 50%;
+    .hero-banner::before {
+        content: ''; position: absolute; right: -60px; bottom: -60px;
+        width: 220px; height: 220px; border-radius: 50%;
         background: rgba(255,255,255,0.04);
     }
-    .mgmt-card {
-        background: white; border-radius: 14px;
-        border: 1px solid #f0f4f8; transition: all 0.25s ease;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%;
-        overflow: hidden;
-    }
-    .mgmt-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
-    .mgmt-card-icon {
-        width: 52px; height: 52px; border-radius: 14px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.4rem; color: white; margin-bottom: 1rem;
-    }
-    .reg-toggle-card {
-        border-radius: 14px; border: none; text-align: center;
-        background: #f8fafc; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    .hero-banner::after {
+        content: ''; position: absolute; right: 80px; top: -40px;
+        width: 140px; height: 140px; border-radius: 50%;
+        background: rgba(255,255,255,0.03);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid px-3">
 
     <!-- Hero Banner -->
-    <div class="admin-hero" data-aos="fade-down">
+    <div class="hero-banner" data-aos="fade-down">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
             <div>
-                <div class="mb-2">
-                    <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:3px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;">
-                        <i class="fas fa-shield-alt me-1"></i> League Administrator
-                    </span>
-                </div>
-                <h1 style="font-size:1.7rem;margin-bottom:6px;">Welcome, {{ user.get_full_name|default:user.username }}</h1>
-                <p style="opacity:0.8;margin:0;">Manage the league — teams, players, matches, officials &amp; registration controls.</p>
+                <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:3px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;" class="mb-2 d-inline-block">
+                    <i class="fas fa-shield-alt me-1"></i> League Administrator
+                </span>
+                <h2 style="margin-bottom:4px;">Welcome, {{ user.get_full_name|default:user.username }}</h2>
+                <p style="opacity:0.8;margin:0;font-size:0.9rem;">Manage teams, players, matches, officials &amp; registration controls.</p>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{% url 'matches:manage_matches' %}" class="btn" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:10px;">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'matches:manage_matches' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);">
                     <i class="fas fa-futbol me-1"></i> Matches
                 </a>
-                <a href="{% url 'teams:dashboard' %}" class="btn" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:10px;">
+                <a href="{% url 'teams:dashboard' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);">
                     <i class="fas fa-users me-1"></i> Teams
                 </a>
+                <a href="{% url 'admin_dashboard:statistics_dashboard' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);">
+                    <i class="fas fa-chart-bar me-1"></i> Stats
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4" data-aos="fade-up">
+        <div class="col-md-5">
+            <div class="chart-card h-100">
+                <div class="chart-card-title"><i class="fas fa-chart-pie"></i> Registration Windows</div>
+                <canvas id="regWindowChart" height="220"></canvas>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="chart-card h-100">
+                <div class="chart-card-title"><i class="fas fa-exchange-alt"></i> Transfer Activity</div>
+                <canvas id="transferChart" height="220"></canvas>
             </div>
         </div>
     </div>
@@ -67,9 +74,7 @@
                 </div>
                 <h6 class="fw-bold mb-1">Team Management</h6>
                 <p class="text-muted small mb-3">Manage teams and approvals</p>
-                <a href="{% url 'teams:dashboard' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:8px;">
-                    Manage Teams
-                </a>
+                <a href="{% url 'teams:dashboard' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:8px;">Manage Teams</a>
             </div>
         </div>
         <div class="col-6 col-md-3">
@@ -79,9 +84,7 @@
                 </div>
                 <h6 class="fw-bold mb-1">Player Management</h6>
                 <p class="text-muted small mb-3">Manage player registrations</p>
-                <a href="{% url 'teams:admin_manage_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;border-radius:8px;">
-                    Manage Players
-                </a>
+                <a href="{% url 'teams:admin_manage_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;border-radius:8px;">Manage Players</a>
             </div>
         </div>
         <div class="col-6 col-md-3">
@@ -91,9 +94,7 @@
                 </div>
                 <h6 class="fw-bold mb-1">Officials Management</h6>
                 <p class="text-muted small mb-3">Manage team officials</p>
-                <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4cc9f0,#4361ee);color:white;border-radius:8px;">
-                    Manage Officials
-                </a>
+                <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4cc9f0,#4361ee);color:white;border-radius:8px;">Manage Officials</a>
             </div>
         </div>
         <div class="col-6 col-md-3">
@@ -103,14 +104,12 @@
                 </div>
                 <h6 class="fw-bold mb-1">Match Management</h6>
                 <p class="text-muted small mb-3">Manage fixtures &amp; matches</p>
-                <a href="{% url 'matches:manage_matches' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;border-radius:8px;">
-                    Manage Matches
-                </a>
+                <a href="{% url 'matches:manage_matches' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;border-radius:8px;">Manage Matches</a>
             </div>
         </div>
     </div>
 
-    <!-- Transfer Management + User Management -->
+    <!-- Transfer + User Management -->
     <div class="row g-3 mb-4" data-aos="fade-up">
         <div class="col-md-4">
             <div class="mgmt-card p-3">
@@ -121,9 +120,7 @@
                     {% if pending_transfers > 0 %}<span class="badge bg-warning text-dark ms-1">{{ pending_transfers }}</span>{% endif %}
                 </h6>
                 <p class="text-muted small mb-3">Awaiting parent club decision</p>
-                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#f72585);color:white;border-radius:8px;">
-                    View Transfers
-                </a>
+                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#f72585);color:white;border-radius:8px;">View Transfers</a>
             </div>
         </div>
         <div class="col-md-4">
@@ -135,9 +132,7 @@
                     {% if rejected_transfers > 0 %}<span class="badge bg-danger ms-1">{{ rejected_transfers }}</span>{% endif %}
                 </h6>
                 <p class="text-muted small mb-3">Transfers needing admin review</p>
-                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;border-radius:8px;">
-                    Review Rejections
-                </a>
+                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;border-radius:8px;">Review Rejections</a>
             </div>
         </div>
         {% if user.is_staff or user.is_superuser %}
@@ -157,8 +152,8 @@
     </div>
 
     <!-- Registration Window Controls -->
-    <div class="card shadow-sm mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+    <div class="card mb-4" data-aos="fade-up">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;padding:1rem 1.5rem;">
             <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Registration Window Controls</h5>
         </div>
         <div class="card-body">
@@ -167,14 +162,10 @@
                     <div class="reg-toggle-card p-3">
                         <h6 class="fw-bold">Team Registration</h6>
                         <div class="mb-2">
-                            {% if league_settings.team_registration_open %}
-                            <span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
-                            {% else %}
-                            <span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>
-                            {% endif %}
+                            {% if league_settings.team_registration_open %}<span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
+                            {% else %}<span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>{% endif %}
                         </div>
-                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">
-                            {% csrf_token %}
+                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">{% csrf_token %}
                             <input type="hidden" name="window_type" value="team">
                             <button type="submit" class="btn btn-sm {% if league_settings.team_registration_open %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
                                 {% if league_settings.team_registration_open %}<i class="fas fa-lock"></i> Close{% else %}<i class="fas fa-unlock"></i> Open{% endif %}
@@ -186,14 +177,10 @@
                     <div class="reg-toggle-card p-3">
                         <h6 class="fw-bold">Player Registration</h6>
                         <div class="mb-2">
-                            {% if league_settings.player_registration_open %}
-                            <span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
-                            {% else %}
-                            <span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>
-                            {% endif %}
+                            {% if league_settings.player_registration_open %}<span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
+                            {% else %}<span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>{% endif %}
                         </div>
-                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">
-                            {% csrf_token %}
+                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">{% csrf_token %}
                             <input type="hidden" name="window_type" value="player">
                             <button type="submit" class="btn btn-sm {% if league_settings.player_registration_open %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
                                 {% if league_settings.player_registration_open %}<i class="fas fa-lock"></i> Close{% else %}<i class="fas fa-unlock"></i> Open{% endif %}
@@ -205,14 +192,10 @@
                     <div class="reg-toggle-card p-3">
                         <h6 class="fw-bold">Transfer Window</h6>
                         <div class="mb-2">
-                            {% if league_settings.transfer_window_open %}
-                            <span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
-                            {% else %}
-                            <span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>
-                            {% endif %}
+                            {% if league_settings.transfer_window_open %}<span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
+                            {% else %}<span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>{% endif %}
                         </div>
-                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">
-                            {% csrf_token %}
+                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">{% csrf_token %}
                             <input type="hidden" name="window_type" value="transfer">
                             <button type="submit" class="btn btn-sm {% if league_settings.transfer_window_open %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
                                 {% if league_settings.transfer_window_open %}<i class="fas fa-lock"></i> Close{% else %}<i class="fas fa-unlock"></i> Open{% endif %}
@@ -225,8 +208,8 @@
     </div>
 
     <!-- Deadline Controls -->
-    <div class="card shadow-sm mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
+    <div class="card mb-4" data-aos="fade-up">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;padding:1rem 1.5rem;">
             <h5 class="mb-0"><i class="fas fa-hourglass-half me-2"></i>Set / Update Deadlines</h5>
         </div>
         <div class="card-body">
@@ -260,5 +243,70 @@
         </div>
     </div>
 
-</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // Registration Windows Doughnut
+    var ctx1 = document.getElementById('regWindowChart');
+    if (ctx1) {
+        var labels = ['Team Reg', 'Player Reg', 'Transfer'];
+        var openVals = [
+            {{ league_settings.team_registration_open|yesno:"1,0" }},
+            {{ league_settings.player_registration_open|yesno:"1,0" }},
+            {{ league_settings.transfer_window_open|yesno:"1,0" }}
+        ];
+        new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: openVals,
+                    backgroundColor: ['#4361ee','#2dc653','#f4a261'],
+                    borderWidth: 0, hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true, cutout: '62%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(c) {
+                                return labels[c.dataIndex] + ': ' + (openVals[c.dataIndex] ? 'OPEN' : 'CLOSED');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Transfer Activity Bar
+    var ctx2 = document.getElementById('transferChart');
+    if (ctx2) {
+        new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ['Pending Transfers', 'Rejected Transfers'],
+                datasets: [{
+                    label: 'Count',
+                    data: [{{ pending_transfers|default:0 }}, {{ rejected_transfers|default:0 }}],
+                    backgroundColor: ['rgba(243,162,97,0.85)', 'rgba(230,57,70,0.75)'],
+                    borderRadius: 10, borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+})();
+</script>
 {% endblock %}
