@@ -309,16 +309,6 @@ body {
         #scroll-top:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(230,57,70,0.5); }
     
 
-/* ===== Temporary debug overrides to ensure hero is visible ===== */
-/* Remove or adjust after diagnosing layout issue */
-#page-loader { display: none !important; }
-.home-hero {
-    display: block !important;
-    position: relative !important;
-    z-index: 5 !important;
-}
-
-
 /* moved from templates/base_dashboard.html style block #1 */
         #nprogress .bar { background: #e63946 !important; height: 3px !important; }
         #nprogress .peg { box-shadow: 0 0 10px #e63946, 0 0 5px #e63946 !important; }
