@@ -1,261 +1,310 @@
 ﻿{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}League Tables - FKF Meru League{% endblock %}
+{% block title %}League Tables — FKF Meru County League{% endblock %}
 
 {% block extra_css %}
 <style>
-    .nav-tabs .nav-link {
-        border: 2px solid transparent;
-        border-radius: 8px 8px 0 0;
-        color: #6c757d;
-        transition: all 0.3s ease;
-    }
-    
-    .nav-tabs .nav-link:hover {
-        border-color: #dee2e6;
-        color: #495057;
-        background-color: #f8f9fa;
-    }
-    
-    .nav-tabs .nav-link.active {
-        color: #fff;
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-        font-weight: 700;
-    }
-    
-    .form-badges .badge {
-        width: 28px;
-        height: 28px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 0.85rem;
-        border-radius: 4px;
-    }
+  /* Zone tab pills */
+  .zone-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; }
+  .zone-pill {
+    padding: 8px 20px; border-radius: 20px; font-weight: 600; font-size: 0.84rem;
+    border: 2px solid transparent; cursor: pointer; transition: var(--transition);
+    background: white; color: var(--text-secondary); box-shadow: var(--shadow-xs);
+  }
+  .zone-pill:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .zone-pill.active-a { background: linear-gradient(135deg,#ff6b6b,#ee5a24); color: white; border-color: transparent; }
+  .zone-pill.active-b { background: linear-gradient(135deg,#4ecdc4,#0fb9b1); color: white; border-color: transparent; }
+  .zone-pill.active-c { background: linear-gradient(135deg,#45b7d1,#0652DD); color: white; border-color: transparent; }
+  .zone-pill.active-d { background: linear-gradient(135deg,var(--fkf-purple),var(--fkf-blue)); color: white; border-color: transparent; }
+  .zone-pill.active   { background: linear-gradient(135deg,var(--fkf-red),var(--fkf-red-dark)); color: white; border-color: transparent; }
+
+  /* Table */
+  .league-table thead th { background: linear-gradient(90deg,#1a1a2e,#2d3748); }
+  .league-table tbody tr { transition: background 0.15s ease; }
+  .league-table tbody tr:hover td { background: #f0fdf4; }
+  .league-table td { vertical-align: middle; padding: 0.75rem 0.9rem; font-size: 0.875rem; }
+
+  /* Position indicators */
+  .pos-indicator { width: 4px; border-radius: 4px; height: 40px; display: inline-block; flex-shrink: 0; }
+  .pos-champion { background: linear-gradient(135deg,#ffd700,#f59e0b); }
+  .pos-promo    { background: linear-gradient(135deg,var(--fkf-green),var(--fkf-green-dark)); }
+  .pos-relegate { background: linear-gradient(135deg,var(--fkf-red),var(--fkf-red-dark)); }
+  .pos-normal   { background: transparent; }
+  tr.row-champion { background: linear-gradient(90deg,rgba(255,215,0,0.07),transparent) !important; }
+  tr.row-promo    { background: linear-gradient(90deg,rgba(45,198,83,0.07),transparent) !important; }
+  tr.row-relegate { background: linear-gradient(90deg,rgba(230,57,70,0.07),transparent) !important; }
+
+  /* Form badges */
+  .form-badge { width: 24px; height: 24px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.72rem; }
+  .form-w { background: var(--fkf-green); color: white; }
+  .form-d { background: #f59e0b; color: white; }
+  .form-l { background: var(--fkf-red); color: white; }
+
+  /* Stats cards */
+  .stats-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .stats-card-hdr { padding: 0.9rem 1.2rem; color: white; font-weight: 700; font-size: 0.9rem; }
+  .player-stat-row { display: flex; align-items: center; gap: 12px; padding: 10px 1rem; border-bottom: 1px solid var(--border-light); transition: background 0.15s ease; }
+  .player-stat-row:last-child { border-bottom: none; }
+  .player-stat-row:hover { background: #f8fafc; }
+  .player-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .player-avatar-placeholder { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg,#94a3b8,#64748b); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
+  .stat-rank { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; flex-shrink: 0; }
+  .rank-1 { background: linear-gradient(135deg,#ffd700,#f59e0b); color: #7c4f00; }
+  .rank-2 { background: linear-gradient(135deg,#c0c0c0,#9ca3af); color: #374151; }
+  .rank-3 { background: linear-gradient(135deg,#cd7f32,#92400e); color: white; }
+  .rank-n { background: #f1f5f9; color: var(--text-muted); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="text-primary">League Tables</h2>
-        <p class="lead">FKF Meru County League Standings</p>
-    </div>
+
+<!-- Page header -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+  <div>
+    <h2 class="mb-1" style="font-size:1.6rem;">
+      <i class="fas fa-table me-2" style="color:var(--fkf-red);"></i>League Tables
+    </h2>
+    <p class="text-muted mb-0" style="font-size:0.875rem;">FKF Meru County League Standings</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-calendar-alt me-1"></i>Fixtures
+    </a>
+    <a href="{% url 'matches:top_scorers' %}" class="btn btn-outline-danger btn-sm">
+      <i class="fas fa-star me-1"></i>Top Scorers
+    </a>
+  </div>
 </div>
 
-<!-- Zone Tabs -->
-<ul class="nav nav-tabs mb-4" id="zoneTabs" role="tablist">
-    {% for zone in zones %}
-    <li class="nav-item" role="presentation">
-        <button class="nav-link {% if forloop.first %}active{% endif %}" 
-                id="zone-{{ zone.id }}-tab" 
-                data-bs-toggle="tab" 
-                data-bs-target="#zone-{{ zone.id }}" 
-                type="button" 
-                role="tab"
-                aria-controls="zone-{{ zone.id }}"
-                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-                style="font-weight: 600; font-size: 1.1rem;">
-            <i class="fas fa-map-marker-alt me-2"></i>{{ zone.name }}
-        </button>
-    </li>
-    {% endfor %}
-</ul>
+<!-- Zone tabs (pill style) -->
+<div class="zone-pills" id="zonePills">
+  {% for zone in zones %}
+  <button class="zone-pill {% if forloop.first %}active{% endif %}"
+          data-bs-toggle="tab"
+          data-bs-target="#zone-{{ zone.id }}"
+          onclick="activatePill(this, {{ forloop.counter0 }})">
+    <i class="fas fa-map-marker-alt me-1" style="font-size:0.78rem;"></i>{{ zone.name }}
+  </button>
+  {% endfor %}
+</div>
 
 <!-- Zone Tables -->
 <div class="tab-content" id="zoneTabContent">
-    {% for zone, table in tables.items %}
-    <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
-         id="zone-{{ zone.id }}" role="tabpanel">
-        
-        <div class="card">
-            <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">{{ zone.name }} League Table</h4>
-                <span class="badge bg-white text-primary">{{ table|length }} Teams</span>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>#</th>
-                                <th>Team</th>
-                                <th>P</th>
-                                <th>W</th>
-                                <th>D</th>
-                                <th>L</th>
-                                <th>GF</th>
-                                <th>GA</th>
-                                <th>GD</th>
-                                <th>Pts</th>
-                                <th>Form</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for entry in table %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        {% if entry.team.logo %}
-                                        <img src="{{ entry.team.logo.url }}" alt="{{ entry.team.team_name }}"
-                                             class="team-logo me-2">
-                                        {% endif %}
-                                        <strong>{{ entry.team.team_name }}</strong>
-                                        {% if request.user.is_superuser %}
-                                            <a href="{% url 'matches:admin_edit_league_table' entry.id %}" class="btn btn-sm btn-outline-primary ms-2" title="Edit League Table">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                        {% else %}
-                                            {% with show_edit_button=False %}
-                                                {% for group in request.user.groups.all %}
-                                                    {% if group.name == 'League Admin' and not show_edit_button %}
-                                                        <a href="{% url 'matches:admin_edit_league_table' entry.id %}" class="btn btn-sm btn-outline-primary ms-2" title="Edit League Table">
-                                                            <i class="fas fa-edit"></i>
-                                                        </a>
-                                                        {% with show_edit_button=True %}{% endwith %}
-                                                    {% endif %}
-                                                {% endfor %}
-                                            {% endwith %}
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td>{{ entry.matches_played }}</td>
-                                <td>{{ entry.wins }}</td>
-                                <td>{{ entry.draws }}</td>
-                                <td>{{ entry.losses }}</td>
-                                <td>{{ entry.goals_for }}</td>
-                                <td>{{ entry.goals_against }}</td>
-                                <td>
-                                    {% if entry.goal_difference > 0 %}
-                                    <span class="text-success">+{{ entry.goal_difference }}</span>
-                                    {% elif entry.goal_difference < 0 %}
-                                    <span class="text-danger">{{ entry.goal_difference }}</span>
-                                    {% else %}
-                                    <span class="text-muted">{{ entry.goal_difference }}</span>
-                                    {% endif %}
-                                </td>
-                                <td><strong>{{ entry.points }}</strong></td>
-                                <td class="form-badges">
-                                    {% if entry.form %}
-                                        <div class="d-flex gap-1">
-                                            {% for result in entry.form %}
-                                                {% if result == 'W' %}
-                                                    <span class="badge bg-success" title="Win">W</span>
-                                                {% elif result == 'D' %}
-                                                    <span class="badge bg-warning text-dark" title="Draw">D</span>
-                                                {% elif result == 'L' %}
-                                                    <span class="badge bg-danger" title="Loss">L</span>
-                                                {% endif %}
-                                            {% endfor %}
-                                        </div>
-                                    {% else %}
-                                        <span class="text-muted">No data</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="11" class="text-center py-4">
-                                    <i class="fas fa-table fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">No teams in this zone yet</p>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  {% for zone, table in tables.items %}
+  <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+       id="zone-{{ zone.id }}" role="tabpanel">
+
+    <div class="card mb-4" style="overflow:visible;">
+      <div class="card-header d-flex align-items-center justify-content-between"
+           style="background:linear-gradient(90deg,#1a1a2e,#2d3748);">
+        <h5 class="mb-0 text-white">
+          <i class="fas fa-map-marker-alt me-2" style="color:var(--fkf-gold);"></i>{{ zone.name }} — League Table
+        </h5>
+        <span class="badge bg-light text-dark fw-bold">{{ table|length }} Teams</span>
+      </div>
+
+      <!-- Legend -->
+      <div class="px-3 pt-3 pb-1 d-flex flex-wrap gap-3" style="font-size:0.78rem;color:var(--text-muted);">
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:linear-gradient(135deg,#ffd700,#f59e0b);margin-right:5px;vertical-align:middle;"></span>League Champion</span>
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:linear-gradient(135deg,var(--fkf-green),var(--fkf-green-dark));margin-right:5px;vertical-align:middle;"></span>Promotion Zone</span>
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:linear-gradient(135deg,var(--fkf-red),var(--fkf-red-dark));margin-right:5px;vertical-align:middle;"></span>Relegation Zone</span>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table league-table mb-0">
+            <thead>
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>Team</th>
+                <th title="Played">P</th>
+                <th title="Won">W</th>
+                <th title="Drawn">D</th>
+                <th title="Lost">L</th>
+                <th title="Goals For">GF</th>
+                <th title="Goals Against">GA</th>
+                <th title="Goal Difference">GD</th>
+                <th title="Points"><strong>Pts</strong></th>
+                <th>Form</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in table %}
+              <tr class="{% if forloop.counter == 1 %}row-champion{% elif forloop.counter <= 3 %}row-promo{% elif forloop.counter > table|length|add:'-2' %}row-relegate{% endif %}">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="pos-indicator {% if forloop.counter == 1 %}pos-champion{% elif forloop.counter <= 3 %}pos-promo{% elif forloop.counter > table|length|add:'-2' %}pos-relegate{% else %}pos-normal{% endif %}"></div>
+                    <span class="fw-700">{{ forloop.counter }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    {% if entry.team.logo %}
+                    <img src="{{ entry.team.logo.url }}" alt="{{ entry.team.team_name }}"
+                         style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--border-mid);">
+                    {% else %}
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--fkf-red),var(--fkf-red-dark));display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;font-weight:800;flex-shrink:0;">
+                      {{ entry.team.team_name|slice:":2"|upper }}
+                    </div>
+                    {% endif %}
+                    <span class="fw-600">{{ entry.team.team_name }}</span>
+                    {% if request.user.is_superuser %}
+                    <a href="{% url 'matches:admin_edit_league_table' entry.id %}" class="btn btn-xs btn-outline-secondary ms-1" title="Edit" style="padding:1px 6px;font-size:0.7rem;">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    {% else %}
+                    {% for group in request.user.groups.all %}
+                      {% if group.name == 'League Admin' %}
+                      <a href="{% url 'matches:admin_edit_league_table' entry.id %}" class="btn btn-xs btn-outline-secondary ms-1" title="Edit" style="padding:1px 6px;font-size:0.7rem;">
+                        <i class="fas fa-edit"></i>
+                      </a>
+                      {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                  </div>
+                </td>
+                <td>{{ entry.matches_played }}</td>
+                <td class="text-success fw-600">{{ entry.wins }}</td>
+                <td class="text-warning fw-600">{{ entry.draws }}</td>
+                <td class="text-danger fw-600">{{ entry.losses }}</td>
+                <td>{{ entry.goals_for }}</td>
+                <td>{{ entry.goals_against }}</td>
+                <td>
+                  {% if entry.goal_difference > 0 %}
+                  <span class="text-success fw-600">+{{ entry.goal_difference }}</span>
+                  {% elif entry.goal_difference < 0 %}
+                  <span class="text-danger fw-600">{{ entry.goal_difference }}</span>
+                  {% else %}
+                  <span class="text-muted">0</span>
+                  {% endif %}
+                </td>
+                <td><strong style="font-size:1rem;color:var(--fkf-dark);">{{ entry.points }}</strong></td>
+                <td>
+                  {% if entry.form %}
+                  <div class="d-flex gap-1">
+                    {% for result in entry.form %}
+                    {% if result == 'W' %}<span class="form-badge form-w" title="Win">W</span>
+                    {% elif result == 'D' %}<span class="form-badge form-d" title="Draw">D</span>
+                    {% elif result == 'L' %}<span class="form-badge form-l" title="Loss">L</span>
+                    {% endif %}
+                    {% endfor %}
+                  </div>
+                  {% else %}
+                  <span class="text-muted" style="font-size:0.78rem;">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="11" class="text-center py-5 text-muted">
+                  <i class="fas fa-table fa-3x mb-3 d-block opacity-25"></i>
+                  No teams in this zone yet
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-        
+      </div>
     </div>
-    {% endfor %}
+
+  </div><!-- /tab-pane -->
+  {% endfor %}
 </div>
 
-<!-- Statistics Section -->
-<div class="row mt-5">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
-                <h5 class="mb-0">Top Scorers</h5>
-            </div>
-            <div class="card-body">
-                {% if top_scorers %}
-                <div class="list-group">
-                    {% for player in top_scorers %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                {% if player.photo %}
-                                <img src="{{ player.photo.url }}" alt="{{ player.full_name }}"
-                                     class="player-photo me-3">
-                                {% else %}
-                                <div class="player-photo bg-secondary me-3 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-user text-white"></i>
-                                </div>
-                                {% endif %}
-                                <div>
-                                    <h6 class="mb-0">{{ player.full_name }}</h6>
-                                    <small class="text-muted">{{ player.team.team_name }} â€¢ {{ player.position }}</small>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge bg-primary" style="font-size: 1.2rem;">{{ player.goals_scored }}</span>
-                                <p class="mb-0"><small>goals</small></p>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-center text-muted py-4">No goal scorers yet</p>
-                {% endif %}
-            </div>
+<!-- Top Scorers + Goalkeepers -->
+<div class="row g-4 mt-2">
+  <div class="col-md-6">
+    <div class="stats-card">
+      <div class="stats-card-hdr" style="background:linear-gradient(90deg,var(--fkf-red),var(--fkf-red-dark));">
+        <i class="fas fa-futbol me-2"></i>Top Scorers
+      </div>
+      {% if top_scorers %}
+      {% for player in top_scorers %}
+      <div class="player-stat-row">
+        <div class="stat-rank {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-n{% endif %}">
+          {{ forloop.counter }}
         </div>
-    </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
-                <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Top Goalkeepers</h5>
-            </div>
-            <div class="card-body">
-                {% if goalkeepers %}
-                <div class="list-group">
-                    {% for goalkeeper in goalkeepers %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                {% if goalkeeper.photo %}
-                                <img src="{{ goalkeeper.photo.url }}" alt="{{ goalkeeper.full_name }}"
-                                     class="player-photo me-3">
-                                {% else %}
-                                <div class="player-photo bg-secondary me-3 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-user text-white"></i>
-                                </div>
-                                {% endif %}
-                                <div>
-                                    <h6 class="mb-0">{{ goalkeeper.full_name }}</h6>
-                                    <small class="text-muted">{{ goalkeeper.team.team_name }}</small>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge bg-success" style="font-size: 1.2rem;">{{ goalkeeper.clean_sheets }}</span>
-                                <p class="mb-0"><small>clean sheets</small></p>
-                                <small class="text-muted">{{ goalkeeper.matches_played }} matches</small>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-center text-muted py-4">No goalkeeper data yet</p>
-                {% endif %}
-            </div>
+        {% if player.photo %}
+        <img src="{{ player.photo.url }}" alt="{{ player.full_name }}" class="player-avatar">
+        {% else %}
+        <div class="player-avatar-placeholder">{{ player.full_name|slice:":1"|upper }}</div>
+        {% endif %}
+        <div class="flex-grow-1 min-width-0">
+          <div class="fw-600" style="font-size:0.875rem;">{{ player.full_name }}</div>
+          <div style="font-size:0.76rem;color:var(--text-muted);">{{ player.team.team_name }} &bull; {{ player.position }}</div>
         </div>
+        <div class="text-end">
+          <div class="badge" style="background:linear-gradient(135deg,var(--fkf-red),var(--fkf-red-dark));color:white;font-size:1rem;padding:4px 12px;">{{ player.goals_scored }}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);">goals</div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-futbol fa-2x mb-2 d-block opacity-25"></i>No scorers yet
+      </div>
+      {% endif %}
     </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="stats-card">
+      <div class="stats-card-hdr" style="background:linear-gradient(90deg,var(--fkf-green-dark),#0f5132);">
+        <i class="fas fa-shield-alt me-2"></i>Top Goalkeepers
+      </div>
+      {% if goalkeepers %}
+      {% for gk in goalkeepers %}
+      <div class="player-stat-row">
+        <div class="stat-rank {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-n{% endif %}">
+          {{ forloop.counter }}
+        </div>
+        {% if gk.photo %}
+        <img src="{{ gk.photo.url }}" alt="{{ gk.full_name }}" class="player-avatar">
+        {% else %}
+        <div class="player-avatar-placeholder">{{ gk.full_name|slice:":1"|upper }}</div>
+        {% endif %}
+        <div class="flex-grow-1 min-width-0">
+          <div class="fw-600" style="font-size:0.875rem;">{{ gk.full_name }}</div>
+          <div style="font-size:0.76rem;color:var(--text-muted);">{{ gk.team.team_name }} &bull; {{ gk.matches_played }} matches</div>
+        </div>
+        <div class="text-end">
+          <div class="badge" style="background:linear-gradient(135deg,var(--fkf-green),var(--fkf-green-dark));color:white;font-size:1rem;padding:4px 12px;">{{ gk.clean_sheets }}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);">clean sheets</div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-shield-alt fa-2x mb-2 d-block opacity-25"></i>No goalkeeper data yet
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
+
+<script>
+var pillColors = ['active','active-b','active-c','active-d','active'];
+function activatePill(el, idx) {
+  document.querySelectorAll('.zone-pill').forEach(function(p) {
+    p.className = 'zone-pill';
+  });
+  el.classList.add(pillColors[idx % pillColors.length] || 'active');
+}
+document.addEventListener('DOMContentLoaded', function() {
+  var first = document.querySelector('.zone-pill');
+  if (first) first.classList.add('active');
+  // Bootstrap tab support
+  document.querySelectorAll('.zone-pill').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var target = el.getAttribute('data-bs-target');
+      if (target) {
+        var tab = new bootstrap.Tab(el);
+        tab.show();
+      }
+    });
+  });
+});
+</script>
 {% endblock %}

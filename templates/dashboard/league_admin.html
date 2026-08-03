@@ -3,25 +3,7 @@
 {% block page_title %}<i class="fas fa-shield-alt me-2" style="color:#e63946;"></i> League Admin Dashboard{% endblock %}
 {% block nav_active_dashboard %}active{% endblock %}
 
-{% block extra_css %}
-<style>
-    .hero-banner {
-        background: linear-gradient(135deg, #c1121f 0%, #1a1a2e 100%);
-        border-radius: 16px; padding: 1.6rem 2rem; color: white;
-        position: relative; overflow: hidden; margin-bottom: 1.5rem;
-    }
-    .hero-banner::before {
-        content: ''; position: absolute; right: -60px; bottom: -60px;
-        width: 220px; height: 220px; border-radius: 50%;
-        background: rgba(255,255,255,0.04);
-    }
-    .hero-banner::after {
-        content: ''; position: absolute; right: 80px; top: -40px;
-        width: 140px; height: 140px; border-radius: 50%;
-        background: rgba(255,255,255,0.03);
-    }
-</style>
-{% endblock %}
+{% block extra_css %}{% endblock %}
 
 {% block content %}
 

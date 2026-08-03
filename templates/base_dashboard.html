@@ -174,93 +174,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js"></script>
-
-    <script>
-    (function() {
-        // NProgress
-        NProgress.start();
-        window.addEventListener('load', function() {
-            NProgress.done();
-            setTimeout(function() {
-                var loader = document.getElementById('page-loader');
-                if (loader) loader.classList.add('loaded');
-            }, 200);
-        });
-
-        // AOS
-        AOS.init({ duration: 550, once: true, offset: 40 });
-
-        // Sidebar elements
-        var sidebar = document.getElementById('dbSidebar');
-        var main = document.getElementById('dbMain');
-        var overlay = document.getElementById('sbOverlay');
-        var sbToggleBtn = document.getElementById('sbToggleBtn');
-        var topbarToggle = document.getElementById('topbarToggle');
-
-        function isDesktop() { return window.innerWidth >= 992; }
-
-        function toggleSidebarDesktop() {
-            sidebar.classList.toggle('collapsed');
-            main.classList.toggle('expanded');
-            localStorage.setItem('sbCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
-        }
-
-        function openMobileSidebar() {
-            sidebar.classList.add('mobile-open');
-            overlay.classList.add('active');
-        }
-        function closeMobileSidebar() {
-            sidebar.classList.remove('mobile-open');
-            overlay.classList.remove('active');
-        }
-        function toggleMobileSidebar() {
-            if (sidebar.classList.contains('mobile-open')) closeMobileSidebar();
-            else openMobileSidebar();
-        }
-
-        if (sbToggleBtn) sbToggleBtn.addEventListener('click', function() {
-            if (isDesktop()) toggleSidebarDesktop();
-            else toggleMobileSidebar();
-        });
-        if (topbarToggle) topbarToggle.addEventListener('click', function() {
-            if (isDesktop()) toggleSidebarDesktop();
-            else toggleMobileSidebar();
-        });
-        if (overlay) overlay.addEventListener('click', closeMobileSidebar);
-
-        // Restore state
-        if (isDesktop() && localStorage.getItem('sbCollapsed') === '1') {
-            sidebar.classList.add('collapsed');
-            main.classList.add('expanded');
-        }
-
-        // Auto-highlight active nav item
-        var currentPath = window.location.pathname;
-        document.querySelectorAll('.sb-nav-item[href]').forEach(function(item) {
-            var href = item.getAttribute('href');
-            if (href && href !== '/' && currentPath.startsWith(href)) {
-                item.classList.add('active');
-            }
-        });
-
-        // Scroll to top
-        var scrollBtn = document.getElementById('scroll-top');
-        window.addEventListener('scroll', function() {
-            if (scrollBtn) scrollBtn.classList.toggle('visible', window.scrollY > 200);
-        }, { passive: true });
-        if (scrollBtn) scrollBtn.addEventListener('click', function() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-
-        // Date in topbar
-        var dateEl = document.getElementById('topbarDate');
-        if (dateEl) {
-            var d = new Date();
-            var opts = { weekday:'short', year:'numeric', month:'short', day:'numeric' };
-            dateEl.textContent = d.toLocaleDateString('en-US', opts);
-        }
-    })();
-    </script>
+    <!-- NProgress kick-off before DOMContentLoaded -->
+    <script>if(typeof NProgress!=='undefined'){NProgress.configure({showSpinner:false,speed:380,minimum:0.15});NProgress.start();}</script>
+    <script src="{% static 'js/app.js' %}"></script>
 
     {% block extra_js %}{% endblock %}
 </body>

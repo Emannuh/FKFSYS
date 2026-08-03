@@ -1,71 +1,9 @@
 ﻿{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Super Admin Dashboard — FKF Meru League{% endblock %}
+{% block title %}Super Admin Dashboard — FKF Meru County League{% endblock %}
 
-{% block extra_css %}
-<style>
-    .dash-welcome {
-        background: linear-gradient(135deg, #c1121f 0%, #1a1a2e 100%);
-        border-radius: 18px;
-        padding: 2rem 2.5rem;
-        color: white;
-        position: relative;
-        overflow: hidden;
-        margin-bottom: 2rem;
-    }
-    .dash-welcome::after {
-        content: '\f3c5';
-        font-family: 'Font Awesome 6 Free';
-        font-weight: 900;
-        position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
-        font-size: 8rem; opacity: 0.06; color: white;
-    }
-    .dash-welcome h1 { font-size: 1.8rem; margin-bottom: 4px; }
-    .dash-welcome p { opacity: 0.82; margin: 0; font-size: 0.95rem; }
-    .dash-welcome .badge-role {
-        background: rgba(255,255,255,0.15);
-        border: 1px solid rgba(255,255,255,0.3);
-        color: white; padding: 4px 14px; border-radius: 20px;
-        font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;
-        text-transform: uppercase;
-    }
-    .quick-action-btn {
-        display: flex; align-items: center; gap: 12px;
-        padding: 13px 16px; border-radius: 12px;
-        background: white; border: 1.5px solid #e8ecf0;
-        color: #2d3748; text-decoration: none;
-        transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-        font-weight: 500; font-size: 0.875rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    .quick-action-btn:hover {
-        background: linear-gradient(135deg,#e63946,#c1121f);
-        color: white; border-color: transparent;
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px rgba(230,57,70,0.3);
-    }
-    .quick-action-btn .qa-icon {
-        width: 36px; height: 36px; border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.95rem; flex-shrink: 0;
-    }
-    .quick-action-btn:hover .qa-icon { background: rgba(255,255,255,0.2) !important; color: white !important; }
-    .match-result-card {
-        background: white; border-radius: 12px; padding: 14px;
-        border: 1px solid #f0f4f8; transition: all 0.2s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    .match-result-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
-    .score-badge {
-        background: linear-gradient(135deg,#1a1a2e,#2d3748);
-        color: white; border-radius: 8px; padding: 6px 14px;
-        font-weight: 800; font-size: 1.1rem; letter-spacing: 2px;
-    }
-    .live-badge { background: #e63946; color: white; border-radius: 20px; padding: 3px 10px; font-size: 0.7rem; font-weight: 700; animation: pulse-red 1.5s infinite; }
-    @keyframes pulse-red { 0%,100% { box-shadow: 0 0 0 0 rgba(230,57,70,0.4); } 50% { box-shadow: 0 0 0 8px rgba(230,57,70,0); } }
-</style>
-{% endblock %}
+{% block extra_css %}{% endblock %}
 
 {% block content %}
 

@@ -6,17 +6,8 @@
 
 {% block extra_css %}
 <style>
-    .hero-banner {
-        background: linear-gradient(135deg, #4361ee 0%, #1a1a2e 100%);
-        border-radius: 16px; padding: 1.6rem 2rem; color: white;
-        position: relative; overflow: hidden; margin-bottom: 1.5rem;
-    }
-    .hero-banner::before {
-        content: ''; position: absolute; right: -60px; bottom: -60px;
-        width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.04);
-    }
-    .ref-avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.6); object-fit: cover; flex-shrink: 0; }
-    .ref-avatar-placeholder { width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; flex-shrink: 0; }
+  .ref-avatar { width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,.6);object-fit:cover;flex-shrink:0; }
+  .ref-avatar-placeholder { width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:2rem;color:white;flex-shrink:0; }
 </style>
 {% endblock %}
 
