@@ -181,18 +181,7 @@
                 </td>
                 <td><strong style="font-size:1rem;color:var(--fkf-dark);">{{ entry.points }}</strong></td>
                 <td>
-                  {% if entry.form %}
-                  <div class="d-flex gap-1">
-                    {% for result in entry.form %}
-                    {% if result == 'W' %}<span class="form-badge form-w" title="Win">W</span>
-                    {% elif result == 'D' %}<span class="form-badge form-d" title="Draw">D</span>
-                    {% elif result == 'L' %}<span class="form-badge form-l" title="Loss">L</span>
-                    {% endif %}
-                    {% endfor %}
-                  </div>
-                  {% else %}
-                  <span class="text-muted" style="font-size:0.78rem;">—</span>
-                  {% endif %}
+                  {% load fkf_tags %}{% form_string entry.form %}
                 </td>
               </tr>
               {% empty %}

@@ -16,7 +16,7 @@
     <!-- Rejected Transfers (Admin Override) -->
     {% if rejected_transfers %}
     <div class="card mb-4">
-        <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
+        <div class="card-header ch-red">
             <h5 class="mb-0"><i class="fas fa-times-circle"></i> Rejected Transfers ({{ rejected_transfers.count }})</h5>
         </div>
         <div class="card-body">
@@ -123,7 +123,7 @@
     <!-- Recent Approved Transfers -->
     {% if approved_transfers %}
     <div class="card">
-        <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
+        <div class="card-header ch-green">
             <h5 class="mb-0"><i class="fas fa-check-circle"></i> Recent Approved Transfers (Last 20)</h5>
         </div>
         <div class="card-body">

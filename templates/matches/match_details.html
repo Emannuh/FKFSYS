@@ -93,9 +93,8 @@
         <div><i class="fas fa-map-marker-alt me-1"></i>{{ match.venue|default:"TBD" }}</div>
       </div>
       <div class="mt-2">
-        <span class="badge {% if match.status == 'completed' %}bg-success{% elif match.status == 'ongoing' %}bg-warning text-dark{% else %}bg-info{% endif %}">
-          {{ match.get_status_display }}
-        </span>
+        {% load fkf_tags %}
+        <span class="badge ms-1">{% match_badge match.status %}</span>
         {% if match.zone %}<span class="badge bg-light text-dark ms-1">{{ match.zone.name }}</span>{% endif %}
         {% if match.round_number %}<span class="badge bg-secondary ms-1">Round {{ match.round_number }}</span>{% endif %}
       </div>

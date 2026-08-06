@@ -57,29 +57,12 @@
                                 <small class="text-muted">{{ match_data.match.kickoff_time|time:"H:i"|default:"TBD" }}</small>
                             </td>
                             <td>
-                                <div>
-                                    <strong>Home:</strong>
-                                    {% if match_data.home_squad %}
-                                        {% if match_data.home_squad.status == 'submitted' %}
-                                        <span class="badge bg-warning text-dark">Pending</span>
-                                        {% elif match_data.home_squad.status == 'approved' %}
-                                        <span class="badge bg-success">Approved</span>
-                                        {% endif %}
-                                    {% else %}
-                                    <span class="badge bg-secondary">Not Submitted</span>
-                                    {% endif %}
+                                {% load fkf_tags %}
+                                <div><strong>Home:</strong>
+                                    {% if match_data.home_squad %}{% squad_badge match_data.home_squad.status %}{% else %}{% squad_badge 'pending' %}{% endif %}
                                 </div>
-                                <div class="mt-1">
-                                    <strong>Away:</strong>
-                                    {% if match_data.away_squad %}
-                                        {% if match_data.away_squad.status == 'submitted' %}
-                                        <span class="badge bg-warning text-dark">Pending</span>
-                                        {% elif match_data.away_squad.status == 'approved' %}
-                                        <span class="badge bg-success">Approved</span>
-                                        {% endif %}
-                                    {% else %}
-                                    <span class="badge bg-secondary">Not Submitted</span>
-                                    {% endif %}
+                                <div class="mt-1"><strong>Away:</strong>
+                                    {% if match_data.away_squad %}{% squad_badge match_data.away_squad.status %}{% else %}{% squad_badge 'pending' %}{% endif %}
                                 </div>
                             </td>
                             <td>

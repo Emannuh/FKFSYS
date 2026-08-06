@@ -251,18 +251,11 @@
                                 
                                 <div class="text-center">
                                     <div class="mb-2">
+                                        {% load fkf_tags %}
                                         {% if match_data.squad %}
-                                            {% if match_data.squad.status == 'pending' %}
-                                            <span class="badge bg-secondary">Not Submitted</span>
-                                            {% elif match_data.squad.status == 'submitted' %}
-                                            <span class="badge bg-warning">Awaiting Approval</span>
-                                            {% elif match_data.squad.status == 'approved' %}
-                                            <span class="badge bg-success">Approved</span>
-                                            {% elif match_data.squad.status == 'locked' %}
-                                            <span class="badge bg-dark">Locked</span>
-                                            {% endif %}
+                                            {% squad_badge match_data.squad.status %}
                                         {% else %}
-                                        <span class="badge bg-secondary">Not Submitted</span>
+                                            {% squad_badge 'pending' %}
                                         {% endif %}
                                     </div>
                                     

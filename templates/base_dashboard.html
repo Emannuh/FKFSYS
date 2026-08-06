@@ -61,12 +61,7 @@
             <div class="sb-avatar">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</div>
             <div class="sb-user-info">
                 <span class="sb-user-name">{{ user.get_full_name|default:user.username }}</span>
-                <span class="sb-user-role">
-                    {% if user.is_superuser %}Super Admin
-                    {% elif user.is_staff %}League Admin
-                    {% elif user.groups.all|length > 0 %}{{ user.groups.all.0.name }}
-                    {% else %}Member{% endif %}
-                </span>
+                <span class="sb-user-role">{% load fkf_tags %}{% user_role %}</span>
             </div>
         </div>
 

@@ -875,3 +875,32 @@ body:not(.db-layout) main.container { flex: 1; padding-top: 24px; padding-bottom
   .db-content { padding: 0 !important; }
   .card { box-shadow: none !important; border: 1px solid #ddd !important; }
 }
+
+/* ===== REGISTRATION WINDOW CARDS (partial) ============================= */
+.reg-window-card {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border-left-width: 4px !important;
+  border-left-style: solid !important;
+}
+.reg-window-card.reg-open  { border-left-color: var(--fkf-green) !important; }
+.reg-window-card.reg-closed { border-left-color: var(--fkf-red)  !important; }
+
+.reg-window-icon {
+  width: 48px; height: 48px; border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 1.3rem; flex-shrink: 0;
+}
+.reg-icon-open   { background: linear-gradient(135deg, var(--fkf-green), var(--fkf-green-dark)); }
+.reg-icon-closed { background: linear-gradient(135deg, var(--fkf-red),   var(--fkf-red-dark));  }
+
+/* ===== CARD HEADER COLOUR CLASSES ====================================== */
+/* Replace all inline style="background:linear-gradient(...)" on card-header */
+.ch-red    { background: linear-gradient(90deg, var(--fkf-red),        var(--fkf-red-dark))   !important; color: white !important; }
+.ch-green  { background: linear-gradient(90deg, var(--fkf-green),      var(--fkf-green-dark)) !important; color: white !important; }
+.ch-blue   { background: linear-gradient(90deg, var(--fkf-blue),       var(--fkf-blue-dark))  !important; color: white !important; }
+.ch-orange { background: linear-gradient(90deg, var(--fkf-gold),       var(--fkf-gold-dark))  !important; color: white !important; }
+.ch-dark   { background: linear-gradient(90deg, var(--fkf-dark),       var(--fkf-dark-2))     !important; color: white !important; }
+.ch-teal   { background: linear-gradient(90deg, var(--fkf-teal),       var(--fkf-teal-dark))  !important; color: white !important; }
+.ch-purple { background: linear-gradient(90deg, var(--fkf-purple),     var(--fkf-purple-dark))!important; color: white !important; }
+.ch-forest { background: linear-gradient(90deg, #198754,               #0f5132)               !important; color: white !important; }

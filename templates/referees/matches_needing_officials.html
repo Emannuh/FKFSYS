@@ -745,9 +745,8 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="badge {% if match.status == 'scheduled' %}bg-primary{% elif match.status == 'completed' %}bg-success{% elif match.status == 'live' %}bg-danger{% else %}bg-warning{% endif %}">
-                                    {{ match.get_status_display }}
-                                </span>
+                                {% load fkf_tags %}{% match_badge match.status %}
+                            </td>
                                 {% if match.status == 'live' %}
                                 <span class="badge bg-danger blink-live ms-1">● LIVE</span>
                                 {% if match.start_time %}

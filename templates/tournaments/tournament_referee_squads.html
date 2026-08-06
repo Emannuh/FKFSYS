@@ -71,17 +71,7 @@
                             <td class="fw-bold">{{ squad.team_registration.display_name }}</td>
                             <td>{{ squad.get_starting_eleven.count }}/11</td>
                             <td>{{ squad.get_substitutes.count }}/14</td>
-                            <td>
-                                {% if squad.status == 'pending' %}
-                                <span class="badge bg-secondary">Not Submitted</span>
-                                {% elif squad.status == 'submitted' %}
-                                <span class="badge bg-warning text-dark">Awaiting Approval</span>
-                                {% elif squad.status == 'approved' %}
-                                <span class="badge bg-success">Approved</span>
-                                {% elif squad.status == 'locked' %}
-                                <span class="badge bg-info">Locked</span>
-                                {% endif %}
-                            </td>
+                            <td>{% load fkf_tags %}{% squad_badge squad.status %}</td>
                             <td>{{ squad.submitted_at|date:"d/m/Y H:i"|default:"–" }}</td>
                             <td class="text-end">
                                 {% if squad.status == 'submitted' %}
