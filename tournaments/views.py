@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
 from datetime import timedelta
 import random
 import math
@@ -39,15 +39,16 @@ from .forms import (
     GenerateFixturesForm,
 )
 from teams.models import Team, Player
+from fkf_league.permissions import is_league_admin, is_team_manager
 
 
-# ── permission helpers ────────────────────────────────────────────────────
+# ── Permission helpers ────────────────────────────────────────────────────
 def admin_required(user):
-    return user.is_superuser or user.groups.filter(name='League Admin').exists()
+    return is_league_admin(user)
 
 
 def team_manager_required(user):
-    return user.groups.filter(name='Team Managers').exists() or user.is_superuser
+    return is_team_manager(user)
 
 
 # ══════════════════════════════════════════════════════════════════════════

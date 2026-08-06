@@ -10,12 +10,13 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from .models import ActivityLog
 from .undo_handlers import perform_undo
+from fkf_league.permissions import is_super_admin
 
 User = get_user_model()
 
 
 def superadmin_required(user):
-    return user.is_superuser
+    return is_super_admin(user)
 
 
 @staff_member_required

@@ -60,6 +60,29 @@ class Match(models.Model):
     def __str__(self):
         return f"{self.home_team} vs {self.away_team} - {self.match_date.strftime('%Y-%m-%d')}"
     
+    # ── Status helpers ──────────────────────────────────────────────────
+    @property
+    def is_completed(self):
+        return self.status == 'completed'
+
+    @property
+    def is_live(self):
+        return self.status == 'live'
+
+    @property
+    def is_upcoming(self):
+        return self.status in ('scheduled', 'ongoing')
+
+    @property
+    def is_scheduled(self):
+        return self.status == 'scheduled'
+
+    # ── Score / result helpers ───────────────────────────────────────────
+    @property
+    def score_display(self):
+        """e.g. '2 – 1'"""
+        return f"{self.home_score} \u2013 {self.away_score}"
+
     @property
     def winner(self):
         if self.home_score > self.away_score:
@@ -67,6 +90,51 @@ class Match(models.Model):
         elif self.away_score > self.home_score:
             return self.away_team
         return None
+
+    def result_for(self, team):
+        """Return 'W', 'D', or 'L' for a given team. Returns None if not completed."""
+        if not self.is_completed:
+            return None
+        if self.home_team_id == team.pk or self.home_team == team:
+            if self.home_score > self.away_score:
+                return 'W'
+            if self.home_score < self.away_score:
+                return 'L'
+            return 'D'
+        else:
+            if self.away_score > self.home_score:
+                return 'W'
+            if self.away_score < self.home_score:
+                return 'L'
+            return 'D'
+
+    # ── Kickoff datetime ─────────────────────────────────────────────────
+    @property
+    def kickoff_datetime(self):
+        """
+        Single source of truth for the match kickoff as an aware datetime.
+        Eliminates the copy-pasted datetime.combine block from 3+ views.
+        Falls back to match_date (already a datetime) when kickoff_time is absent.
+        """
+        from datetime import datetime as _dt
+        from django.utils import timezone as _tz
+
+        if not self.kickoff_time:
+            return self.match_date  # match_date is already a DateTimeField
+
+        t = self.kickoff_time
+        if isinstance(t, str):
+            for fmt in ('%H:%M:%S', '%H:%M'):
+                try:
+                    t = _dt.strptime(t, fmt).time()
+                    break
+                except ValueError:
+                    continue
+            else:
+                return self.match_date  # unparseable, fall back
+
+        naive = _dt.combine(self.match_date.date(), t)
+        return _tz.make_aware(naive) if _tz.is_naive(naive) else naive
     
     def __setattr__(self, name, value):
         if name == 'match_date' and value is not None:
@@ -138,10 +206,16 @@ class LeagueTable(models.Model):
     
     def calculate_points(self):
         self.points = (self.wins * 3) + (self.draws * 1)
-    
+
     def update_stats(self):
         # This will be updated when matches are recorded
         pass
+
+    def save(self, *args, **kwargs):
+        """Auto-calculate goal difference and points on every save."""
+        self.goal_difference = self.goals_for - self.goals_against
+        self.points = (self.wins * 3) + self.draws
+        super().save(*args, **kwargs)
 
 
 class Suspension(models.Model):

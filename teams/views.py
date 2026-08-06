@@ -1,19 +1,22 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Q
 from django.db import models
 from django.urls import reverse
+
 from .models import Team, Player, Zone, LeagueSettings, TransferRequest, TeamOfficial
 from .forms import TeamRegistrationForm, PlayerRegistrationForm, TeamKitForm
 from .officials_forms import TeamOfficialForm
+from .utils import get_match_squad_data
 from payments.models import Payment
+from fkf_league.permissions import is_league_admin_or_manager
+from fkf_league.constants import TeamStatus, TransferStatus
 
+# ── Permission wrappers ─────────────────────────────────────────────────────
 def admin_or_league_manager_required(user):
-    """Check if user is staff or in League Admin or League Manager group"""
-    return user.is_staff or user.groups.filter(name__in=['League Admin', 'League Manager']).exists()
+    return is_league_admin_or_manager(user)
 
 def team_registration(request):
     # Check if team registration is open
@@ -27,46 +30,36 @@ def team_registration(request):
     
     if request.method == 'POST':
         form = TeamRegistrationForm(request.POST, request.FILES)
-        print(f"Form is valid: {form.is_valid()}")  # Debug
         if form.is_valid():
             try:
                 team = form.save(commit=False)
                 team.status = 'pending'
-                
-                # Generate team code if not already set in model save method
                 if not team.team_code:
                     import uuid
                     team.team_code = str(uuid.uuid4())[:8].upper()
-                
                 team.save()
-                print(f"Team saved: {team.team_name}, Code: {team.team_code}")  # Debug
-                
+
                 # Store in session for payment page
                 request.session['registration_success'] = True
                 request.session['success_team_name'] = team.team_name
                 request.session['success_team_code'] = team.team_code
                 request.session['team_id_for_payment'] = team.id
-                
-                # Add success message
-                messages.success(request, 
-                    f'✅ Team "{team.team_name}" registered successfully! '
-                    f'Please proceed to payment.'
+
+                messages.success(
+                    request,
+                    f'✅ Team "{team.team_name}" registered successfully! Please proceed to payment.'
                 )
-                
-                # REDIRECT to payment page
                 return redirect('payments:payment_page', team_id=team.id)
-                
+
             except Exception as e:
-                print(f"Error saving team: {e}")  # Debug
-                messages.error(request, f'Error saving team: {str(e)}')
+                messages.error(request, f'Error saving team: {e}')
         else:
-            print(f"Form errors: {form.errors}")  # Debug
             for field, errors in form.errors.items():
                 for error in errors:
                     if field == '__all__':
-                        messages.error(request, f"{error}")
+                        messages.error(request, error)
                     else:
-                        messages.error(request, f"{field}: {error}")
+                        messages.error(request, f'{field}: {error}')
     
     else:
         form = TeamRegistrationForm()
@@ -179,170 +172,81 @@ def registration_success(request):
     })
 
 def team_dashboard(request, team_id=None):
-    from matches.models import Match
-    from referees.models import MatchdaySquad
-    from tournaments.models import Tournament, TournamentTeamRegistration, ExternalTeam
+    """
+    Public / admin team dashboard.
+    Uses get_match_squad_data() — eliminates the third copy of the squad-window block.
+    """
     from django.utils import timezone
-    from datetime import timedelta
+    from tournaments.models import Tournament, TournamentTeamRegistration, ExternalTeam
     import logging
-    
+
     logger = logging.getLogger(__name__)
-    
-    # If team_id is provided, show that team's dashboard
+
+    # ── Resolve team ─────────────────────────────────────────────────────
     if team_id:
         team = get_object_or_404(Team, id=team_id)
-        logger.info(f"Team dashboard accessed via team_id: {team.team_name}")
-    # If user is team manager, show their team's dashboard
+        logger.info("Team dashboard via team_id: %s", team.team_name)
     elif request.user.is_authenticated and hasattr(request.user, 'managed_teams'):
         team = request.user.managed_teams.first()
         if not team:
             messages.error(request, "You are not assigned to any team.")
             return redirect('dashboard')
-        logger.info(f"Team dashboard accessed by manager: {request.user.username} for team: {team.team_name}")
+        logger.info("Team dashboard via manager %s: %s", request.user.username, team.team_name)
     else:
-        logger.warning(f"Team dashboard access attempt by user: {request.user} without team")
         messages.error(request, "Please specify a team.")
         return redirect('teams:all_teams')
-    
-    players = Player.objects.filter(team=team).order_by('jersey_number')
-    payments = Payment.objects.filter(team=team) if hasattr(Payment, 'objects') else []
-    
-    # Get upcoming matches for this team
-    today = timezone.now()
-    upcoming_matches = Match.objects.filter(
-        Q(home_team=team) | Q(away_team=team),
-        match_date__gte=today.date(),
-        status='scheduled'
-    ).order_by('round_number', 'match_date', 'kickoff_time')[:5]
-    
-    logger.info(f"Found {upcoming_matches.count()} upcoming matches for team: {team.team_name}")
-    
-    # Find the current active round (most recent match that can be selected)
-    current_round = None
-    active_match = None
-    
-    if upcoming_matches.exists():
-        # Get the first upcoming match's round
-        first_match = upcoming_matches.first()
-        current_round = first_match.round_number
-        
-        # Check if previous round is completed
-        if current_round and current_round > 1:
-            previous_round_matches = Match.objects.filter(
-                Q(home_team=team) | Q(away_team=team),
-                round_number=current_round - 1
-            )
-            
-            # If previous round has any unplayed matches, block current round
-            if previous_round_matches.filter(status='scheduled').exists():
-                current_round = None  # Block squad submission
-            else:
-                active_match = first_match  # Only the first match in current round
-        else:
-            # First round or no round number, allow first match
-            active_match = first_match
-    
-    # Prepare matches data with squad info
-    matches_data = []
-    for match in upcoming_matches:
-        squad = MatchdaySquad.objects.filter(match=match, team=team).first()
-        
-        # Determine if this match can have squad submitted
-        can_submit = False
-        if active_match and match.id == active_match.id:
-            # Check if within submission window (4 hours before kick-off) and not after kick-off
-            try:
-                if match.kickoff_time:
-                    # Handle kickoff_time as string (CharField)
-                    kickoff_time = match.kickoff_time
-                    if isinstance(kickoff_time, str):
-                        try:
-                            kickoff_time = datetime.strptime(kickoff_time, '%H:%M:%S').time()
-                        except (ValueError, AttributeError):
-                            try:
-                                kickoff_time = datetime.strptime(kickoff_time, '%H:%M').time()
-                            except (ValueError, AttributeError):
-                                kickoff_time = datetime.strptime('12:00', '%H:%M').time()  # Default to noon
-                    
-                    match_datetime = timezone.make_aware(
-                        timezone.datetime.combine(match.match_date, kickoff_time)
-                    )
-                else:
-                    # If no kickoff time, assume noon
-                    match_datetime = timezone.make_aware(
-                        timezone.datetime.combine(match.match_date, datetime.strptime('12:00', '%H:%M').time())
-                    )
-                time_until_match = match_datetime - today
-                # Can submit if match hasn't started yet and within 4 hours window
-                can_submit = time_until_match > timedelta(hours=0) and time_until_match <= timedelta(hours=4)
-            except (ValueError, TypeError):
-                # If date/time parsing fails, allow submission
-                can_submit = True
-        
-        matches_data.append({
-            'match': match,
-            'squad': squad,
-            'can_submit': can_submit,
-            'is_active_match': active_match and match.id == active_match.id,
-            'squad_status': squad.get_status_display() if squad else 'Not Submitted',
-            'can_view_only': squad.can_view_only() if squad else False,
-            'can_request_edit': squad.can_request_edit() if squad else False,
-        })
-    
-    logger.info(f"Prepared {len(matches_data)} matches with squad info. Current round: {current_round}")
-    logger.info(f"Active match: {active_match}")
 
-    # ── Tournament data ─────────────────────────────────────────────────
-    # Tournaments this league team is registered in
-    team_tournament_regs = TournamentTeamRegistration.objects.filter(
-        team=team
-    ).select_related('tournament')
+    players  = team.players.order_by('jersey_number')
+    payments = Payment.objects.filter(team=team)
 
-    # Tournaments the logged-in user's external teams are registered in
+    # ── Shared utility — replaces ~80-line duplicated block ──────────────
+    current_round, matches_data = get_match_squad_data(team)
+    logger.info("Squad data: %d matches, round=%s", len(matches_data), current_round)
+
+    # ── Tournament data ───────────────────────────────────────────────────
+    team_tournament_regs = (
+        TournamentTeamRegistration.objects
+        .filter(team=team)
+        .select_related('tournament')
+    )
     external_tournament_regs = TournamentTeamRegistration.objects.none()
     if request.user.is_authenticated:
         ext_teams = ExternalTeam.objects.filter(manager_user=request.user)
         if ext_teams.exists():
-            external_tournament_regs = TournamentTeamRegistration.objects.filter(
-                external_team__in=ext_teams
-            ).select_related('tournament', 'external_team')
-
-    # Open tournaments the team can still register for
-    open_tournaments = Tournament.objects.filter(
-        status='registration',
-        registration_deadline__gte=timezone.now(),
-    ).exclude(
-        registrations__team=team
+            external_tournament_regs = (
+                TournamentTeamRegistration.objects
+                .filter(external_team__in=ext_teams)
+                .select_related('tournament', 'external_team')
+            )
+    open_tournaments = (
+        Tournament.objects
+        .filter(status='registration', registration_deadline__gte=timezone.now())
+        .exclude(registrations__team=team)
     )
 
     return render(request, 'teams/dashboard.html', {
-        'team': team,
-        'players': players,
-        'payments': payments,
-        'upcoming_matches': matches_data,
-        'current_round': current_round,
-        'team_tournament_regs': team_tournament_regs,
+        'team':                     team,
+        'players':                  players,
+        'payments':                 payments,
+        'upcoming_matches':         matches_data,
+        'current_round':            current_round,
+        'team_tournament_regs':     team_tournament_regs,
         'external_tournament_regs': external_tournament_regs,
-        'open_tournaments': open_tournaments,
+        'open_tournaments':         open_tournaments,
     })
 
 def all_teams(request):
-    """View all teams - accessible to staff, superuser, League Admin, and League Manager"""
+    """All teams — visible to any authenticated admin/manager."""
     if not request.user.is_authenticated:
         messages.error(request, "Please log in to access this page.")
         return redirect('login')
-
-    if not (request.user.is_staff or request.user.is_superuser or request.user.groups.filter(name__in=['League Admin', 'League Manager']).exists()):
+    if not is_league_admin_or_manager(request.user):
         messages.error(request, "You don't have permission to access this page.")
         return redirect('dashboard')
 
-    teams = Team.objects.all()
+    teams = Team.objects.select_related('zone').all()
     zones = Zone.objects.all()
-
-    return render(request, 'teams/all_teams.html', {
-        'teams': teams,
-        'zones': zones
-    })
+    return render(request, 'teams/all_teams.html', {'teams': teams, 'zones': zones})
 
 def team_detail(request, team_id):
     team = get_object_or_404(Team, id=team_id)
@@ -489,150 +393,56 @@ def select_kit_colors(request):
 
 @login_required
 def team_manager_dashboard(request):
-    """Dashboard for approved team managers"""
-    from matches.models import Match
-    from referees.models import MatchdaySquad
-    from django.utils import timezone
-    from datetime import timedelta, datetime
+    """Dashboard for approved team managers — uses shared get_match_squad_data()."""
     import logging
-    
-    logger = logging.getLogger(__name__)
-    
-    # Get user's approved team
-    team = Team.objects.filter(manager=request.user, status='approved').first()
-    
-    if not team:
-        messages.error(request, "You don't have an approved team.")
-        return redirect('dashboard')
-    
-    logger.info(f"Team manager dashboard accessed by: {request.user.username} for team: {team.team_name}")
-    
-    # Check if kit colors are set
-    kit_complete = team.kit_colors_set
-
-    # Show reminder only once for approved teams on first login
-    show_kit_prompt = False
-    if not kit_complete and not team.kit_setup_prompt_shown:
-        show_kit_prompt = True
-        team.kit_setup_prompt_shown = True
-        team.save(update_fields=['kit_setup_prompt_shown'])
-    
-    # Get team data
-    players = Player.objects.filter(team=team).order_by('jersey_number')
-    player_count = players.count()
-    captain = players.filter(is_captain=True).first()
-    
-    # Get league settings for deadlines
-    settings = LeagueSettings.get_settings()
-    
-    # Get upcoming matches for matchday squad management
-    today = timezone.now()
-    upcoming_matches = Match.objects.filter(
-        Q(home_team=team) | Q(away_team=team),
-        match_date__gte=today.date(),
-        status='scheduled'
-    ).order_by('round_number', 'match_date', 'kickoff_time')[:5]
-    
-    logger.info(f"Found {upcoming_matches.count()} upcoming matches for team: {team.team_name}")
-    
-    # Find the current active round (most recent match that can be selected)
-    current_round = None
-    active_match = None
-    
-    if upcoming_matches.exists():
-        # Get the first upcoming match's round
-        first_match = upcoming_matches.first()
-        current_round = first_match.round_number
-        
-        # Check if previous round is completed
-        if current_round and current_round > 1:
-            previous_round_matches = Match.objects.filter(
-                Q(home_team=team) | Q(away_team=team),
-                round_number=current_round - 1
-            )
-            
-            # If previous round has any unplayed matches, block current round
-            if previous_round_matches.filter(status='scheduled').exists():
-                current_round = None  # Block squad submission
-            else:
-                active_match = first_match  # Only the first match in current round
-        else:
-            # First round or no round number, allow first match
-            active_match = first_match
-    
-    # Prepare matches data with squad info
-    matches_data = []
-    for match in upcoming_matches:
-        squad = MatchdaySquad.objects.filter(match=match, team=team).first()
-        
-        # Determine if this match can have squad submitted
-        can_submit = False
-        if active_match and match.id == active_match.id:
-            # Check if within submission window (4 hours before kick-off) and not after kick-off
-            try:
-                if match.kickoff_time:
-                    # Handle kickoff_time as string (CharField)
-                    kickoff_time = match.kickoff_time
-                    if isinstance(kickoff_time, str):
-                        try:
-                            kickoff_time = datetime.strptime(kickoff_time, '%H:%M:%S').time()
-                        except (ValueError, AttributeError):
-                            try:
-                                kickoff_time = datetime.strptime(kickoff_time, '%H:%M').time()
-                            except (ValueError, AttributeError):
-                                kickoff_time = datetime.strptime('12:00', '%H:%M').time()  # Default to noon
-                    
-                    match_datetime = timezone.make_aware(
-                        timezone.datetime.combine(match.match_date, kickoff_time)
-                    )
-                else:
-                    # If no kickoff time, assume noon
-                    match_datetime = timezone.make_aware(
-                        timezone.datetime.combine(match.match_date, datetime.strptime('12:00', '%H:%M').time())
-                    )
-                time_until_match = match_datetime - today
-                # Can submit if match hasn't started yet and within 4 hours window
-                can_submit = time_until_match > timedelta(hours=0) and time_until_match <= timedelta(hours=4)
-            except (ValueError, TypeError):
-                # If date/time parsing fails, allow submission
-                can_submit = True
-        
-        matches_data.append({
-            'match': match,
-            'squad': squad,
-            'can_submit': can_submit,
-            'is_active_match': active_match and match.id == active_match.id,
-            'squad_status': squad.get_status_display() if squad else 'Not Submitted',
-            'can_view_only': squad.can_view_only() if squad else False,
-            'can_request_edit': squad.can_request_edit() if squad else False,
-        })
-    
-    logger.info(f"Prepared {len(matches_data)} matches with squad info. Current round: {current_round}")
-
-    # ── Tournament data ─────────────────────────────────────────────────
+    from django.utils import timezone
     from tournaments.models import (
         Tournament, TournamentTeamRegistration, TournamentMatch,
         TournamentMatchdaySquad, ExternalTeam,
     )
 
-    team_tournament_regs = TournamentTeamRegistration.objects.filter(
-        team=team,
-    ).select_related('tournament')
+    logger = logging.getLogger(__name__)
 
-    external_tournament_regs = TournamentTeamRegistration.objects.none()
+    team = Team.objects.filter(manager=request.user, status=TeamStatus.APPROVED).first()
+    if not team:
+        messages.error(request, "You don't have an approved team.")
+        return redirect('dashboard')
+
+    logger.info("Team manager dashboard: %s → %s", request.user.username, team.team_name)
+
+    # Kit prompt (show once after approval)
+    show_kit_prompt = False
+    if not team.kit_colors_set and not team.kit_setup_prompt_shown:
+        show_kit_prompt = True
+        team.kit_setup_prompt_shown = True
+        team.save(update_fields=['kit_setup_prompt_shown'])
+
+    # ── Shared utility replaces ~80 lines of duplicated logic ───────────
+    current_round, matches_data = get_match_squad_data(team)
+    logger.info("Prepared %d match(es), round=%s", len(matches_data), current_round)
+
+    # league_settings is injected automatically by the context processor
+    players = team.players.order_by('jersey_number')
+
+    # ── Tournament data ─────────────────────────────────────────────────
+    team_tournament_regs = (
+        TournamentTeamRegistration.objects
+        .filter(team=team)
+        .select_related('tournament')
+    )
     ext_teams = ExternalTeam.objects.filter(manager_user=request.user)
-    if ext_teams.exists():
-        external_tournament_regs = TournamentTeamRegistration.objects.filter(
-            external_team__in=ext_teams,
-        ).select_related('tournament', 'external_team')
-
-    open_tournaments = Tournament.objects.filter(
-        status='registration',
-        registration_deadline__gte=timezone.now(),
-    ).exclude(registrations__team=team)
-
-    # Tournament matches for this team
-    all_regs = list(
+    external_tournament_regs = (
+        TournamentTeamRegistration.objects
+        .filter(external_team__in=ext_teams)
+        .select_related('tournament', 'external_team')
+        if ext_teams.exists() else TournamentTeamRegistration.objects.none()
+    )
+    open_tournaments = (
+        Tournament.objects
+        .filter(status='registration', registration_deadline__gte=timezone.now())
+        .exclude(registrations__team=team)
+    )
+    all_approved_regs = list(
         TournamentTeamRegistration.objects.filter(team=team, status='approved')
     ) + list(
         TournamentTeamRegistration.objects.filter(
@@ -640,42 +450,34 @@ def team_manager_dashboard(request):
         )
     )
     tournament_matches_data = []
-    for reg in all_regs:
-        t_matches = TournamentMatch.objects.filter(
-            Q(home_team=reg) | Q(away_team=reg),
-            status='scheduled',
-        ).select_related('tournament', 'home_team', 'away_team').order_by('match_date')
-        for tm in t_matches:
-            t_squad = TournamentMatchdaySquad.objects.filter(match=tm, team_registration=reg).first()
+    for reg in all_approved_regs:
+        for tm in TournamentMatch.objects.filter(
+            Q(home_team=reg) | Q(away_team=reg), status='scheduled'
+        ).select_related('tournament', 'home_team', 'away_team').order_by('match_date'):
+            t_squad = TournamentMatchdaySquad.objects.filter(
+                match=tm, team_registration=reg
+            ).first()
             tournament_matches_data.append({
                 'match': tm,
                 'reg': reg,
                 'squad': t_squad,
                 'starting_count': t_squad.squad_players.filter(is_starting=True).count() if t_squad else 0,
-                'subs_count': t_squad.squad_players.filter(is_starting=False).count() if t_squad else 0,
+                'subs_count':     t_squad.squad_players.filter(is_starting=False).count() if t_squad else 0,
             })
 
     context = {
-        'team': team,
-        'players': players,
-        'player_count': player_count,
-        'captain_name': captain.full_name if captain else "Not set",
-        'kit_complete': kit_complete,
-        'show_kit_prompt': show_kit_prompt,
-        'recent_players': players.order_by('-registration_date')[:10],
-        'league_settings': settings,  # Add this for consistency with home template
-        'player_registration_deadline': settings.player_registration_deadline,
-        'player_registration_closed_date': settings.player_registration_closed_date,
-        'transfer_window_deadline': settings.transfer_window_deadline,
-        'transfer_window_closed_date': settings.transfer_window_closed_date,
-        'player_registration_open': settings.player_registration_open,
-        'transfer_window_open': settings.transfer_window_open,
-        'upcoming_matches': matches_data,
-        'current_round': current_round,
-        # Tournament
-        'team_tournament_regs': team_tournament_regs,
+        'team':                    team,
+        'players':                 players,
+        'player_count':            team.player_count,
+        'captain_name':            team.captain.full_name if team.captain else 'Not set',
+        'kit_complete':            team.kit_colors_set,
+        'show_kit_prompt':         show_kit_prompt,
+        'recent_players':          players.order_by('-registration_date')[:10],
+        'upcoming_matches':        matches_data,
+        'current_round':           current_round,
+        'team_tournament_regs':    team_tournament_regs,
         'external_tournament_regs': external_tournament_regs,
-        'open_tournaments': open_tournaments,
+        'open_tournaments':        open_tournaments,
         'tournament_matches_data': tournament_matches_data,
     }
     return render(request, 'dashboard/team_manager.html', context)

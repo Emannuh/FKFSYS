@@ -1,44 +1,36 @@
 # frontend/views.py
 from django.shortcuts import render
-from django.db.models import Count, Sum
-from teams.models import Team, Zone, LeagueSettings
+from django.db.models import Count, Q
+
+from teams.models import Team
 from matches.models import Match
-from payments.models import Payment
+from fkf_league.constants import MatchStatus, TeamStatus
+
 
 def home(request):
-    """Homepage view"""
-    # Get statistics for homepage
-    total_teams = Team.objects.filter(status='approved').count()
-    completed_matches = Match.objects.filter(status='completed').count()
-    
-    # Get recent matches
-    recent_matches = Match.objects.filter(
-        status='completed'
-    ).order_by('-match_date')[:5]
-    
-    # Get league leaders
-    zones = Zone.objects.all()
-    
-    # Get league settings for deadlines
-    settings = LeagueSettings.get_settings()
-    
-    context = {
-        'total_teams': total_teams,
-        'completed_matches': completed_matches,
-        'recent_matches': recent_matches,
-        'zones': zones,
-        'league_settings': settings,
-    }
-    return render(request, 'home.html', context)
+    """Homepage — stats from one aggregate, league_settings from context processor."""
+    stats = Match.objects.aggregate(
+        completed_matches=Count('id', filter=Q(status=MatchStatus.COMPLETED)),
+    )
+    return render(request, 'home.html', {
+        'total_teams':       Team.objects.filter(status=TeamStatus.APPROVED).count(),
+        'completed_matches': stats['completed_matches'],
+        'recent_matches':    (
+            Match.objects
+            .filter(status=MatchStatus.COMPLETED)
+            .select_related('home_team', 'away_team', 'zone')
+            .order_by('-match_date')[:5]
+        ),
+    })
+
 
 def about(request):
-    """About page"""
     return render(request, 'frontend/about.html')
 
+
 def contact(request):
-    """Contact page"""
     return render(request, 'frontend/contact.html')
 
+
 def rules(request):
-    """League rules page"""
     return render(request, 'frontend/rules.html')

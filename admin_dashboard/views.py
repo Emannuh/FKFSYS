@@ -5,235 +5,74 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.db.models import Sum, Count, Q
-from django.core.mail import send_mail
 from django.conf import settings
+
 from teams.models import Team, Player, Zone, LeagueSettings, TransferRequest
+from teams.utils import get_match_squad_data
 from payments.models import Payment
 from matches.models import Match, LeagueTable
 from referees.models import MatchReport, Referee
+from fkf_league.permissions import is_league_admin, is_super_admin
+from admin_dashboard.email import send_welcome_email, send_password_reset_email
 
+# ── Permission wrappers (kept as one-liners for @user_passes_test) ───────────
 def admin_required(user):
-    """Check if user is staff (Super Admin) or in League Admin group (League Manager)"""
-    return user.is_staff or user.groups.filter(name='League Admin').exists()
+    return is_league_admin(user)
 
 def superadmin_required(user):
-    """Check if user is superuser - for user management only"""
-    return user.is_superuser
-
-def send_welcome_email(user, password, role):
-    """
-    Send welcome email to newly created user with login credentials
-    """
-    from django.core.mail import EmailMultiAlternatives
-    from django.template.loader import render_to_string
-    
-    subject = f'Welcome to FKF Meru League Management System - {role}'
-    
-    # Plain text version
-    text_content = f"""
-Dear {user.first_name} {user.last_name},
-
-Welcome to the FKF Meru County League Management System!
-
-Your account has been successfully created with the following details:
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LOGIN CREDENTIALS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Username: {user.username}
-Temporary Password: {password}
-Role: {role}
-
-Login URL: {settings.SITE_URL}/accounts/login/
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPORTANT: CHANGE YOUR PASSWORD
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-For security reasons, please change your password immediately after your first login:
-
-1. Log in using the credentials above
-2. Click on your username in the top navigation bar
-3. Select "Change Password" from the dropdown menu
-4. Follow the prompts to set a new secure password
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECURITY TIPS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✓ Create a strong password with at least 8 characters
-✓ Use a mix of uppercase, lowercase, numbers, and symbols
-✓ Never share your password with anyone
-✓ Log out when finished using the system
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NEED HELP?
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-If you have any questions or need assistance, please contact the system administrator.
-
-Best regards,
-FKF Meru County League Administration
-    """
-    
-    # HTML version
-    try:
-        html_content = render_to_string('emails/welcome_email.html', {
-            'user': user,
-            'username': user.username,
-            'password': password,
-            'role': role,
-            'login_url': f'{settings.SITE_URL}/accounts/login/'
-        })
-    except:
-        html_content = None
-    
-    try:
-        email = EmailMultiAlternatives(
-            subject,
-            text_content,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email]
-        )
-        if html_content:
-            email.attach_alternative(html_content, "text/html")
-        email.send(fail_silently=False)
-        return True
-    except Exception as e:
-        print(f"Error sending email to {user.email}: {str(e)}")
-        return False
-
-def send_password_reset_email(user, new_password):
-    """
-    Send password reset email to user
-    """
-    from django.core.mail import EmailMultiAlternatives
-    from django.template.loader import render_to_string
-    
-    subject = 'FKF Meru League - Password Reset'
-    
-    # Get user's role(s)
-    roles = ', '.join([group.name for group in user.groups.all()])
-    
-    # Plain text version
-    text_content = f"""
-Dear {user.first_name} {user.last_name},
-
-Your password has been reset by the system administrator.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NEW LOGIN CREDENTIALS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Username: {user.username}
-New Password: {new_password}
-Role: {roles}
-
-Login URL: {settings.SITE_URL}/accounts/login/
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPORTANT: CHANGE YOUR PASSWORD
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-For security reasons, please change your password immediately:
-
-1. Log in using the new credentials above
-2. Click on your username in the top navigation bar
-3. Select "Change Password" from the dropdown menu
-4. Follow the prompts to set a new secure password
-
-If you did not request this password reset, please contact the system administrator immediately.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECURITY REMINDER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✓ Never share your password with anyone
-✓ Use a strong, unique password
-✓ Log out when finished using the system
-
-Best regards,
-FKF Meru County League Administration
-    """
-    
-    # HTML version
-    try:
-        html_content = render_to_string('emails/password_reset.html', {
-            'user': user,
-            'username': user.username,
-            'password': new_password,
-            'roles': roles,
-            'login_url': f'{settings.SITE_URL}/accounts/login/'
-        })
-    except:
-        html_content = None
-    
-    try:
-        email = EmailMultiAlternatives(
-            subject,
-            text_content,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email]
-        )
-        if html_content:
-            email.attach_alternative(html_content, "text/html")
-        email.send(fail_silently=False)
-        return True
-    except Exception as e:
-        print(f"Error sending password reset email to {user.email}: {str(e)}")
-        return False
+    return is_super_admin(user)
 
 @login_required
 @user_passes_test(admin_required)
 def admin_dashboard(request):
-    """Main admin dashboard"""
-    # Statistics
-    total_teams = Team.objects.count()
-    registered_teams = Team.objects.filter(status='approved').count()
-    pending_teams = Team.objects.filter(status='pending').count()
-    total_players = Player.objects.count()
-    total_referees = Referee.objects.count()
-    
-    # Payment statistics
-    total_payments = Payment.objects.filter(status='completed').count()
-    total_revenue = Payment.objects.filter(status='completed').aggregate(
-        Sum('amount')
-    )['amount__sum'] or 0
-    
-    # Match statistics
-    total_matches = Match.objects.count()
-    completed_matches = Match.objects.filter(status='completed').count()
-    
-    # Pending approvals
-    pending_reports = MatchReport.objects.filter(status='submitted').count()
-    pending_registrations = Team.objects.filter(status='pending').count()
-    
-    # Recent activities
-    recent_payments = Payment.objects.filter(
-        status='completed'
-    ).order_by('-transaction_date')[:5]
-    
-    recent_matches = Match.objects.filter(
-        status='completed'
-    ).order_by('-match_date')[:5]
-    
+    """Main admin dashboard — all stats from annotated aggregations, not separate COUNT queries."""
+    from fkf_league.constants import MatchStatus, TeamStatus, ReportStatus
+
+    team_stats = Team.objects.aggregate(
+        total=Count('id'),
+        approved=Count('id', filter=Q(status=TeamStatus.APPROVED)),
+        pending=Count('id', filter=Q(status=TeamStatus.PENDING)),
+    )
+    match_stats = Match.objects.aggregate(
+        total=Count('id'),
+        completed=Count('id', filter=Q(status=MatchStatus.COMPLETED)),
+    )
+    payment_stats = Payment.objects.filter(status='completed').aggregate(
+        count=Count('id'),
+        revenue=Sum('amount'),
+    )
+
     context = {
-        'total_teams': total_teams,
-        'registered_teams': registered_teams,
-        'pending_teams': pending_teams,
-        'total_players': total_players,
-        'total_referees': total_referees,
-        'total_payments': total_payments,
-        'total_revenue': total_revenue,
-        'total_matches': total_matches,
-        'completed_matches': completed_matches,
-        'pending_reports': pending_reports,
-        'pending_registrations': pending_registrations,
-        'recent_payments': recent_payments,
-        'recent_matches': recent_matches,
+        'total_teams':          team_stats['total'],
+        'registered_teams':     team_stats['approved'],
+        'pending_teams':        team_stats['pending'],
+        'total_players':        Player.objects.count(),
+        'total_referees':       Referee.objects.count(),
+        'total_payments':       payment_stats['count'] or 0,
+        'total_revenue':        payment_stats['revenue'] or 0,
+        'total_matches':        match_stats['total'],
+        'completed_matches':    match_stats['completed'],
+        'pending_reports':      MatchReport.objects.filter(status=ReportStatus.SUBMITTED).count(),
+        'pending_registrations': team_stats['pending'],
+        'recent_payments':      Payment.objects.filter(status='completed').order_by('-transaction_date')[:5],
+        'recent_matches':       Match.objects.filter(status=MatchStatus.COMPLETED)
+                                              .select_related('home_team', 'away_team', 'zone')
+                                              .order_by('-match_date')[:5],
+        # Extra stats for 2nd row
+        'total_tournaments':    _safe_tournament_count(),
+        'active_suspensions':   Player.objects.filter(is_suspended=True).count(),
+        'pending_transfers':    TransferRequest.objects.filter(status='pending_parent').count(),
+        'pending_referee_approvals': Referee.objects.filter(status='pending').count(),
     }
     return render(request, 'admin_dashboard/dashboard.html', context)
+
+
+def _safe_tournament_count():
+    try:
+        from tournaments.models import Tournament
+        return Tournament.objects.count()
+    except Exception:
+        return 0
 
 @login_required
 @user_passes_test(admin_required)
@@ -368,29 +207,19 @@ def approve_reports(request):
 @login_required
 @user_passes_test(admin_required)
 def view_suspensions(request):
-    """View suspended players"""
-    # Direct red cards (3 match ban)
-    red_card_players = Player.objects.filter(
-        red_cards__gt=0,
-        is_suspended=True
+    """View all active suspensions — queries Suspension model directly, not Player flags."""
+    from matches.models import Suspension
+    active_suspensions = (
+        Suspension.objects
+        .filter(is_active=True)
+        .select_related('player', 'player__team', 'match')
+        .order_by('player__last_name')
     )
-    
-    # Accumulated yellow cards (6 yellows = 1 match ban)
-    yellow_card_players = Player.objects.filter(
-        yellow_cards__gte=6,
-        is_suspended=True
-    )
-    
-    # Two yellow cards in one match (2 match ban)
-    two_yellow_players = Player.objects.filter(
-        yellow_cards__gte=2,
-        is_suspended=True
-    ).exclude(id__in=red_card_players.values('id'))
-    
     context = {
-        'red_card_players': red_card_players,
-        'yellow_card_players': yellow_card_players,
-        'two_yellow_players': two_yellow_players,
+        'active_suspensions': active_suspensions,
+        # Legacy aliases kept so existing template still works
+        'red_card_players':   Player.objects.filter(red_cards__gt=0, is_suspended=True).select_related('team'),
+        'yellow_card_players': Player.objects.filter(yellow_cards__gte=6, is_suspended=True).select_related('team'),
     }
     return render(request, 'admin_dashboard/suspensions.html', context)
 
@@ -435,45 +264,26 @@ def manage_suspension(request, player_id):
 @login_required
 @user_passes_test(admin_required)
 def statistics_dashboard(request):
-    """Statistics and analytics dashboard"""
-    # Top scorers
-    top_scorers = Player.objects.filter(
-        goals_scored__gt=0
-    ).order_by('-goals_scored')[:10]
-    
-    # Most yellow cards
-    most_yellows = Player.objects.filter(
-        yellow_cards__gt=0
-    ).order_by('-yellow_cards')[:10]
-    
-    # Most red cards
-    most_reds = Player.objects.filter(
-        red_cards__gt=0
-    ).order_by('-red_cards')[:10]
-    
-    # Team statistics
-    teams_with_most_goals = Team.objects.annotate(
-        total_goals=Sum('players__goals_scored')
-    ).filter(total_goals__gt=0).order_by('-total_goals')[:10]
-    
-    # Match statistics by zone
-    zone_stats = []
-    for zone in Zone.objects.all():
-        matches = Match.objects.filter(zone=zone)
-        completed = matches.filter(status='completed').count()
-        
-        zone_stats.append({
-            'zone': zone,
-            'total_matches': matches.count(),
-            'completed_matches': completed,
-            'completion_rate': (completed / matches.count() * 100) if matches.count() > 0 else 0
-        })
-    
+    """Statistics dashboard — uses annotated querysets to avoid N+1 queries."""
+    # Zone stats via annotation instead of a Python loop
+    zone_stats = Zone.objects.annotate(
+        total_matches=Count('match'),
+        completed_matches=Count('match', filter=Q(match__status='completed')),
+    ).order_by('name')
+
     context = {
-        'top_scorers': top_scorers,
-        'most_yellows': most_yellows,
-        'most_reds': most_reds,
-        'teams_with_most_goals': teams_with_most_goals,
+        'top_scorers': Player.objects.filter(goals_scored__gt=0)
+                                     .select_related('team')
+                                     .order_by('-goals_scored')[:10],
+        'most_yellows': Player.objects.filter(yellow_cards__gt=0)
+                                      .select_related('team')
+                                      .order_by('-yellow_cards')[:10],
+        'most_reds': Player.objects.filter(red_cards__gt=0)
+                                   .select_related('team')
+                                   .order_by('-red_cards')[:10],
+        'teams_with_most_goals': Team.objects.annotate(
+            total_goals=Sum('players__goals_scored')
+        ).filter(total_goals__gt=0).order_by('-total_goals')[:10],
         'zone_stats': zone_stats,
     }
     return render(request, 'admin_dashboard/statistics.html', context)
@@ -539,203 +349,92 @@ def view_report(request, report_id):
 @login_required
 def dashboard(request):
     """
-    Main dashboard router - redirects users to appropriate dashboard based on role
-    PRIORITY ORDER:
-    1. Super Admin (superuser) -> Full admin dashboard with user management
-    2. Team Manager -> Team management dashboard
-    3. Referees Manager -> Referee management dashboard
-    4. Referee -> Referee portal
-    5. League Manager (League Admin group) -> League operations dashboard
-    6. Default -> Basic dashboard
+    Role-based dashboard router.
+    Business logic lives in Python; templates only render data passed in context.
+
+    Priority:
+      1. Super Admin      → full admin_dashboard
+      2. Team Manager     → team_manager.html
+      3. Referees Manager → referees_manager.html
+      4. Referee          → referees:referee_dashboard
+      5. League Admin     → league_manager.html  (ops without user mgmt)
+      6. Default          → default.html
     """
-    from datetime import datetime, timedelta
-    
+    from fkf_league.constants import TeamStatus, TransferStatus, ReportStatus
+
     user = request.user
-    
-    # 1. SUPER ADMIN - Full access with user management
+
+    # 1. SUPER ADMIN
     if user.is_superuser:
-        return admin_dashboard(request)  # Redirect to full admin dashboard
-    
-    # 2. TEAM MANAGER
-    elif user.groups.filter(name='Team Managers').exists():
+        return admin_dashboard(request)
+
+    # 2. TEAM MANAGER  ─────────────────────────────────────────────────────
+    if user.groups.filter(name='Team Managers').exists():
         team = Team.objects.filter(manager=user).first()
-        
+
         if not team:
             messages.error(request, "You are not assigned to any team.")
             return render(request, 'dashboard/default.html')
-        
-        # Check if team is approved
-        if team.status != 'approved':
+
+        if team.status != TeamStatus.APPROVED:
             messages.warning(request, f"Your team '{team.team_name}' is pending approval.")
             return render(request, 'dashboard/pending_approval.html', {'team': team})
-        
-        # Only force kit selection on first login; honor stored flag thereafter
+
         if not team.kit_colors_set:
             messages.info(request, "Please select your team kit colors first.")
             return redirect('teams:update_kits', team_id=team.id)
-        
-        # Get team manager dashboard data
-        player_count = Player.objects.filter(team=team).count()
-        
-        # Get captain name
-        captain = Player.objects.filter(team=team, is_captain=True).first()
-        captain_name = captain.full_name if captain else "Not set"
-        
-        # Get upcoming matches with squad info for matchday management
-        from referees.models import MatchdaySquad
-        today = timezone.now()
-        upcoming_matches_qs = Match.objects.filter(
-            Q(home_team=team) | Q(away_team=team),
-            match_date__gte=today.date(),
-            status='scheduled'
-        ).order_by('round_number', 'match_date', 'kickoff_time')[:5]
-        
-        # Find the current active round (most recent match that can be selected)
-        current_round = None
-        active_match = None
-        
-        if upcoming_matches_qs.exists():
-            # Get the first upcoming match's round
-            first_match = upcoming_matches_qs.first()
-            current_round = first_match.round_number
-            
-            # Check if previous round is completed
-            if current_round and current_round > 1:
-                previous_round_matches = Match.objects.filter(
-                    Q(home_team=team) | Q(away_team=team),
-                    round_number=current_round - 1
-                )
-                
-                # If previous round has any unplayed matches, block current round
-                if previous_round_matches.filter(status='scheduled').exists():
-                    current_round = None  # Block squad submission
-                else:
-                    active_match = first_match  # Only the first match in current round
-            else:
-                # First round or no round number, allow first match
-                active_match = first_match
-        
-        # Prepare matches data with squad info
-        matches_data = []
-        for match in upcoming_matches_qs:
-            squad = MatchdaySquad.objects.filter(match=match, team=team).first()
-            
-            # Determine if this match can have squad submitted
-            can_submit = False
-            match_started = False
-            match_datetime = None
-            
-            # Always check if match has started (for substitution requests)
-            try:
-                if match.kickoff_time:
-                    # Parse kickoff_time if it's a string
-                    kickoff_time = match.kickoff_time
-                    if isinstance(kickoff_time, str):
-                        try:
-                            kickoff_time = datetime.strptime(kickoff_time, '%H:%M:%S').time()
-                        except ValueError:
-                            try:
-                                kickoff_time = datetime.strptime(kickoff_time, '%H:%M').time()
-                            except ValueError:
-                                kickoff_time = None
-                    
-                    if kickoff_time:
-                        match_datetime = timezone.make_aware(
-                            timezone.datetime.combine(match.match_date, kickoff_time)
-                        )
-                        # Check if match has started (for substitution requests)
-                        match_started = match_datetime <= today
-                else:
-                    # If no kickoff time, assume noon
-                    match_datetime = timezone.make_aware(
-                        timezone.datetime.combine(match.match_date, timezone.datetime.strptime('12:00', '%H:%M').time())
-                    )
-                    match_started = match_datetime <= today
-            except (ValueError, TypeError):
-                match_started = False
-                match_datetime = None
-            
-            if active_match and match.id == active_match.id and match_datetime:
-                # Check if within submission window (4 hours before kick-off) and not after kick-off
-                try:
-                    time_until_match = match_datetime - today
-                    # Can submit if match hasn't started yet and within 4 hours window
-                    can_submit = time_until_match > timedelta(hours=0) and time_until_match <= timedelta(hours=4)
-                except (ValueError, TypeError):
-                    # If date/time parsing fails, allow submission
-                    can_submit = True
-            
-            matches_data.append({
-                'match': match,
-                'squad': squad,
-                'can_submit': can_submit,
-                'is_active_match': active_match and match.id == active_match.id,
-                'squad_status': squad.get_status_display() if squad else 'Not Submitted',
-                'match_started': match_started
-            })
-        
-        # Get league settings for deadlines
-        settings = LeagueSettings.get_settings()
-        
-        # Get incoming transfer requests (other teams requesting your players)
-        incoming_transfers = TransferRequest.objects.filter(
-            from_team=team,
-            status='pending_parent'
-        ).select_related('player', 'to_team', 'requested_by').order_by('-request_date')
-        
+
+        # ── Shared utility eliminates the ~80-line duplicated block ──────
+        current_round, matches_data = get_match_squad_data(team)
+
+        # league_settings injected by context processor — no need to fetch here
+        incoming_transfers = (
+            TransferRequest.objects
+            .filter(from_team=team, status=TransferStatus.PENDING_PARENT)
+            .select_related('player', 'to_team', 'requested_by')
+            .order_by('-request_date')
+        )
+
         context = {
-            'team': team,
-            'player_count': player_count,
-            'captain_name': captain_name,
-            'upcoming_matches': matches_data,
-            'current_round': current_round,
-            'recent_players': Player.objects.filter(team=team).order_by('-registration_date')[:10],
-            'kit_complete': team.kit_colors_set,
-            'show_kit_prompt': False,
-            'league_settings': settings,
-            'player_registration_deadline': settings.player_registration_deadline,
-            'player_registration_closed_date': settings.player_registration_closed_date,
-            'transfer_window_deadline': settings.transfer_window_deadline,
-            'transfer_window_closed_date': settings.transfer_window_closed_date,
-            'player_registration_open': settings.player_registration_open,
-            'transfer_window_open': settings.transfer_window_open,
+            'team':               team,
+            'player_count':       team.player_count,
+            'captain_name':       team.captain.full_name if team.captain else 'Not set',
+            'kit_complete':       team.kit_colors_set,
+            'show_kit_prompt':    False,
+            'recent_players':     team.players.order_by('-registration_date')[:10],
+            'upcoming_matches':   matches_data,
+            'current_round':      current_round,
             'incoming_transfers': incoming_transfers,
         }
         return render(request, 'dashboard/team_manager.html', context)
-    
-    # 3. REFEREES MANAGER
-    elif user.groups.filter(name='Referees Manager').exists():
-        # Get pending referees count for dashboard
-        pending_referees_count = Referee.objects.filter(status='pending').count()
-        
+
+    # 3. REFEREES MANAGER  ─────────────────────────────────────────────────
+    if user.groups.filter(name='Referees Manager').exists():
         context = {
-            'pending_referees_count': pending_referees_count,
+            'pending_referees_count': Referee.objects.filter(status='pending').count(),
         }
         return render(request, 'dashboard/referees_manager.html', context)
-    
-    # 4. REFEREE
-    elif user.groups.filter(name='Referee').exists():
+
+    # 4. REFEREE  ──────────────────────────────────────────────────────────
+    if user.groups.filter(name='Referee').exists():
         return redirect('referees:referee_dashboard')
-    
-    # 5. LEAGUE MANAGER (League Admin group) - Operations without user management
-    elif user.groups.filter(name='League Admin').exists():
-        # Get league settings
-        settings = LeagueSettings.get_settings()
-        
-        # Get transfer stats
-        pending_transfers = TransferRequest.objects.filter(status='pending_parent').count()
-        rejected_transfers = TransferRequest.objects.filter(status='rejected').count()
-        
+
+    # 5. LEAGUE ADMIN  ─────────────────────────────────────────────────────
+    if user.groups.filter(name='League Admin').exists():
+        # league_settings injected by context processor
+        transfer_stats = TransferRequest.objects.aggregate(
+            pending=Count('id', filter=Q(status=TransferStatus.PENDING_PARENT)),
+            rejected=Count('id', filter=Q(status=TransferStatus.REJECTED)),
+        )
         context = {
-            'pending_teams': Team.objects.filter(status='pending'),
-            'pending_reports': MatchReport.objects.filter(status='draft'),
-            'league_settings': settings,
-            'pending_transfers': pending_transfers,
-            'rejected_transfers': rejected_transfers,
+            'pending_teams':      Team.objects.filter(status=TeamStatus.PENDING),
+            'pending_reports':    MatchReport.objects.filter(status=ReportStatus.DRAFT),
+            'pending_transfers':  transfer_stats['pending'],
+            'rejected_transfers': transfer_stats['rejected'],
         }
         return render(request, 'dashboard/league_manager.html', context)
-    
-    # 6. DEFAULT DASHBOARD FOR OTHER USERS
+
+    # 6. DEFAULT  ──────────────────────────────────────────────────────────
     return render(request, 'dashboard/default.html')
 
 

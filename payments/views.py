@@ -138,7 +138,8 @@ def payment_callback(request):
             return JsonResponse({'ResultCode': 0, 'ResultDesc': 'Success'})
         
         except Exception as e:
-            print(f"Callback error: {e}")
+            import logging as _log
+            _log.getLogger(__name__).error("M-Pesa callback error: %s", e)
             return JsonResponse({'ResultCode': 1, 'ResultDesc': 'Failed'})
     
     return JsonResponse({'ResultCode': 1, 'ResultDesc': 'Invalid request method'})

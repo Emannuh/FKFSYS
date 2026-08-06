@@ -114,6 +114,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # ── Project-wide processors ──────────────────────────────
+                'fkf_league.context_processors.league_settings_context',
+                'fkf_league.context_processors.site_info_context',
             ],
         },
     },
@@ -231,3 +234,67 @@ ADMIN_EMAIL = 'admin@fkfmeru.com'
 
 # Site URL (for email links)
 SITE_URL = 'http://localhost:8000'  # Change to your production URL   
+
+
+# ── Logging ────────────────────────────────────────────────────────────────
+# Replaces all print() debug calls in the codebase.
+# In development: INFO+ goes to console.
+# In production: WARNING+ goes to a rotating log file under logs/.
+import os as _os
+_LOGS_DIR = BASE_DIR / 'logs'
+_LOGS_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(_LOGS_DIR / 'fkf.log'),
+            'maxBytes': 5 * 1024 * 1024,   # 5 MB
+            'backupCount': 3,
+            'formatter': 'verbose',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+        },
+    },
+
+    'loggers': {
+        # All project apps log at DEBUG+ in dev; filtered per-app in production
+        'teams':           {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': False},
+        'matches':         {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': False},
+        'referees':        {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': False},
+        'admin_dashboard': {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': False},
+        'payments':        {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': False},
+        'tournaments':     {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': False},
+        'frontend':        {'handlers': ['console', 'file'], 'level': 'INFO',  'propagate': False},
+
+        # Django internals — only warnings and above
+        'django':          {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+        'django.request':  {'handlers': ['console', 'mail_admins'], 'level': 'ERROR', 'propagate': False},
+    },
+
+    # Root logger fallback
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+}

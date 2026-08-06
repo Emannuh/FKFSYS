@@ -8,10 +8,11 @@ from datetime import timedelta
 from matches.models import Match
 from .models import MatchOfficials, MatchReport, SquadEditRequest
 from tournaments.models import TournamentMatchOfficials, TournamentMatch
+from fkf_league.permissions import is_referees_manager
+
 
 def referees_manager_required(user):
-    """Check if user is in Referees Manager group or is staff"""
-    return user.groups.filter(name='Referees Manager').exists() or user.is_staff
+    return is_referees_manager(user)
 
 @login_required
 @permission_required('referees.appoint_referees', raise_exception=True)
@@ -95,9 +96,9 @@ FKF Meru County League - Referees Management
                 )
                 email.send(fail_silently=True)
                 
-            except Exception as e:
-                # Log error but don't stop the process
-                print(f"Failed to send email to {referee.email}: {str(e)}")
+            except Exception as exc:
+                import logging as _log
+                _log.getLogger(__name__).warning("Failed to send cancellation email to %s: %s", referee.email, exc)
             
             # Send SMS Notification (if phone number available)
             if referee.phone_number:
@@ -108,17 +109,13 @@ FKF Meru County League - Referees Management
                         f"{match.match_date.strftime('%d/%m/%Y')} has been CANCELLED. "
                         f"Contact Referees Manager for details."
                     )
-                    
                     # TODO: Integrate with SMS service (e.g., Africa's Talking)
-                    # For now, we'll log it
-                    print(f"SMS to {referee.phone_number}: {sms_message}")
+                    import logging as _log
+                    _log.getLogger(__name__).info("SMS pending to %s: %s", referee.phone_number, sms_message)
                     
-                    # Uncomment when SMS service is configured:
-                    # from your_sms_service import send_sms
-                    # send_sms(referee.phone_number, sms_message)
-                    
-                except Exception as e:
-                    print(f"Failed to send SMS to {referee.phone_number}: {str(e)}")
+                except Exception as exc:
+                    import logging as _log
+                    _log.getLogger(__name__).warning("Failed to send SMS to %s: %s", referee.phone_number, exc)
         
         messages.success(
             request, 
@@ -321,7 +318,9 @@ def referee_dashboard(request):
             Q(var=referee) | Q(avar1=referee) | Q(match_commissioner=referee)
         ).select_related('match', 'match__home_team', 'match__away_team', 'match__zone').order_by('match__match_date')
 
-        print(f"DEBUG: Found {appointments.count()} appointments for referee {referee.full_name}")
+        import logging as _log
+        _referee_log = _log.getLogger(__name__)
+        _referee_log.debug("Found %d appointments for referee %s", appointments.count(), referee.full_name)
 
         upcoming_matches = []
         pending_confirmation = []
@@ -400,7 +399,11 @@ def referee_dashboard(request):
             else:
                 completed_matches.append(match_info)
 
-        print(f"DEBUG: Pending: {len(pending_confirmation)}, Current: {len(current_matches)}, Upcoming: {len(upcoming_matches)}, Completed: {len(completed_matches)}")
+        _referee_log.debug(
+            "Buckets — pending: %d, current: %d, upcoming: %d, completed: %d",
+            len(pending_confirmation), len(current_matches),
+            len(upcoming_matches), len(completed_matches),
+        )
 
         pending_reports = MatchReport.objects.filter(
             referee=referee,
@@ -508,8 +511,9 @@ def referee_dashboard(request):
         }
         return render(request, 'referees/dashboard.html', context)
     
-    except AttributeError as e:
-        print(f"DEBUG: AttributeError in referee_dashboard: {str(e)}")
+    except AttributeError:
+        import logging as _log
+        _log.getLogger(__name__).warning("referee_dashboard: no referee profile for user %s", request.user)
         messages.error(request, "You need to register as a referee first.")
         return redirect('referees:referee_registration')
 
@@ -1602,10 +1606,6 @@ def submit_comprehensive_report(request, match_id):
     topscorer_form = None   # Add if you have a TopScorerForm
 
     if request.method == 'POST':
-        print("POST request received!")
-        print("POST data keys:", list(request.POST.keys()))
-        print("Submit button:", request.POST.get('save_draft'), request.POST.get('submit_report'))
-        
         if not can_edit:
             messages.error(request, "You are not allowed to submit this report.")
             return redirect('referees:referee_dashboard')
@@ -1664,24 +1664,22 @@ def submit_comprehensive_report(request, match_id):
             messages.success(request, "Full-time score saved and league table updated.")
             return redirect('referees:submit_comprehensive_report', match_id=match.id)
 
-        # Save comprehensive details (draft or final submission)
-        # Debug validation errors
-        if not result_form.is_valid():
-            print("Result form errors:", result_form.errors)
-        if not goal_formset.is_valid():
-            print("Goal formset errors:", goal_formset.errors)
-            print("Goal formset non_form_errors:", goal_formset.non_form_errors())
-        if not card_formset.is_valid():
-            print("Card formset errors:", card_formset.errors)
-            print("Card formset non_form_errors:", card_formset.non_form_errors())
-        if not starting_formset.is_valid():
-            print("Starting formset errors:", starting_formset.errors)
-            print("Starting formset non_form_errors:", starting_formset.non_form_errors())
-        if not reserve_formset.is_valid():
-            print("Reserve formset errors:", reserve_formset.errors)
-            print("Reserve formset non_form_errors:", reserve_formset.non_form_errors())
+        # Collect validation errors and surface them to the user
+        import logging as _log
+        _report_log = _log.getLogger(__name__)
+        all_valid = True
+        for label, obj in [
+            ('result_form', result_form),
+            ('goal_formset', goal_formset),
+            ('card_formset', card_formset),
+            ('starting_formset', starting_formset),
+            ('reserve_formset', reserve_formset),
+        ]:
+            if not obj.is_valid():
+                all_valid = False
+                _report_log.debug("%s errors: %s", label, obj.errors)
 
-        if result_form.is_valid() and goal_formset.is_valid() and card_formset.is_valid() and starting_formset.is_valid() and reserve_formset.is_valid():
+        if all_valid:
             result_form.save()
             instances = goal_formset.save()
             card_formset.save()

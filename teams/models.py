@@ -140,6 +140,28 @@ class Team(models.Model):
     def __str__(self):
         return self.team_name
     
+    # ── Convenience properties ───────────────────────────────────────────
+    @property
+    def is_approved(self):
+        return self.status == 'approved'
+
+    @property
+    def is_pending(self):
+        return self.status == 'pending'
+
+    @property
+    def player_count(self):
+        return self.players.count()
+
+    @property
+    def captain(self):
+        return self.players.filter(is_captain=True).first()
+
+    @property
+    def kit_is_complete(self):
+        """Alias kept for template compatibility."""
+        return self.kit_colors_set
+
     class Meta:
         ordering = ['team_name']
 
@@ -207,8 +229,28 @@ class Player(models.Model):
     def age(self):
         from datetime import date
         today = date.today()
-        return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))
-    
+        return today.year - self.date_of_birth.year - (
+            (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+        )
+
+    @property
+    def is_license_expired(self):
+        from datetime import date
+        return bool(self.license_expiry_date and self.license_expiry_date < date.today())
+
+    @property
+    def card_summary(self):
+        return f"{self.yellow_cards}Y / {self.red_cards}R"
+
+    @property
+    def status_label(self):
+        """Human-readable status for use in templates."""
+        if self.is_suspended:
+            return 'Suspended'
+        if self.is_captain:
+            return 'Captain'
+        return 'Active'
+
     def __str__(self):
         return self.full_name
     
