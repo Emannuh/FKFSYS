@@ -1,429 +1,227 @@
 """
-External API Integrations for Player Verification
-- Kenya IPRS (Integrated Population Registration System) for ID verification
-- FIFA Connect for international player verification
+External player-verification integrations.
+
+- Kenya IPRS (Integrated Population Registration System) — national ID lookup
+- FIFA Connect — sanctions / transfer-ban lookup
+
+Both are disabled unless explicitly enabled through environment variables:
+``IPRS_ENABLED``, ``IPRS_API_KEY``, ``IPRS_API_SECRET``, ``IPRS_BASE_URL``;
+``FIFA_CONNECT_ENABLED``, ``FIFA_CONNECT_API_KEY``, ``FIFA_ASSOCIATION_CODE``,
+``FIFA_CONNECT_URL``.
+
+Data-protection rules (PCI/SOC2):
+- identity data (ID numbers, names, DOB) and credentials are never logged;
+- registry data is never echoed back to the user in error messages;
+- cache keys are hashed so raw ID numbers are not stored as keys;
+- every outbound request has a connect/read timeout and failures degrade to
+  ``verified=False`` instead of raising.
 """
+from __future__ import annotations
+
+import hashlib
+import logging
+import os
+import secrets
+from difflib import SequenceMatcher
+from typing import Any
 
 import requests
-import hashlib
-import json
 from django.core.cache import cache
-from django.conf import settings
-from datetime import datetime, timedelta
-import os
-from dotenv import load_dotenv
+from django.utils import timezone
 
-load_dotenv()
+logger = logging.getLogger(__name__)
+
+# (connect, read) seconds
+REQUEST_TIMEOUT = (5, 15)
+
+VerificationResult = dict[str, Any]
+
+
+def _result(*, valid: bool, verified: bool, data: dict | None = None, errors=None) -> VerificationResult:
+    return {'valid': valid, 'verified': verified, 'data': data, 'errors': list(errors or [])}
+
+
+def _env_flag(name: str) -> bool:
+    return os.environ.get(name, 'False').strip().lower() in {'1', 'true', 'yes'}
+
+
+def _hashed_key(prefix: str, *parts) -> str:
+    digest = hashlib.sha256('|'.join(str(p).strip().lower() for p in parts).encode()).hexdigest()
+    return f'{prefix}_{digest}'
+
+
+class IPRSError(Exception):
+    """Raised internally when the IPRS service cannot be used."""
 
 
 class IPRSVerification:
-    """
-    Integration with Kenya's IPRS (Integrated Population Registration System)
-    For verifying National ID cards
-    """
-    
+    """Verify Kenyan national IDs against IPRS."""
+
+    CACHE_SECONDS = 60 * 60 * 24 * 30
+
     def __init__(self):
-        # IPRS API credentials (get from eCitizen/IPRS portal)
-        self.api_key = os.getenv('IPRS_API_KEY')
-        self.api_secret = os.getenv('IPRS_API_SECRET')
-        self.base_url = os.getenv('IPRS_BASE_URL', 'https://iprs.go.ke/api/v1')
-        self.enabled = os.getenv('IPRS_ENABLED', 'False').lower() == 'true'
-    
-    def verify_id_number(self, id_number, full_name=None, date_of_birth=None):
+        self.api_key = os.environ.get('IPRS_API_KEY')
+        self.api_secret = os.environ.get('IPRS_API_SECRET')
+        self.base_url = os.environ.get('IPRS_BASE_URL', 'https://iprs.go.ke/api/v1').rstrip('/')
+        self.enabled = _env_flag('IPRS_ENABLED')
+
+    def verify_id_number(self, id_number, full_name=None, date_of_birth=None) -> VerificationResult:
         """
-        Verify Kenya National ID with IPRS
-        
-        Args:
-            id_number: Kenya National ID number
-            full_name: Expected full name (optional, for matching)
-            date_of_birth: Expected DOB (optional, for matching)
-        
-        Returns:
-            dict: {
-                'valid': bool,
-                'verified': bool,
-                'data': dict or None,
-                'errors': list
-            }
+        Returns ``{'valid', 'verified', 'data', 'errors'}``.
+        ``verified`` is False whenever IPRS could not give an authoritative answer.
         """
-        # Check if IPRS is enabled
         if not self.enabled or not self.api_key:
-            return {
-                'valid': True,  # Skip verification if not configured
-                'verified': False,
-                'data': None,
-                'errors': ['IPRS verification not configured']
-            }
-        
-        # Check cache first (valid for 30 days)
-        cache_key = f'iprs_verify_{id_number}'
-        cached_result = cache.get(cache_key)
-        if cached_result:
-            return cached_result
-        
+            return _result(valid=True, verified=False, errors=['IPRS verification not configured'])
+
+        cache_key = _hashed_key('iprs_verify', id_number, full_name or '', date_of_birth or '')
+        cached = cache.get(cache_key)
+        if cached:
+            return cached
+
         try:
-            # Prepare request
-            url = f"{self.base_url}/verify/id"
-            headers = {
-                'Authorization': f'Bearer {self._get_access_token()}',
-                'Content-Type': 'application/json'
-            }
-            
-            payload = {
-                'id_number': id_number,
-                'request_id': self._generate_request_id()
-            }
-            
-            # Make API request
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                result = {
-                    'valid': data.get('status') == 'valid',
-                    'verified': True,
-                    'data': {
-                        'id_number': data.get('id_number'),
-                        'full_name': data.get('full_name'),
-                        'date_of_birth': data.get('date_of_birth'),
-                        'gender': data.get('gender'),
-                        'photo': data.get('photo_url'),  # Optional
-                        'citizenship': data.get('citizenship', 'Kenyan'),
-                    },
-                    'errors': []
-                }
-                
-                # Validate name match if provided
-                if full_name and result['data']['full_name']:
-                    if not self._names_match(full_name, result['data']['full_name']):
-                        result['valid'] = False
-                        result['errors'].append(
-                            f"Name mismatch: Provided '{full_name}' vs "
-                            f"IPRS '{result['data']['full_name']}'"
-                        )
-                
-                # Validate DOB match if provided
-                if date_of_birth and result['data']['date_of_birth']:
-                    if str(date_of_birth) != result['data']['date_of_birth']:
-                        result['valid'] = False
-                        result['errors'].append(
-                            f"Date of birth mismatch: Provided '{date_of_birth}' vs "
-                            f"IPRS '{result['data']['date_of_birth']}'"
-                        )
-                
-                # Cache result for 30 days
-                cache.set(cache_key, result, 60 * 60 * 24 * 30)
-                
-                return result
-            
-            elif response.status_code == 404:
-                return {
-                    'valid': False,
-                    'verified': True,
-                    'data': None,
-                    'errors': ['ID number not found in IPRS database - possible fake ID']
-                }
-            
-            else:
-                return {
-                    'valid': False,
-                    'verified': False,
-                    'data': None,
-                    'errors': [f'IPRS API error: {response.status_code}']
-                }
-        
-        except requests.exceptions.Timeout:
-            return {
-                'valid': False,
-                'verified': False,
-                'data': None,
-                'errors': ['IPRS verification timeout - please try again']
-            }
-        
-        except Exception as e:
-            return {
-                'valid': False,
-                'verified': False,
-                'data': None,
-                'errors': [f'IPRS verification error: {str(e)}']
-            }
-    
-    def _get_access_token(self):
-        """Get or refresh IPRS access token"""
-        cache_key = 'iprs_access_token'
-        token = cache.get(cache_key)
-        
+            response = requests.post(
+                f'{self.base_url}/verify/id',
+                json={'id_number': id_number, 'request_id': self._generate_request_id()},
+                headers={
+                    'Authorization': f'Bearer {self._get_access_token()}',
+                    'Content-Type': 'application/json',
+                },
+                timeout=REQUEST_TIMEOUT,
+            )
+        except requests.Timeout:
+            logger.warning("IPRS verification timed out")
+            return _result(valid=False, verified=False, errors=['IPRS verification timeout - please try again'])
+        except (requests.RequestException, IPRSError) as exc:
+            logger.warning("IPRS verification unavailable (%s)", type(exc).__name__)
+            return _result(valid=False, verified=False, errors=['IPRS verification is temporarily unavailable'])
+
+        if response.status_code == 404:
+            return _result(valid=False, verified=True, errors=['ID number not found in IPRS database'])
+        if response.status_code != 200:
+            logger.warning("IPRS verification failed with HTTP %s", response.status_code)
+            return _result(valid=False, verified=False, errors=[f'IPRS API error: {response.status_code}'])
+
+        try:
+            payload = response.json()
+        except ValueError:
+            logger.warning("IPRS returned a non-JSON response")
+            return _result(valid=False, verified=False, errors=['IPRS verification is temporarily unavailable'])
+
+        result = _result(valid=payload.get('status') == 'valid', verified=True)
+        iprs_name = payload.get('full_name')
+        iprs_dob = payload.get('date_of_birth')
+        # Never echo registry values back to the caller — only say which field mismatched.
+        if full_name and iprs_name and not self._names_match(full_name, iprs_name):
+            result['valid'] = False
+            result['errors'].append('Name does not match the IPRS record for this ID number')
+        if date_of_birth and iprs_dob and str(date_of_birth) != str(iprs_dob):
+            result['valid'] = False
+            result['errors'].append('Date of birth does not match the IPRS record for this ID number')
+
+        cache.set(cache_key, result, self.CACHE_SECONDS)
+        return result
+
+    def _get_access_token(self) -> str:
+        token = cache.get('iprs_access_token')
         if token:
             return token
-        
-        # Request new token
-        url = f"{self.base_url}/oauth/token"
-        payload = {
-            'grant_type': 'client_credentials',
-            'client_id': self.api_key,
-            'client_secret': self.api_secret
-        }
-        
-        response = requests.post(url, data=payload, timeout=30)
-        
-        if response.status_code == 200:
+        try:
+            response = requests.post(
+                f'{self.base_url}/oauth/token',
+                data={
+                    'grant_type': 'client_credentials',
+                    'client_id': self.api_key,
+                    'client_secret': self.api_secret,
+                },
+                timeout=REQUEST_TIMEOUT,
+            )
+        except requests.RequestException as exc:
+            raise IPRSError('token request failed') from exc
+        if response.status_code != 200:
+            raise IPRSError(f'token request returned HTTP {response.status_code}')
+        try:
             data = response.json()
             token = data['access_token']
-            expires_in = data.get('expires_in', 3600)
-            
-            # Cache token
-            cache.set(cache_key, token, expires_in - 300)  # Refresh 5 min early
-            return token
-        
-        raise Exception('Failed to get IPRS access token')
-    
-    def _generate_request_id(self):
-        """Generate unique request ID"""
-        return f"FKF-{datetime.now().strftime('%Y%m%d%H%M%S')}-{os.urandom(4).hex()}"
-    
-    def _names_match(self, name1, name2, threshold=0.8):
-        """Check if two names match (fuzzy matching)"""
-        from difflib import SequenceMatcher
-        
-        # Normalize names
-        name1 = ' '.join(name1.lower().split())
-        name2 = ' '.join(name2.lower().split())
-        
-        # Calculate similarity
-        similarity = SequenceMatcher(None, name1, name2).ratio()
-        
-        return similarity >= threshold
+        except (ValueError, KeyError) as exc:
+            raise IPRSError('malformed token response') from exc
+        expires_in = int(data.get('expires_in', 3600))
+        cache.set('iprs_access_token', token, max(expires_in - 300, 60))
+        return token
+
+    @staticmethod
+    def _generate_request_id() -> str:
+        return f"FKF-{timezone.now():%Y%m%d%H%M%S}-{secrets.token_hex(4)}"
+
+    @staticmethod
+    def _names_match(name1: str, name2: str, threshold: float = 0.8) -> bool:
+        a = ' '.join(name1.lower().split())
+        b = ' '.join(name2.lower().split())
+        return SequenceMatcher(None, a, b).ratio() >= threshold
 
 
 class FIFAConnectVerification:
-    """
-    Integration with FIFA Connect (FIFA's player registration system)
-    Requires official FKF credentials and FIFA API access
-    """
-    
+    """Check a player against FIFA Connect (sanctions / transfer bans)."""
+
+    CACHE_SECONDS = 60 * 60 * 24 * 7
+
     def __init__(self):
-        # FIFA Connect credentials (requires FKF official access)
-        self.api_key = os.getenv('FIFA_CONNECT_API_KEY')
-        self.association_code = os.getenv('FIFA_ASSOCIATION_CODE', 'KEN')  # Kenya
-        self.base_url = os.getenv('FIFA_CONNECT_URL', 'https://connect.fifa.com/api/v1')
-        self.enabled = os.getenv('FIFA_CONNECT_ENABLED', 'False').lower() == 'true'
-    
-    def verify_player(self, player_data):
-        """
-        Verify player with FIFA Connect
-        
-        Args:
-            player_data: dict with:
-                - first_name
-                - last_name
-                - date_of_birth
-                - nationality
-                - id_number (optional)
-                - fkf_license_number (optional)
-        
-        Returns:
-            dict: verification result
-        """
+        self.api_key = os.environ.get('FIFA_CONNECT_API_KEY')
+        self.association_code = os.environ.get('FIFA_ASSOCIATION_CODE', 'KEN')
+        self.base_url = os.environ.get('FIFA_CONNECT_URL', 'https://connect.fifa.com/api/v1').rstrip('/')
+        self.enabled = _env_flag('FIFA_CONNECT_ENABLED')
+
+    def verify_player(self, player_data: dict) -> VerificationResult:
         if not self.enabled or not self.api_key:
-            return {
-                'valid': True,  # Skip if not configured
-                'verified': False,
-                'data': None,
-                'errors': ['FIFA Connect not configured']
-            }
-        
-        # Check cache
-        cache_key = self._generate_cache_key(player_data)
-        cached_result = cache.get(cache_key)
-        if cached_result:
-            return cached_result
-        
+            return _result(valid=True, verified=False, errors=['FIFA Connect not configured'])
+
+        cache_key = _hashed_key(
+            'fifa_verify', player_data['first_name'], player_data['last_name'], player_data['date_of_birth']
+        )
+        cached = cache.get(cache_key)
+        if cached:
+            return cached
+
         try:
-            url = f"{self.base_url}/players/search"
-            headers = {
-                'Authorization': f'Bearer {self.api_key}',
-                'X-Association-Code': self.association_code,
-                'Content-Type': 'application/json'
-            }
-            
-            payload = {
-                'first_name': player_data['first_name'],
-                'last_name': player_data['last_name'],
-                'date_of_birth': str(player_data['date_of_birth']),
-                'nationality': player_data.get('nationality', 'KEN')
-            }
-            
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                result = {
-                    'valid': True,
-                    'verified': True,
-                    'data': {
-                        'fifa_id': data.get('player_id'),
-                        'full_name': data.get('full_name'),
-                        'date_of_birth': data.get('date_of_birth'),
-                        'nationality': data.get('nationality'),
-                        'current_club': data.get('current_club'),
-                        'registration_status': data.get('status'),
-                        'sanctions': data.get('sanctions', []),
-                        'transfer_ban': data.get('transfer_ban', False),
-                    },
-                    'errors': []
-                }
-                
-                # Check for sanctions
-                if result['data']['sanctions']:
-                    result['valid'] = False
-                    result['errors'].append(
-                        f"Player has FIFA sanctions: {', '.join(result['data']['sanctions'])}"
-                    )
-                
-                # Check transfer ban
-                if result['data']['transfer_ban']:
-                    result['valid'] = False
-                    result['errors'].append("Player is under FIFA transfer ban")
-                
-                # Cache for 7 days
-                cache.set(cache_key, result, 60 * 60 * 24 * 7)
-                
-                return result
-            
-            elif response.status_code == 404:
-                # Player not found in FIFA database (okay for local players)
-                return {
-                    'valid': True,
-                    'verified': True,
-                    'data': None,
-                    'errors': ['Player not registered in FIFA Connect (local player)']
-                }
-            
-            else:
-                return {
-                    'valid': False,
-                    'verified': False,
-                    'data': None,
-                    'errors': [f'FIFA Connect error: {response.status_code}']
-                }
-        
-        except Exception as e:
-            return {
-                'valid': False,
-                'verified': False,
-                'data': None,
-                'errors': [f'FIFA Connect error: {str(e)}']
-            }
-    
-    def _generate_cache_key(self, player_data):
-        """Generate cache key from player data"""
-        key_string = f"{player_data['first_name']}{player_data['last_name']}{player_data['date_of_birth']}"
-        return f"fifa_verify_{hashlib.md5(key_string.encode()).hexdigest()}"
-
-
-class VerificationOrchestrator:
-    """
-    Orchestrates verification from multiple sources
-    Combines IPRS and FIFA Connect verification
-    """
-    
-    def __init__(self):
-        self.iprs = IPRSVerification()
-        self.fifa = FIFAConnectVerification()
-    
-    def verify_player_comprehensive(self, player_data):
-        """
-        Comprehensive player verification using all available sources
-        
-        Args:
-            player_data: dict with player information
-        
-        Returns:
-            dict: Combined verification results
-        """
-        results = {
-            'overall_valid': True,
-            'iprs_result': None,
-            'fifa_result': None,
-            'warnings': [],
-            'errors': [],
-            'verified_data': {}
-        }
-        
-        # 1. Verify ID with IPRS
-        if player_data.get('id_number'):
-            iprs_result = self.iprs.verify_id_number(
-                player_data['id_number'],
-                full_name=f"{player_data['first_name']} {player_data['last_name']}",
-                date_of_birth=player_data.get('date_of_birth')
+            response = requests.post(
+                f'{self.base_url}/players/search',
+                json={
+                    'first_name': player_data['first_name'],
+                    'last_name': player_data['last_name'],
+                    'date_of_birth': str(player_data['date_of_birth']),
+                    'nationality': player_data.get('nationality') or 'KEN',
+                },
+                headers={
+                    'Authorization': f'Bearer {self.api_key}',
+                    'X-Association-Code': self.association_code,
+                    'Content-Type': 'application/json',
+                },
+                timeout=REQUEST_TIMEOUT,
             )
-            results['iprs_result'] = iprs_result
-            
-            if not iprs_result['valid']:
-                results['overall_valid'] = False
-                results['errors'].extend(iprs_result['errors'])
-            
-            if iprs_result['data']:
-                results['verified_data']['iprs'] = iprs_result['data']
-        
-        # 2. Verify with FIFA Connect
-        fifa_result = self.fifa.verify_player(player_data)
-        results['fifa_result'] = fifa_result
-        
-        if not fifa_result['valid']:
-            results['overall_valid'] = False
-            results['errors'].extend(fifa_result['errors'])
-        
-        if fifa_result['data']:
-            results['verified_data']['fifa'] = fifa_result['data']
-        
-        # 3. Cross-check data consistency
-        if results['iprs_result'] and results['fifa_result']:
-            if (results['iprs_result'].get('data') and 
-                results['fifa_result'].get('data')):
-                
-                iprs_dob = results['iprs_result']['data'].get('date_of_birth')
-                fifa_dob = results['fifa_result']['data'].get('date_of_birth')
-                
-                if iprs_dob != fifa_dob:
-                    results['warnings'].append(
-                        f"Date of birth mismatch between IPRS and FIFA Connect"
-                    )
-        
-        return results
+        except requests.RequestException as exc:
+            logger.warning("FIFA Connect verification unavailable (%s)", type(exc).__name__)
+            return _result(valid=False, verified=False, errors=['FIFA Connect is temporarily unavailable'])
 
+        if response.status_code == 404:
+            # Not registered with FIFA — normal for local players.
+            return _result(valid=True, verified=True, errors=['Player not registered in FIFA Connect (local player)'])
+        if response.status_code != 200:
+            logger.warning("FIFA Connect verification failed with HTTP %s", response.status_code)
+            return _result(valid=False, verified=False, errors=[f'FIFA Connect error: {response.status_code}'])
 
-# Async verification for better UX (optional, requires Celery)
-def verify_player_async(player_id):
-    """
-    Background task to verify player after registration
-    Use with Celery for async processing
-    """
-    from teams.models import Player
-    
-    try:
-        player = Player.objects.get(id=player_id)
-        orchestrator = VerificationOrchestrator()
-        
-        player_data = {
-            'first_name': player.first_name,
-            'last_name': player.last_name,
-            'date_of_birth': player.date_of_birth,
-            'id_number': player.id_number,
-            'nationality': player.nationality,
-        }
-        
-        results = orchestrator.verify_player_comprehensive(player_data)
-        
-        # Store verification results
-        # You could add a JSONField to Player model to store this
-        # player.verification_results = results
-        # player.is_verified = results['overall_valid']
-        # player.save()
-        
-        return results
-    
-    except Player.DoesNotExist:
-        return {'error': 'Player not found'}
+        try:
+            data = response.json()
+        except ValueError:
+            logger.warning("FIFA Connect returned a non-JSON response")
+            return _result(valid=False, verified=False, errors=['FIFA Connect is temporarily unavailable'])
+
+        result = _result(valid=True, verified=True, data={'fifa_id': data.get('player_id')})
+        sanctions = data.get('sanctions') or []
+        if sanctions:
+            result['valid'] = False
+            result['errors'].append(f"Player has FIFA sanctions: {', '.join(map(str, sanctions))}")
+        if data.get('transfer_ban'):
+            result['valid'] = False
+            result['errors'].append('Player is under FIFA transfer ban')
+
+        cache.set(cache_key, result, self.CACHE_SECONDS)
+        return result
