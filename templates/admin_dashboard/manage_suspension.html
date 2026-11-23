@@ -1,155 +1,100 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 
 {% block title %}Manage Suspension - {{ player.full_name }}{% endblock %}
+{% block page_title %}Manage suspension{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="text-primary">Manage Suspension</h2>
-        <p class="lead">{{ player.full_name }} - {{ player.team.team_name }}</p>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Discipline</span>
+        <h1 class="page-title h2">Manage Suspension</h1>
+        <p class="page-subtitle">{{ player.full_name }} - {{ player.team.team_name }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'admin_dashboard:view_suspensions' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Suspensions</a>
     </div>
 </div>
+{% endblock %}
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header ch-red">
-                <h5 class="mb-0">Player Information</h5>
-            </div>
-            <div class="card-body text-center">
-                {% if player.photo %}
-                <img src="{{ player.photo.url }}" alt="{{ player.full_name }}" 
-                     class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
-                {% else %}
-                <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
-                     style="width: 150px; height: 150px;">
-                    <i class="fas fa-user fa-4x text-white"></i>
-                </div>
-                {% endif %}
-                <h4>{{ player.full_name }}</h4>
-                <p class="text-muted">#{{ player.jersey_number }} • {{ player.position }}</p>
-                <p><strong>Team:</strong> {{ player.team.team_name }}</p>
-                
-                <div class="row mt-3">
-                    <div class="col-6">
-                        <div class="card bg-danger text-white">
-                            <div class="card-body py-2">
-                                <h6 class="mb-0">Red Cards</h6>
-                                <h3 class="mb-0">{{ player.red_cards }}</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="card bg-warning text-dark">
-                            <div class="card-body py-2">
-                                <h6 class="mb-0">Yellow Cards</h6>
-                                <h3 class="mb-0">{{ player.yellow_cards }}</h3>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mt-3">
-                    <p><strong>Matches Played:</strong> {{ player.matches_played }}</p>
-                    <p><strong>Goals Scored:</strong> {{ player.goals_scored }}</p>
-                </div>
-            </div>
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8 dash-stack">
+        <div class="alert {% if player.is_suspended %}alert-danger{% else %}alert-success{% endif %} mb-0" role="status">
+            <strong><i class="fas {% if player.is_suspended %}fa-ban{% else %}fa-circle-check{% endif %} me-1" aria-hidden="true"></i>{% if player.is_suspended %}Currently Suspended{% else %}Not Suspended{% endif %}</strong>
+            {% if player.is_suspended %}
+            <div class="mt-1"><strong>Reason:</strong> {{ player.suspension_reason|default:"Not specified" }}{% if player.suspension_end %} &middot; <strong>Suspension End:</strong> {{ player.suspension_end|date:"F d, Y" }}{% endif %}</div>
+            {% endif %}
         </div>
+
+        <section class="panel" aria-labelledby="suspend-title">
+            <div class="panel-header"><h2 class="panel-title" id="suspend-title"><i class="fas fa-ban" aria-hidden="true"></i>Suspend Player</h2></div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="suspend">
+                <div class="panel-body">
+                    <div class="mb-3">
+                        <label for="suspension_length" class="form-label">Suspension Length (Matches)</label>
+                        <select name="suspension_length" id="suspension_length" class="form-select" required>
+                            <option value="1">1 Match</option>
+                            <option value="2">2 Matches</option>
+                            <option value="3" selected>3 Matches (Red Card)</option>
+                            <option value="4">4 Matches</option>
+                            <option value="5">5 Matches</option>
+                            <option value="10">10 Matches (Serious Offense)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="reason" class="form-label">Suspension Reason</label>
+                        <textarea name="reason" id="reason" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="panel-footer form-actions">
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-ban me-1" aria-hidden="true"></i>Suspend Player</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel" aria-labelledby="clear-title">
+            <div class="panel-header"><h2 class="panel-title" id="clear-title"><i class="fas fa-circle-check" aria-hidden="true"></i>Clear Suspension</h2></div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="clear">
+                <div class="panel-body">
+                    <div class="form-check">
+                        <input type="checkbox" name="reset_cards" id="reset_cards" value="yes" class="form-check-input">
+                        <label for="reset_cards" class="form-check-label">Also reset yellow/red card counts to zero</label>
+                    </div>
+                </div>
+                <div class="panel-footer form-actions">
+                    <button type="submit" class="btn btn-success"><i class="fas fa-circle-check me-1" aria-hidden="true"></i>Clear Suspension</button>
+                </div>
+            </form>
+        </section>
     </div>
-    
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header ch-red">
-                <h5 class="mb-0">Suspension Management</h5>
+
+    <div class="col-lg-4 dash-stack">
+        <section class="panel" aria-labelledby="player-title">
+            <div class="panel-header"><h2 class="panel-title" id="player-title"><i class="fas fa-user" aria-hidden="true"></i>Player Information</h2></div>
+            <div class="panel-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    {% if player.photo %}<img src="{{ player.photo.url }}" alt="{{ player.full_name }}" class="team-crest team-crest--lg">{% else %}<span class="team-crest team-crest--lg" aria-hidden="true"><i class="fas fa-user"></i></span>{% endif %}
+                    <div>
+                        <p class="fw-bold mb-0">{{ player.full_name }}</p>
+                        <p class="text-body-secondary small mb-0">#{{ player.jersey_number }} &middot; {{ player.position }}</p>
+                    </div>
+                </div>
+                <dl class="kv-list">
+                    <dt>Team</dt><dd>{{ player.team.team_name }}</dd>
+                    <dt>Red Cards</dt><dd class="fw-bold">{{ player.red_cards }}</dd>
+                    <dt>Yellow Cards</dt><dd class="fw-bold">{{ player.yellow_cards }}</dd>
+                    <dt>Matches Played</dt><dd>{{ player.matches_played }}</dd>
+                    <dt>Goals Scored</dt><dd>{{ player.goals_scored }}</dd>
+                </dl>
             </div>
-            <div class="card-body">
-                <!-- Current Suspension Status -->
-                <div class="alert {% if player.is_suspended %}alert-danger{% else %}alert-success{% endif %}">
-                    <h5>
-                        <i class="fas {% if player.is_suspended %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
-                        {% if player.is_suspended %}
-                        Currently Suspended
-                        {% else %}
-                        Not Suspended
-                        {% endif %}
-                    </h5>
-                    {% if player.is_suspended %}
-                    <p class="mb-0">
-                        <strong>Reason:</strong> {{ player.suspension_reason|default:"Not specified" }}<br>
-                        {% if player.suspension_end %}
-                        <strong>Suspension End:</strong> {{ player.suspension_end|date:"F d, Y" }}
-                        {% endif %}
-                    </p>
-                    {% endif %}
-                </div>
-                
-                <!-- Suspend Player Form -->
-                <div class="card mb-4">
-                    <div class="card-header ch-red">
-                        <h6 class="mb-0">Suspend Player</h6>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="suspend">
-                            
-                            <div class="mb-3">
-                                <label for="suspension_length" class="form-label">Suspension Length (Matches)</label>
-                                <select name="suspension_length" id="suspension_length" class="form-control" required>
-                                    <option value="1">1 Match</option>
-                                    <option value="2">2 Matches</option>
-                                    <option value="3" selected>3 Matches (Red Card)</option>
-                                    <option value="4">4 Matches</option>
-                                    <option value="5">5 Matches</option>
-                                    <option value="10">10 Matches (Serious Offense)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="reason" class="form-label">Suspension Reason</label>
-                                <textarea name="reason" id="reason" class="form-control" rows="3" required></textarea>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-ban"></i> Suspend Player
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                
-                <!-- Clear Suspension Form -->
-                <div class="card">
-                    <div class="card-header ch-green">
-                        <h6 class="mb-0">Clear Suspension</h6>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="clear">
-                            
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input type="checkbox" name="reset_cards" id="reset_cards" value="yes" class="form-check-input">
-                                    <label for="reset_cards" class="form-check-label">
-                                        Also reset yellow/red card counts to zero
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-check-circle"></i> Clear Suspension
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                
-                <div class="mt-4">
-                    <a href="{% url 'admin_dashboard:view_suspensions' %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Suspensions
-                    </a>
-                </div>
-            </div>
-        </div>
+        </section>
     </div>
 </div>
 {% endblock %}
