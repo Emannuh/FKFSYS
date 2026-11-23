@@ -214,9 +214,155 @@
         updateStats();
     }
 
+    /* ---- Report formsets (comprehensive + flash) -------------------------
+       Same contract as the original inline scripts: clone the empty form, swap
+       __prefix__ for the next index, bump <prefix>-TOTAL_FORMS. */
+    function totalInput(prefix) { return document.getElementById('id_' + prefix + '-TOTAL_FORMS'); }
+
+    function insertForm(prefix, container, html) {
+        var total = totalInput(prefix);
+        if (!total || !container || !html) return null;
+        var idx = parseInt(total.value, 10) || 0;
+        container.insertAdjacentHTML('beforeend', html.replace(/__prefix__/g, idx));
+        total.value = idx + 1;
+        return container.lastElementChild;
+    }
+
+    function rowIndex(row, prefix) {
+        var field = row.querySelector('[name^="' + prefix + '-"]');
+        var m = field && field.name.match(new RegExp('^' + prefix + '-(\\d+)-'));
+        return m ? parseInt(m[1], 10) : -1;
+    }
+
+    // Existing rows: tick DELETE and hide. New rows: drop the last one outright, or
+    // blank a middle one (unchanged extra forms are ignored by Django) so indices stay contiguous.
+    function removeRow(row, prefix) {
+        if (!row) return;
+        var idInput = row.querySelector('input[name$="-id"]');
+        var del = row.querySelector('input[name$="-DELETE"]');
+        if (idInput && idInput.value) {
+            if (del) del.checked = true;
+            row.hidden = true;
+            return;
+        }
+        var total = totalInput(prefix);
+        var idx = rowIndex(row, prefix);
+        if (total && idx === parseInt(total.value, 10) - 1) {
+            total.value = idx;
+            row.remove();
+        } else {
+            row.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (el) {
+                if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+                else el.value = '';
+            });
+            row.hidden = true;
+        }
+    }
+
+    function initReportFormsets() {
+        var report = document.getElementById('matchReportForm');
+        var flash = document.getElementById('flashReportForm');
+        if (!report && !flash) return;
+
+        function wireSimple(kind) { // goal | card
+            var btn = document.getElementById('add-' + kind + '-form');
+            var container = document.getElementById(kind + '-formset');
+            var tpl = document.querySelector('#empty-' + kind + ' .formset-form');
+            if (!btn || !container) return;
+            var prefix = container.dataset.prefix || kind;
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                var el = tpl && insertForm(prefix, container, tpl.outerHTML);
+                if (!el) { alert('Could not add a row. Please reload the page and try again.'); return; }
+                var first = el.querySelector('select, input:not([type="hidden"])');
+                if (first) first.focus();
+                if (flash) filterPlayersForRow(el);
+            });
+            container.addEventListener('click', function (e) {
+                var rm = e.target.closest('.remove-' + kind + '-form');
+                if (!rm) return;
+                e.preventDefault();
+                if (flash && !confirm('Remove this ' + (kind === 'goal' ? 'goal' : 'card') + ' entry?')) return;
+                removeRow(rm.closest('.formset-form'), prefix);
+            });
+        }
+        wireSimple('goal');
+        wireSimple('card');
+
+        if (report) {
+            var homeTeam = report.dataset.homeTeam;
+            var awayTeam = report.dataset.awayTeam;
+            [['add-home-starting', 'starting', 'home-starting-lineup', 'empty-starting-home', homeTeam],
+             ['add-away-starting', 'starting', 'away-starting-lineup', 'empty-starting-away', awayTeam],
+             ['add-home-reserves', 'reserve', 'home-reserves', 'empty-reserve-home', homeTeam],
+             ['add-away-reserves', 'reserve', 'away-reserves', 'empty-reserve-away', awayTeam]
+            ].forEach(function (cfg) {
+                var btn = document.getElementById(cfg[0]);
+                if (!btn) return;
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var tpl = document.getElementById(cfg[3]);
+                    var el = tpl && insertForm(cfg[1], document.getElementById(cfg[2]), tpl.innerHTML);
+                    if (!el) return;
+                    var idx = parseInt(totalInput(cfg[1]).value, 10) - 1;
+                    var team = document.getElementById('id_' + cfg[1] + '-' + idx + '-team');
+                    if (team) team.value = cfg[4];
+                    var jersey = document.getElementById('id_' + cfg[1] + '-' + idx + '-jersey_number');
+                    if (jersey) { jersey.focus(); jersey.select(); }
+                });
+            });
+            report.addEventListener('click', function (e) {
+                var s = e.target.closest('.remove-starting-form');
+                var r = e.target.closest('.remove-reserve-form');
+                if (s) { e.preventDefault(); removeRow(s.closest('tr'), 'starting'); }
+                if (r) { e.preventDefault(); removeRow(r.closest('.formset-form'), 'reserve'); }
+            });
+            [['add-host-official', 'host-officials'], ['add-away-official', 'away-officials']].forEach(function (cfg) {
+                var btn = document.getElementById(cfg[0]);
+                var tpl = document.getElementById('empty-team_officials');
+                if (!btn || !tpl) return;
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    insertForm('team_officials', document.getElementById(cfg[1]), tpl.innerHTML);
+                });
+            });
+        }
+
+        // Flash report: limit player / assist choices to the selected team.
+        var playerTpl = document.getElementById('flashPlayers');
+        var players = playerTpl ? Array.prototype.slice.call(playerTpl.content.querySelectorAll('option')) : [];
+        function fillSelect(select, teamId) {
+            if (!select) return;
+            var current = select.value;
+            select.innerHTML = '<option value="">---------</option>';
+            players.forEach(function (opt) {
+                if (opt.dataset.team === teamId) {
+                    var o = opt.cloneNode(true);
+                    if (o.value === current) o.selected = true;
+                    select.appendChild(o);
+                }
+            });
+        }
+        function filterPlayersForRow(row, teamSelect) {
+            if (!players.length || !row) return;
+            teamSelect = teamSelect || row.querySelector('select[id*="team"]');
+            if (!teamSelect || !teamSelect.value) return;
+            var player = Array.prototype.find.call(row.querySelectorAll('select[id*="player"]'), function (s) { return s.id.indexOf('assist') === -1; });
+            fillSelect(player, teamSelect.value);
+            fillSelect(row.querySelector('select[id*="assist"]'), teamSelect.value);
+        }
+        if (flash) {
+            flash.addEventListener('change', function (e) {
+                if (e.target.matches('select[id*="team"]')) filterPlayersForRow(e.target.closest('.formset-form'), e.target);
+            });
+            flash.querySelectorAll('.formset-form').forEach(function (row) { filterPlayersForRow(row); });
+        }
+    }
+
     function init() {
         initDashboardChart();
         initAvailability();
+        initReportFormsets();
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

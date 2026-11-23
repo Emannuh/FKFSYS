@@ -131,3 +131,34 @@ tr.ref-urgent > td:first-child { box-shadow: inset 3px 0 0 var(--fkf-red); }
 tr.ref-soon > td:first-child { box-shadow: inset 3px 0 0 var(--fkf-warning-solid); }
 tr.ref-done > td:first-child { box-shadow: inset 3px 0 0 var(--fkf-green); }
 .ref-match-cell { min-width: 13rem; }
+
+/* --- Match report forms ------------------------------------------------ */
+.ref-narrow-form { max-width: 1080px; }
+.ref-formset-row { padding-bottom: var(--fkf-space-3); margin-bottom: var(--fkf-space-3); border-bottom: 1px dashed var(--fkf-border); }
+.ref-formset-row:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+.ref-formset:not(:has(.ref-formset-row)) { display: none; }
+.ref-score-entry { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--fkf-space-4); align-items: start; }
+.ref-score-entry__team { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--fkf-space-1); min-width: 0; }
+.ref-score-entry__name { font-weight: 800; font-size: var(--fkf-text-lg); overflow-wrap: anywhere; }
+.ref-score-entry__side { font-size: var(--fkf-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fkf-text-muted); }
+.ref-score-entry__input { width: 100%; max-width: 9rem; margin-top: var(--fkf-space-2); }
+.ref-score-entry__input .form-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ref-score-entry__input .form-control { text-align: center; font-size: var(--fkf-text-2xl); font-weight: 800; font-variant-numeric: tabular-nums; min-height: 3.25rem; }
+.ref-score-entry__vs { align-self: center; font-weight: 800; color: var(--fkf-text-muted); text-transform: uppercase; font-size: var(--fkf-text-sm); }
+@media (max-width: 575.98px) { .ref-score-entry { gap: var(--fkf-space-2); } .ref-score-entry__name { font-size: var(--fkf-text-sm); } }
+
+/* Raw Django widgets (lineup formsets render without form-control classes) */
+.ref-raw-fields input:not([type="checkbox"]):not([type="hidden"]):not([type="radio"]),
+.ref-raw-fields select, .ref-raw-fields textarea {
+  display: block; width: 100%; min-height: 36px; padding: 0.3rem 0.55rem;
+  font-size: var(--fkf-text-sm); color: var(--fkf-text); background-color: var(--fkf-surface);
+  border: 1px solid var(--fkf-border-strong); border-radius: var(--fkf-radius-sm);
+}
+.ref-raw-fields select { padding-right: 1.6rem; }
+.ref-raw-fields input:focus, .ref-raw-fields select:focus, .ref-raw-fields textarea:focus { outline: 0; border-color: var(--fkf-accent); box-shadow: var(--fkf-focus-ring); }
+.ref-raw-fields .ref-col-minute input { max-width: 4.75rem; }
+.ref-reserve-list { display: grid; gap: var(--fkf-space-2); }
+.ref-reserve-list:empty::before { content: "No reserve players added yet."; font-size: var(--fkf-text-sm); color: var(--fkf-text-muted); }
+.ref-reserve { display: grid; grid-template-columns: 5rem 1fr auto; gap: var(--fkf-space-2); align-items: end; padding: var(--fkf-space-2) var(--fkf-space-3); border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius-sm); background: var(--fkf-surface); }
+.ref-reserve.existing-form { background: var(--fkf-surface-2); }
+.ref-reserve__actions { padding-bottom: 2px; }

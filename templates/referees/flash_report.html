@@ -1,206 +1,55 @@
-﻿{% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% extends 'base_dashboard.html' %}
+{% load static crispy_forms_tags %}
 
 {% block title %}Flash Match Report - {{ match }}{% endblock %}
+{% block page_title %}Flash report{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/referees.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="text-primary">Flash Match Report</h2>
-            <p class="lead">{{ match }} - {{ match.match_date|date:"F j, Y, g:i a" }}</p>
-            <p class="text-muted">Venue: {{ match.venue }}</p>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Flash match report</span>
+        <h1 class="page-title h2">{{ match }}</h1>
+        <p class="page-subtitle">{{ match.match_date|date:"F j, Y, g:i a" }} &middot; Venue: {{ match.venue|default:"TBA" }}</p>
     </div>
-    <form method="POST" id="flashReportForm">
-        {% csrf_token %}
-        {% include 'referees/_result_section.html' %}
-        {% include 'referees/_goals_section.html' %}
-        {% include 'referees/_cautions_section.html' %}
-        <!-- Goalkeeper Data & Top Scorers -->
-        <div class="card mb-4">
-            <div class="card-header" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;">
-                <h4 class="mb-0">Goalkeeper Data & Top Scorers</h4>
-            </div>
-            <div class="card-body">
-                {{ goalkeeper_form|crispy }}
-                {{ topscorer_form|crispy }}
-            </div>
-        </div>
-        <!-- Submit Button -->
-        <div class="card">
-            <div class="card-body text-end">
-                <button type="submit" name="submit_flash_report" class="btn btn-lg btn-primary-custom">
-                    <i class="fas fa-paper-plane"></i> Submit Flash Report
-                </button>
-            </div>
-        </div>
-    </form>
+    <div class="page-actions">
+        <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Dashboard</a>
+    </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-$(document).ready(function() {
-    // Store all players data for filtering
-    const allPlayers = {
-        {% for player in home_players %}
-        {{ player.id }}: {
-            name: "{{ player.full_name|escapejs }}",
-            team: {{ match.home_team.id }},
-            jersey: {{ player.jersey_number }},
-            teamName: "{{ match.home_team.team_name|escapejs }}"
-        }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-        {% if home_players and away_players %},{% endif %}
-        {% for player in away_players %}
-        {{ player.id }}: {
-            name: "{{ player.full_name|escapejs }}",
-            team: {{ match.away_team.id }},
-            jersey: {{ player.jersey_number }},
-            teamName: "{{ match.away_team.team_name|escapejs }}"
-        }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    };
-    
-    // Function to update player dropdown based on selected team
-    function updatePlayerDropdown(teamSelect) {
-        const selectedTeamId = parseInt($(teamSelect).val());
-        const $form = $(teamSelect).closest('.formset-form');
-        const $playerSelect = $form.find('select[id*="player"]').not('[id*="assist"]');
-        const $assistSelect = $form.find('select[id*="assist"]');
-        
-        if (!selectedTeamId) return;
-        
-        // Update main player dropdown
-        const currentPlayerId = $playerSelect.val();
-        $playerSelect.empty().append('<option value="">---------</option>');
-        
-        $.each(allPlayers, function(playerId, player) {
-            if (player.team === selectedTeamId) {
-                const option = $('<option></option>')
-                    .val(playerId)
-                    .text(player.name + ' (#' + player.jersey + ')');
-                if (playerId == currentPlayerId) {
-                    option.prop('selected', true);
-                }
-                $playerSelect.append(option);
-            }
-        });
-        
-        // Update assist dropdown if exists
-        if ($assistSelect.length > 0) {
-            const currentAssistId = $assistSelect.val();
-            $assistSelect.empty().append('<option value="">---------</option>');
-            
-            $.each(allPlayers, function(playerId, player) {
-                if (player.team === selectedTeamId) {
-                    const option = $('<option></option>')
-                        .val(playerId)
-                        .text(player.name + ' (#' + player.jersey + ')');
-                    if (playerId == currentAssistId) {
-                        option.prop('selected', true);
-                    }
-                    $assistSelect.append(option);
-                }
-            });
-        }
-    }
-    
-    // Bind change event to existing and future team dropdowns
-    $(document).on('change', 'select[id*="team"]', function() {
-        updatePlayerDropdown(this);
-    });
-    
-    // Initialize player dropdowns on page load for existing forms
-    $('select[id*="team"]').each(function() {
-        if ($(this).val()) {
-            updatePlayerDropdown(this);
-        }
-    });
-    
-    // Add goal form
-    $('#add-goal-form').click(function(e) {
-        e.preventDefault();
-        console.log('Add goal button clicked');
-        
-        let formIdx = parseInt($('#id_matchgoal_set-TOTAL_FORMS').val());
-        console.log('Current form index:', formIdx);
-        
-        // Clone the empty form template
-        let $emptyFormHtml = $('#empty-goal .formset-form').clone();
-        
-        // Replace __prefix__ with the actual form index
-        let newFormHtml = $emptyFormHtml.prop('outerHTML').replace(/__prefix__/g, formIdx);
-        
-        // Append to the formset container with fade-in animation
-        let $newForm = $(newFormHtml).hide();
-        $('#goal-formset').append($newForm);
-        $newForm.slideDown(300);
-        
-        // Increment the form count
-        $('#id_matchgoal_set-TOTAL_FORMS').val(formIdx + 1);
-        
-        // Scroll to the new form
-        $('html, body').animate({
-            scrollTop: $newForm.offset().top - 100
-        }, 300);
-        
-        console.log('Goal form added, new total:', formIdx + 1);
-    });
-    
-    // Add card form
-    $('#add-card-form').click(function(e) {
-        e.preventDefault();
-        console.log('Add card button clicked');
-        
-        let formIdx = parseInt($('#id_caution_set-TOTAL_FORMS').val());
-        console.log('Current form index:', formIdx);
-        
-        // Clone the empty form template
-        let $emptyFormHtml = $('#empty-card .formset-form').clone();
-        
-        // Replace __prefix__ with the actual form index
-        let newFormHtml = $emptyFormHtml.prop('outerHTML').replace(/__prefix__/g, formIdx);
-        
-        // Append to the formset container with fade-in animation
-        let $newForm = $(newFormHtml).hide();
-        $('#card-formset').append($newForm);
-        $newForm.slideDown(300);
-        
-        // Increment the form count
-        $('#id_caution_set-TOTAL_FORMS').val(formIdx + 1);
-        
-        // Scroll to the new form
-        $('html, body').animate({
-            scrollTop: $newForm.offset().top - 100
-        }, 300);
-        
-        console.log('Card form added, new total:', formIdx + 1);
-    });
-    
-    // Remove goal form
-    $(document).on('click', '.remove-goal-form', function(e) {
-        e.preventDefault();
-        let $form = $(this).closest('.formset-form');
-        if (confirm('Remove this goal entry?')) {
-            $form.slideUp(300, function() {
-                $(this).remove();
-            });
-        }
-    });
-    
-    // Remove card form
-    $(document).on('click', '.remove-card-form', function(e) {
-        e.preventDefault();
-        let $form = $(this).closest('.formset-form');
-        if (confirm('Remove this card entry?')) {
-            $form.slideUp(300, function() {
-                $(this).remove();
-            });
-        }
-    });
-});
-</script>
+{% block content %}
+{# Player options per team; referees.js filters the player/assist selects when a team is chosen. #}
+<template id="flashPlayers">
+    {% for player in home_players %}<option value="{{ player.id }}" data-team="{{ match.home_team.id }}">{{ player.full_name }} (#{{ player.jersey_number }})</option>{% endfor %}
+    {% for player in away_players %}<option value="{{ player.id }}" data-team="{{ match.away_team.id }}">{{ player.full_name }} (#{{ player.jersey_number }})</option>{% endfor %}
+</template>
+<form method="POST" id="flashReportForm" class="ref-narrow-form">
+    {% csrf_token %}
+    {{ result_form.non_field_errors }}
+    <div class="ref-form-sections">
+        {% include 'referees/_result_section.html' %}
+        {% include 'referees/_goals_section.html' %}
+        {% include 'referees/_cautions_section.html' %}
+        {% if goalkeeper_form or topscorer_form %}
+        <section class="panel ref-form-section" id="section-keepers" aria-labelledby="section-keepers-title">
+            <div class="panel-header"><h2 class="panel-title" id="section-keepers-title"><span class="ref-step" aria-hidden="true">4</span>Goalkeeper data &amp; top scorers</h2></div>
+            <div class="panel-body">
+                {{ goalkeeper_form|crispy }}
+                {{ topscorer_form|crispy }}
+            </div>
+        </section>
+        {% endif %}
+    </div>
+    <div class="ref-sticky-actions">
+        <span class="ref-sticky-actions__hint">Submitting saves the score, goals and cautions in one go.</span>
+        <div class="ref-sticky-actions__buttons">
+            <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" name="submit_flash_report" class="btn btn-primary"><i class="fas fa-paper-plane me-1" aria-hidden="true"></i>Submit flash report</button>
+        </div>
+    </div>
+</form>
 {% endblock %}
 
+{% block extra_js %}<script src="{% static 'js/pages/referees.js' %}" defer></script>{% endblock %}

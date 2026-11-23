@@ -1,40 +1,35 @@
-﻿{# Partial: Live Result Section #}
+{# Partial: full-time result (comprehensive + flash reports) #}
 {% load crispy_forms_filters %}
-<div class="card mb-4">
-    <div class="card-header" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;">
-        <h4 class="mb-0">Full-Time Result</h4>
+<section class="panel ref-form-section" id="section-result" aria-labelledby="section-result-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="section-result-title"><span class="ref-step" aria-hidden="true">{{ step_result|default:"1" }}</span><i class="fas fa-flag-checkered" aria-hidden="true"></i>Full-time result</h2>
     </div>
-    <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-md-5 text-center">
-                <h5>{{ match.home_team }}</h5>
-                {% if match.home_team.logo %}
-                    <img src="{{ match.home_team.logo.url }}" alt="{{ match.home_team }}" class="team-logo mb-2">
-                {% endif %}
-                <div class="mt-2">{{ score_form.home_score|as_crispy_field }}</div>
+    <div class="panel-body">
+        {{ score_form.non_field_errors }}
+        <div class="ref-score-entry">
+            <div class="ref-score-entry__team">
+                {% if match.home_team.logo %}<img src="{{ match.home_team.logo.url }}" alt="" class="team-crest team-crest--lg">{% else %}<span class="team-crest team-crest--lg" aria-hidden="true">{{ match.home_team.team_name|slice:":2" }}</span>{% endif %}
+                <span class="ref-score-entry__name">{{ match.home_team }}</span>
+                <span class="ref-score-entry__side">Home</span>
+                <div class="ref-score-entry__input">{{ score_form.home_score|as_crispy_field }}</div>
             </div>
-            <div class="col-md-2 text-center">
-                <div class="fw-bold">Vs</div>
-            </div>
-            <div class="col-md-5 text-center">
-                <h5>{{ match.away_team }}</h5>
-                {% if match.away_team.logo %}
-                    <img src="{{ match.away_team.logo.url }}" alt="{{ match.away_team }}" class="team-logo mb-2">
-                {% endif %}
-                <div class="mt-2">{{ score_form.away_score|as_crispy_field }}</div>
+            <div class="ref-score-entry__vs" aria-hidden="true">vs</div>
+            <div class="ref-score-entry__team">
+                {% if match.away_team.logo %}<img src="{{ match.away_team.logo.url }}" alt="" class="team-crest team-crest--lg">{% else %}<span class="team-crest team-crest--lg" aria-hidden="true">{{ match.away_team.team_name|slice:":2" }}</span>{% endif %}
+                <span class="ref-score-entry__name">{{ match.away_team }}</span>
+                <span class="ref-score-entry__side">Away</span>
+                <div class="ref-score-entry__input">{{ score_form.away_score|as_crispy_field }}</div>
             </div>
         </div>
-        {% if can_edit %}
-            <div class="text-end mt-3">
-                <button type="submit" name="submit_score" class="btn btn-primary">
-                    <i class="fas fa-flag-checkered"></i> Save Full-Time Score
-                </button>
-            </div>
-        {% else %}
-            <div class="alert alert-warning mt-3" role="alert">
-                Viewing only. You are not the appointed center referee.
-            </div>
-        {% endif %}
     </div>
-</div>
-
+    {% if can_edit %}
+    <div class="panel-footer d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span class="text-body-secondary">Saving the score updates the league table immediately.</span>
+        <button type="submit" name="submit_score" class="btn btn-outline-secondary">
+            <i class="fas fa-flag-checkered me-1" aria-hidden="true"></i>Save full-time score
+        </button>
+    </div>
+    {% else %}
+    <div class="panel-footer"><span class="text-body-secondary"><i class="fas fa-lock me-1" aria-hidden="true"></i>Viewing only. You are not the appointed center referee.</span></div>
+    {% endif %}
+</section>
