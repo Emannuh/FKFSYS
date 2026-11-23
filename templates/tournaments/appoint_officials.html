@@ -1,5 +1,5 @@
-﻿{% extends 'base.html' %}
-{% block title %}Appoint Officials â€“ Match #{{ match.match_number }}{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Appoint Officials – Match #{{ match.match_number }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -15,7 +15,7 @@
             <!-- Match Info -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body text-center">
-                    <span class="badge bg-info mb-2">{{ match.get_stage_display }} â€“ Match #{{ match.match_number }}</span>
+                    <span class="badge bg-info mb-2">{{ match.get_stage_display }} – Match #{{ match.match_number }}</span>
                     <div class="d-flex justify-content-center align-items-center gap-4 my-3">
                         <div class="text-end" style="min-width: 150px">
                             <h5 class="mb-0">{% if match.home_team %}{{ match.home_team.display_name }}{% else %}TBD{% endif %}</h5>
@@ -25,7 +25,7 @@
                             <h5 class="mb-0">{% if match.away_team %}{{ match.away_team.display_name }}{% else %}TBD{% endif %}</h5>
                         </div>
                     </div>
-                    <p class="text-muted mb-0">{{ match.match_date|date:"l, d F Y â€“ H:i" }} | {{ match.venue|default:match.tournament.venue }}</p>
+                    <p class="text-muted mb-0">{{ match.match_date|date:"l, d F Y – H:i" }} | {{ match.venue|default:match.tournament.venue }}</p>
                 </div>
             </div>
 
@@ -35,17 +35,10 @@
                     <h6 class="mb-0"><i class="fas fa-clipboard me-1"></i>Select Officials</h6>
                 </div>
                 <div class="card-body">
-                    {% if messages %}
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    {% endfor %}
-                    {% endif %}
 
                     <form method="post" novalidate>
                         {% csrf_token %}
+                        {% include 'tournaments/includes/form_errors.html' %}
                         <div class="row">
                             {% for field in form %}
                             <div class="{% if field.name == 'notes' %}col-12{% else %}col-md-6{% endif %} mb-3">

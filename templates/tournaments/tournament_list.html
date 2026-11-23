@@ -8,7 +8,7 @@
             <h2><i class="fas fa-trophy text-warning"></i> Tournaments</h2>
             <p class="text-muted mb-0">FKF Meru County tournament competitions</p>
         </div>
-        {% if request.user.is_superuser or request.user.groups.all|length %}
+        {% if can_manage %}
         <a href="{% url 'tournaments:admin_dashboard' %}" class="btn btn-outline-danger">
             <i class="fas fa-cogs me-1"></i>Admin Panel
         </a>
@@ -38,7 +38,7 @@
                         {% if t.zone %}<span class="badge bg-dark">{{ t.zone }}</span>{% endif %}
                     </div>
                     <p class="small mb-1"><i class="fas fa-calendar me-1"></i>{{ t.start_date|date:"M d, Y" }} – {{ t.end_date|date:"M d, Y" }}</p>
-                    <p class="small mb-0"><i class="fas fa-users me-1"></i>{{ t.registered_teams_count }} / {{ t.max_teams }} teams</p>
+                    <p class="small mb-0"><i class="fas fa-users me-1"></i>{{ t.approved_teams }} / {{ t.max_teams }} teams</p>
                 </div>
                 <div class="card-footer bg-transparent">
                     <a href="{% url 'tournaments:tournament_detail' t.slug %}" class="btn btn-success btn-sm w-100">

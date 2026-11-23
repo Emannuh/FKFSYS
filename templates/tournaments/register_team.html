@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block title %}Register for {{ tournament.name }}{% endblock %}
 
 {% block content %}
@@ -8,7 +8,7 @@
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <h5>{{ tournament.name }}</h5>
-            <p class="text-muted">{{ tournament.start_date|date:"d M Y" }} â€“ {{ tournament.end_date|date:"d M Y" }}</p>
+            <p class="text-muted">{{ tournament.start_date|date:"d M Y" }} – {{ tournament.end_date|date:"d M Y" }}</p>
             {% if tournament.entry_fee > 0 %}
             <div class="alert alert-info">
                 <i class="fas fa-money-bill me-1"></i> Entry fee: <strong>KSh {{ tournament.entry_fee }}</strong>
@@ -24,6 +24,7 @@
         <div class="card-body">
             <form method="post">
                 {% csrf_token %}
+                {% include 'tournaments/includes/form_errors.html' %}
                 <div class="form-check mb-3">
                     {{ form.confirm }}
                     <label class="form-check-label" for="{{ form.confirm.id_for_label }}">
