@@ -1,184 +1,101 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
 {% load static %}
 
 {% block title %}Generate Fixtures - FKF Meru League{% endblock %}
+{% block page_title %}Generate fixtures{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'teams:dashboard' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Generate Fixtures</li>
-                </ol>
-            </nav>
-            <h2 class="text-danger">
-                <i class="fas fa-random"></i> Generate Fixtures
-            </h2>
-            <p class="lead">Generate match fixtures for zones with approved teams</p>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Fixtures</span>
+        <h1 class="page-title h2">Generate Fixtures</h1>
+        <p class="page-subtitle">Generate match fixtures for zones with approved teams.</p>
     </div>
-
-    {% if messages %}
-    <div class="row mb-3">
-        <div class="col-12">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;">
-                    <h5 class="mb-0">
-                        <i class="fas fa-map-marked-alt"></i> Zones & Fixture Generation
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if zones %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th width="25%">Zone</th>
-                                    <th width="15%">Teams</th>
-                                    <th width="20%">Status</th>
-                                    <th width="20%">Generated Date</th>
-                                    <th width="20%">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for zone in zones %}
-                                <tr>
-                                    <td>
-                                        <strong class="text-danger">{{ zone.name }}</strong>
-                                        <br>
-                                        <small class="text-muted">{{ zone.description|default:"No description" }}</small>
-                                    </td>
-                                    <td>
-                                        <span class="badge {% if zone.approved_teams_count >= 4 %}bg-success{% elif zone.approved_teams_count >= 2 %}bg-info{% else %}bg-warning{% endif %} rounded-pill">
-                                            {{ zone.approved_teams_count }} 
-                                            {% if zone.approved_teams_count == 1 %}team{% else %}teams{% endif %}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if zone.fixtures_generated %}
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check-circle"></i> Generated
-                                        </span>
-                                        {% else %}
-                                        <span class="badge bg-secondary">
-                                            <i class="fas fa-clock"></i> Pending
-                                        </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if zone.fixture_generation_date %}
-                                        <small>
-                                            <i class="fas fa-calendar"></i> 
-                                            {{ zone.fixture_generation_date|date:"M d, Y" }}
-                                            <br>
-                                            <i class="fas fa-clock"></i> 
-                                            {{ zone.fixture_generation_date|time:"h:i A" }}
-                                        </small>
-                                        {% else %}
-                                        <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if not zone.fixtures_generated and zone.approved_teams_count >= 2 %}
-                                        <form method="post" style="display: inline;" onsubmit="return confirm('Are you sure you want to generate fixtures for {{ zone.name }}?');">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="zone_id" value="{{ zone.id }}">
-                                            <button type="submit" class="btn btn-sm btn-success">
-                                                <i class="fas fa-bolt"></i> Generate Now
-                                            </button>
-                                        </form>
-                                        {% elif zone.approved_teams_count < 2 %}
-                                        <span class="text-muted">
-                                            <i class="fas fa-info-circle"></i> Need at least 2 teams
-                                        </span>
-                                        {% else %}
-                                        <a href="{% url 'matches:fixtures' %}?zone={{ zone.id }}" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i> View Fixtures
-                                        </a>
-                                        <form method="post" style="display: inline;" onsubmit="return confirm('⚠️ WARNING: This will DELETE all existing fixtures for {{ zone.name }} and generate new ones.\n\nThis action CANNOT be undone if matches have been played.\n\nAre you absolutely sure?');">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="zone_id" value="{{ zone.id }}">
-                                            <input type="hidden" name="regenerate" value="true">
-                                            <button type="submit" class="btn btn-sm btn-warning ms-1">
-                                                <i class="fas fa-redo"></i> Regenerate
-                                            </button>
-                                        </form>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="alert alert-info mt-4">
-                        <h6><i class="fas fa-info-circle"></i> Important Notes:</h6>
-                        <ul class="mb-0">
-                            <li>At least <strong>2 approved teams</strong> are required to generate fixtures for a zone</li>
-                            <li>Fixtures are generated using a <strong>round-robin</strong> format (each team plays every other team)</li>
-                            <li>Teams must be assigned to a zone before fixtures can be generated</li>
-                            <li>Use the <strong>Reschedule</strong> feature to modify dates without losing fixture data</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="alert alert-warning mt-3">
-                        <h6><i class="fas fa-exclamation-triangle"></i> Regenerate Fixtures Warning:</h6>
-                        <ul class="mb-0">
-                            <li>The <strong>Regenerate</strong> button will <strong>DELETE all existing fixtures</strong> for that zone</li>
-                            <li>Regeneration is <strong>BLOCKED</strong> if any matches have been played or are ongoing</li>
-                            <li>All match assignments, referee assignments, and scheduling will be lost</li>
-                            <li>Use this feature carefully - only if you need to completely reset fixtures</li>
-                            <li>For minor changes, use the <strong>Reschedule</strong> feature instead</li>
-                        </ul>
-                    </div>
-                    {% else %}
-                    <div class="alert alert-warning">
-                        <h5><i class="fas fa-exclamation-triangle"></i> No Zones Available</h5>
-                        <p class="mb-0">No zones found. Please create zones and assign teams before generating fixtures.</p>
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="card-footer bg-light">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <a href="{% url 'teams:dashboard' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left"></i> Back to Dashboard
-                        </a>
-                        <div>
-                            <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="btn btn-warning">
-                                <i class="fas fa-calendar-alt"></i> Reschedule Fixtures
-                            </a>
-                            <a href="{% url 'matches:fixtures' %}" class="btn btn-primary">
-                                <i class="fas fa-list"></i> View All Fixtures
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="page-actions">
+        <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="btn btn-outline-secondary"><i class="fas fa-calendar-days me-1" aria-hidden="true"></i>Reschedule Fixtures</a>
+        <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary"><i class="fas fa-list me-1" aria-hidden="true"></i>View All Fixtures</a>
     </div>
 </div>
-
-<style>
-    .table td {
-        vertical-align: middle;
-    }
-    .badge {
-        font-size: 0.875rem;
-    }
-</style>
 {% endblock %}
+
+{% block content %}
+<div class="row g-3 stat-row">
+    <div class="col-4"><div class="stat-tile"><span class="stat-tile__label">Zones</span><span class="stat-tile__value">{{ total_zones|default:0 }}</span></div></div>
+    <div class="col-4"><div class="stat-tile"><span class="stat-tile__label">Generated</span><span class="stat-tile__value">{{ zones_with_fixtures|default:0 }}</span></div></div>
+    <div class="col-4"><div class="stat-tile"><span class="stat-tile__label">Pending</span><span class="stat-tile__value">{{ zones_pending|default:0 }}</span></div></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="panel" aria-labelledby="zones-title">
+            <div class="panel-header"><h2 class="panel-title" id="zones-title"><i class="fas fa-map-location-dot" aria-hidden="true"></i>Zones &amp; Fixture Generation</h2></div>
+            {% if zones %}
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
+                    <thead><tr><th scope="col">Zone</th><th scope="col" class="num">Teams</th><th scope="col">Status</th><th scope="col" class="hide-sm">Generated Date</th><th scope="col" class="text-end">Actions</th></tr></thead>
+                    <tbody>
+                        {% for zone in zones %}
+                        <tr>
+                            <td><span class="fw-semibold">{{ zone.name }}</span><span class="cell-sub">{{ zone.description|default:"No description" }}</span></td>
+                            <td class="num">{{ zone.approved_teams_count }} {% if zone.approved_teams_count == 1 %}team{% else %}teams{% endif %}</td>
+                            <td>{% if zone.fixtures_generated %}<span class="badge status-badge status-success">Generated</span>{% else %}<span class="badge status-badge status-neutral">Pending</span>{% endif %}</td>
+                            <td class="hide-sm col-min">{% if zone.fixture_generation_date %}{{ zone.fixture_generation_date|date:"M d, Y" }}<span class="cell-sub">{{ zone.fixture_generation_date|time:"h:i A" }}</span>{% else %}<span class="text-body-secondary">-</span>{% endif %}</td>
+                            <td class="actions">
+                                {% if not zone.fixtures_generated and zone.approved_teams_count >= 2 %}
+                                <form method="post" data-confirm="Are you sure you want to generate fixtures for {{ zone.name }}?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="zone_id" value="{{ zone.id }}">
+                                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-bolt me-1" aria-hidden="true"></i>Generate Now</button>
+                                </form>
+                                {% elif zone.approved_teams_count < 2 %}
+                                <span class="text-body-secondary small">Need at least 2 teams</span>
+                                {% else %}
+                                <a href="{% url 'matches:fixtures' %}?zone={{ zone.id }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-eye me-1" aria-hidden="true"></i>View Fixtures</a>
+                                <form method="post" data-confirm="WARNING: This will DELETE all existing fixtures for {{ zone.name }} and generate new ones.&#10;&#10;This action CANNOT be undone if matches have been played.&#10;&#10;Are you absolutely sure?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="zone_id" value="{{ zone.id }}">
+                                    <input type="hidden" name="regenerate" value="true">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-rotate-right me-1" aria-hidden="true"></i>Regenerate</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            {% empty_state icon="map" title="No Zones Available" message="No zones found. Please create zones and assign teams before generating fixtures." %}
+            {% endif %}
+        </section>
+    </div>
+    <div class="col-lg-4 dash-stack">
+        <section class="panel" aria-labelledby="notes-title">
+            <div class="panel-header"><h2 class="panel-title" id="notes-title"><i class="fas fa-circle-info" aria-hidden="true"></i>Important Notes</h2></div>
+            <div class="panel-body">
+                <ul class="note-list">
+                    <li>At least <strong>2 approved teams</strong> are required to generate fixtures for a zone</li>
+                    <li>Fixtures are generated using a <strong>round-robin</strong> format (each team plays every other team)</li>
+                    <li>Teams must be assigned to a zone before fixtures can be generated</li>
+                    <li>Use the <strong>Reschedule</strong> feature to modify dates without losing fixture data</li>
+                </ul>
+            </div>
+        </section>
+        <section class="panel danger-panel" aria-labelledby="regen-title">
+            <div class="panel-header"><h2 class="panel-title" id="regen-title"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i>Regenerate Fixtures Warning</h2></div>
+            <div class="panel-body">
+                <ul class="note-list">
+                    <li>The <strong>Regenerate</strong> button will <strong>DELETE all existing fixtures</strong> for that zone</li>
+                    <li>Regeneration is <strong>BLOCKED</strong> if any matches have been played or are ongoing</li>
+                    <li>All match assignments, referee assignments, and scheduling will be lost</li>
+                    <li>For minor changes, use the <strong>Reschedule</strong> feature instead</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/pages/admin.js' %}" defer></script>{% endblock %}

@@ -1,37 +1,62 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 {% block title %}Reschedule Match - Admin Dashboard{% endblock %}
+{% block page_title %}Reschedule match{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Fixtures</span>
+        <h1 class="page-title h2">Reschedule Match</h1>
+        <p class="page-subtitle">{{ match.home_team }} vs {{ match.away_team }}</p>
+    </div>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4 text-primary">Reschedule Match</h2>
-    <div class="card">
-        <div class="card-body">
-            <h5>{{ match.home_team }} vs {{ match.away_team }}</h5>
-                <p><strong>Current Date:</strong> {{ match.match_date|date:'M d, Y' }}<br>
-                    <strong>Current Time:</strong> {{ match.match_date|time:'H:i' }}<br>
-                    <strong>Kickoff Time:</strong> {{ match.kickoff_time }}<br>
-                    <strong>Venue:</strong> {{ match.venue }}</p>
-            <form method="post">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label for="new_date" class="form-label">New Date</label>
-                    <input type="date" class="form-control" id="new_date" name="new_date" required>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" class="panel">
+            {% csrf_token %}
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-calendar-days" aria-hidden="true"></i>New schedule</h2></div>
+            <div class="panel-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="new_date" class="form-label">New Date</label>
+                        <input type="date" class="form-control" id="new_date" name="new_date" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="new_kickoff_time" class="form-label">Kickoff Time</label>
+                        <input type="time" class="form-control" id="new_kickoff_time" name="new_kickoff_time" value="{{ match.kickoff_time }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="new_round" class="form-label">Round</label>
+                        <select class="form-select" id="new_round" name="new_round" required>
+                            {% for r in rounds %}<option value="{{ r }}" {% if match.round_number == r %}selected{% endif %}>Round {{ r }}</option>{% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="new_kickoff_time" class="form-label">Kickoff Time</label>
-                    <input type="time" class="form-control" id="new_kickoff_time" name="new_kickoff_time" value="{{ match.kickoff_time }}" required>
-                </div>
-                <div class="mb-3">
-                    <label for="new_round" class="form-label">Round</label>
-                    <select class="form-control" id="new_round" name="new_round" required>
-                        {% for r in rounds %}
-                            <option value="{{ r }}" {% if match.round_number == r %}selected{% endif %}>Round {{ r }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-warning">Reschedule</button>
-                <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="btn btn-secondary ms-2">Back</a>
-            </form>
-        </div>
+            </div>
+            <div class="panel-footer form-actions">
+                <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="btn btn-outline-secondary">Back</a>
+                <button type="submit" class="btn btn-primary">Reschedule</button>
+            </div>
+        </form>
+    </div>
+    <div class="col-lg-4">
+        <section class="panel" aria-labelledby="current-title">
+            <div class="panel-header"><h2 class="panel-title" id="current-title"><i class="fas fa-circle-info" aria-hidden="true"></i>Current schedule</h2></div>
+            <div class="panel-body">
+                <dl class="kv-list">
+                    <dt>Current Date</dt><dd>{{ match.match_date|date:'M d, Y' }}</dd>
+                    <dt>Current Time</dt><dd>{{ match.match_date|time:'H:i' }}</dd>
+                    <dt>Kickoff Time</dt><dd>{{ match.kickoff_time|default:"TBD" }}</dd>
+                    <dt>Venue</dt><dd>{{ match.venue }}</dd>
+                </dl>
+            </div>
+        </section>
     </div>
 </div>
 {% endblock %}

@@ -1,63 +1,62 @@
-<!-- templates/admin/reschedule_single.html - CREATE THIS FILE -->
-{% extends "admin/base_site.html" %}
-{% load i18n admin_urls %}
+{% extends "base_dashboard.html" %}
+{% load static %}
+{% comment %}Rendered by MatchAdmin.reschedule_single_view (Django admin custom URL).{% endcomment %}
+{% block title %}Reschedule Match — FKF Meru League{% endblock %}
+{% block page_title %}Reschedule match{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Django admin</span>
+        <h1 class="page-title h2">Reschedule Match</h1>
+        <p class="page-subtitle">{{ match.home_team.team_name }} vs {{ match.away_team.team_name }}</p>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div id="content-main">
-    <div class="module">
-        <h2>Reschedule Match</h2>
-        
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Match Details</h4>
-            </div>
-            <div class="card-body">
-                <p><strong>Match:</strong> {{ match.home_team.team_name }} vs {{ match.away_team.team_name }}</p>
-                <p><strong>Current Date:</strong> {{ match.match_date|date:"l, F j, Y" }}</p>
-                <p><strong>Current Time:</strong> {{ match.match_date|time:"g:i A" }}</p>
-                <p><strong>Zone:</strong> {{ match.zone.name }} | <strong>Round:</strong> {{ match.round_number }}</p>
-            </div>
-        </div>
-        
-        <form method="post">
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" class="panel">
             {% csrf_token %}
-            
-            <div class="form-group mb-3">
-                <label for="new_date">New Date:</label>
-                <input type="date" id="new_date" name="new_date" 
-                       value="{{ match.match_date|date:'Y-m-d' }}" 
-                       class="form-control" required>
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-calendar-days" aria-hidden="true"></i>New date and time</h2></div>
+            <div class="panel-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="new_date" class="form-label">New Date:</label>
+                        <input type="date" id="new_date" name="new_date" value="{{ match.match_date|date:'Y-m-d' }}" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="new_time" class="form-label">New Time (24-hour format):</label>
+                        <input type="time" id="new_time" name="new_time" value="{{ match.match_date|time:'H:i' }}" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <label for="reason" class="form-label">Reason for Rescheduling (Optional):</label>
+                        <textarea id="reason" name="reason" class="form-control" rows="3" placeholder="E.g., Venue unavailable, Weather conditions, etc."></textarea>
+                    </div>
+                </div>
             </div>
-            
-            <div class="form-group mb-3">
-                <label for="new_time">New Time (24-hour format):</label>
-                <input type="time" id="new_time" name="new_time" 
-                       value="{{ match.match_date|time:'H:i' }}" 
-                       class="form-control" required>
-            </div>
-            
-            <div class="form-group mb-3">
-                <label for="reason">Reason for Rescheduling (Optional):</label>
-                <textarea id="reason" name="reason" class="form-control" 
-                          rows="3" placeholder="E.g., Venue unavailable, Weather conditions, etc."></textarea>
-            </div>
-            
-            <div class="submit-row">
-                <input type="submit" value="Reschedule Match" class="btn btn-primary">
-                <a href="{% url 'admin:matches_match_changelist' %}" class="btn btn-secondary">Cancel</a>
+            <div class="panel-footer form-actions">
+                <a href="{% url 'admin:matches_match_changelist' %}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Reschedule Match</button>
             </div>
         </form>
     </div>
+    <div class="col-lg-4">
+        <section class="panel" aria-labelledby="md-title">
+            <div class="panel-header"><h2 class="panel-title" id="md-title"><i class="fas fa-circle-info" aria-hidden="true"></i>Match Details</h2></div>
+            <div class="panel-body">
+                <dl class="kv-list">
+                    <dt>Match</dt><dd>{{ match.home_team.team_name }} vs {{ match.away_team.team_name }}</dd>
+                    <dt>Current Date</dt><dd>{{ match.match_date|date:"l, F j, Y" }}</dd>
+                    <dt>Current Time</dt><dd>{{ match.match_date|time:"g:i A" }}</dd>
+                    <dt>Zone</dt><dd>{{ match.zone.name }}</dd>
+                    <dt>Round</dt><dd>{{ match.round_number }}</dd>
+                </dl>
+            </div>
+        </section>
+    </div>
 </div>
-
-<style>
-    .form-control {
-        max-width: 300px;
-    }
-    .submit-row {
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #ddd;
-    }
-</style>
 {% endblock %}
