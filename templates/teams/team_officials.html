@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block title %}Team Officials - {{ team.team_name }}{% endblock %}
 
 {% block content %}
@@ -11,18 +11,7 @@
                     <p class="mb-0 small">{{ team.team_name }}</p>
                 </div>
                 <div class="card-body">
-                    <!-- Messages Display -->
-                    {% if messages %}
-                    <div class="mb-3">
-                        {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message|safe }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    
+
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i>
                         <strong>Required:</strong> Head Coach, Assistant Coach, Goalkeeper Coach, Team Doctor, and Team Patron.
@@ -32,8 +21,8 @@
                     <!-- Progress -->
                     <div class="mb-4">
                         <div class="progress" style="height: 25px;">
-                            <div class="progress-bar bg-success" role="progressbar" 
-                                 style="width: {{ filled_count|add:'0' }}0%"
+                            <div class="progress-bar bg-success" role="progressbar"
+                                 style="width: {% widthratio filled_count total_required 100 %}%"
                                  aria-valuenow="{{ filled_count }}" aria-valuemin="0" aria-valuemax="{{ total_required }}">
                                 {{ filled_count }} of {{ total_required }} Complete
                             </div>
@@ -44,9 +33,9 @@
                     <form method="POST" enctype="multipart/form-data" class="mb-4">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="add_official">
-                        
+
                         <h5 class="text-primary mb-3"><i class="fas fa-user-plus"></i> Add Official</h5>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Position/Role *</label>
@@ -57,7 +46,7 @@
                                 {{ form.full_name }}
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">ID Number *</label>
@@ -75,7 +64,7 @@
                                 {% endif %}
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">CAF License Number (Coaches only)</label>
@@ -86,12 +75,12 @@
                                 {{ form.license_expiry_date }}
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Photo (Optional)</label>
                             {{ form.photo }}
                         </div>
-                        
+
                         <button type="submit" class="btn btn-success">
                             <i class="fas fa-plus"></i> Add Official
                         </button>
@@ -101,7 +90,7 @@
 
                     <!-- Officials List -->
                     <h5 class="text-primary mb-3"><i class="fas fa-list"></i> Registered Officials</h5>
-                    
+
                     {% if officials %}
                     <div class="table-responsive">
                         <table class="table table-bordered">
@@ -122,11 +111,13 @@
                                     <td>{{ official.phone_number }}</td>
                                     <td>{{ official.caf_license_number|default:"N/A" }}</td>
                                     <td>
-                                        <a href="{% url 'teams:delete_official' official.id %}" 
-                                           class="btn btn-sm btn-danger"
-                                           onclick="return confirm('Remove this official?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                        <form method="post" action="{% url 'teams:delete_official' official.id %}" class="d-inline"
+                                              onsubmit="return confirm('Remove this official?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger" aria-label="Remove {{ official.full_name }}">
+                                                <i class="fas fa-trash" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                                 {% endfor %}
