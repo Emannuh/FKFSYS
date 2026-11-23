@@ -1,0 +1,13 @@
+{% load fkf_tags %}{% comment %}
+Live registration windows panel (LeagueSettings from the context processor). Used by about/rules.
+{% endcomment %}
+{% if league_settings %}
+<section class="panel" aria-labelledby="windows-title">
+    <div class="panel-header"><h2 class="panel-title" id="windows-title"><i class="fas fa-calendar-check" aria-hidden="true"></i>Key dates</h2></div>
+    <div class="panel-body d-grid gap-2">
+        {% reg_window_card "Team registration" "fas fa-users" league_settings.team_registration_open league_settings.team_registration_deadline league_settings.team_registration_closed_date %}
+        {% reg_window_card "Player registration" "fas fa-user-plus" league_settings.player_registration_open league_settings.player_registration_deadline league_settings.player_registration_closed_date %}
+        {% reg_window_card "Transfer window" "fas fa-right-left" league_settings.transfer_window_open league_settings.transfer_window_deadline league_settings.transfer_window_closed_date %}
+    </div>
+</section>
+{% endif %}

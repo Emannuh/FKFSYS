@@ -1,13 +1,18 @@
-{% load static %}{% comment %} Shared <head> assets for every full-page layout (base.html, base_dashboard.html, registration/*).
-   Third-party libraries are self-hosted under static/vendor/ (PCI DSS 4.0 req. 6.4.3 — see static/vendor/README.md).
-   Page-specific CSS goes in the layout's {% block extra_css %}, not here. {% endcomment %}
+{% load static %}{% comment %}
+Shared <head> assets for every full-page layout (base.html, base_dashboard.html, registration/*).
+Third-party libraries are self-hosted under static/vendor/ (PCI DSS 4.0 req. 6.4.3; inventory in
+static/vendor/README.md). theme.js runs synchronously so the colour theme is set before first paint.
+Page-specific CSS goes in the layout's {% block extra_css %}, not here.
+{% endcomment %}
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<script src="{% static 'js/theme.js' %}"></script>
 <link rel="stylesheet" href="{% static 'vendor/bootstrap-5.3.8/css/bootstrap.min.css' %}">
 <link rel="stylesheet" href="{% static 'vendor/fontawesome-6.5.0/css/all.min.css' %}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="{% static 'vendor/aos-2.3.1/aos.css' %}">
 <link rel="stylesheet" href="{% static 'vendor/nprogress-0.2.0/nprogress.css' %}">
 <link rel="stylesheet" href="{% static 'css/app.css' %}">

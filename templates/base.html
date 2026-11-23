@@ -1,68 +1,76 @@
 <!DOCTYPE html>
 {% load static site_navigation %}
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     {% include "partials/_head_assets.html" %}
     <title>{% block title %}FKF Meru County League{% endblock %}</title>
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'frontend:home' %}">
-                <span class="brand-icon"><i class="fas fa-futbol" aria-hidden="true"></i></span>
-                FKF Meru County
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% site_top_nav as top_nav %}
-                    {% for item in top_nav %}
+<body class="site-layout">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header>
+        <nav class="site-nav navbar navbar-expand-lg" aria-label="Main">
+            <div class="container">
+                <a class="navbar-brand site-brand" href="{% url 'frontend:home' %}">
+                    <span class="brand-mark"><i class="fas fa-futbol" aria-hidden="true"></i></span>
+                    <span>FKF Meru<span class="brand-sub">County League</span></span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#siteNav"
+                        aria-controls="siteNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="siteNav">
+                    <ul class="navbar-nav mx-lg-auto">
+                        {% site_top_nav as top_nav %}
+                        {% for item in top_nav %}
                         <li class="nav-item">
-                            <a class="nav-link{% if item.is_active %} active{% endif %}" href="{{ item.url }}">
-                                {% if item.icon %}<i class="{{ item.icon }}" aria-hidden="true"></i> {% endif %}{{ item.title }}
-                            </a>
+                            <a class="nav-link{% if item.is_active %} active{% endif %}" href="{{ item.url }}"{% if item.is_active %} aria-current="page"{% endif %}>{{ item.title }}</a>
                         </li>
-                    {% endfor %}
-                    {% if user.is_authenticated and user.is_staff %}
-                        {% admin_dropdown as admin_sections %}
-                        {% if admin_sections %}
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
-                                   data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-user-shield" aria-hidden="true"></i> Admin Panel
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end admin-dropdown-menu" aria-labelledby="adminDropdown">
-                                    {% for section in admin_sections %}
-                                        <li class="dropdown-header"><i class="{{ section.icon }}" aria-hidden="true"></i> {{ section.title }}</li>
-                                        {% for item in section.items %}
-                                            <li><a class="dropdown-item" href="{{ item.url }}"><i class="{{ item.icon }}" aria-hidden="true"></i> {{ item.title }}</a></li>
-                                        {% endfor %}
-                                        {% if not forloop.last %}<li><hr class="dropdown-divider"></li>{% endif %}
-                                    {% endfor %}
-                                </ul>
-                            </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="site-nav-actions">
+                        {% include "partials/_theme_toggle.html" %}
+                        {% if user.is_authenticated %}
+                        <a class="btn btn-primary btn-sm" href="{% url 'dashboard' %}"><i class="fas fa-gauge me-1" aria-hidden="true"></i>Dashboard</a>
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-ghost btn-icon" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+                                <i class="fas fa-user-circle" aria-hidden="true"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h2 class="dropdown-header">{{ user.get_full_name|default:user.username }}</h2></li>
+                                {% if user.is_staff %}
+                                {% admin_dropdown as admin_sections %}
+                                {% for section in admin_sections %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h3 class="dropdown-header">{{ section.title }}</h3></li>
+                                {% for item in section.items %}
+                                <li><a class="dropdown-item" href="{{ item.url }}"><i class="{{ item.icon }}" aria-hidden="true"></i>{{ item.title }}</a></li>
+                                {% endfor %}
+                                {% endfor %}
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>{% include "partials/_logout_form.html" with button_class="dropdown-item" %}</li>
+                            </ul>
+                        </div>
+                        {% else %}
+                        <a class="btn btn-primary btn-sm" href="{% url 'login' %}"><i class="fas fa-sign-in-alt me-1" aria-hidden="true"></i>Log in</a>
                         {% endif %}
-                    {% endif %}
-                    {% if not user.is_authenticated %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Login</a></li>
-                    {% else %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Dashboard</a></li>
-                        <li class="nav-item">{% include "partials/_logout_form.html" with button_class="nav-link btn btn-link navbar-logout" %}</li>
-                    {% endif %}
-                </ul>
+                    </div>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+        {% block hero %}{% endblock %}
+    </header>
 
     {% include "partials/_page_chrome.html" %}
 
-    <main class="container py-4">
-        {% if messages %}<div class="messages-container mb-4">{% include "partials/_messages.html" %}</div>{% endif %}
-        {% block content %}{% endblock %}
+    <main id="main-content" class="site-main" tabindex="-1" {% block content_theme %}data-bs-theme="light"{% endblock %}>
+        <div class="container">
+            {% if messages %}<div class="messages-container mb-4" role="status">{% include "partials/_messages.html" %}</div>{% endif %}
+            {% block page_header %}{% endblock %}
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
     {% include "partials/_site_footer.html" %}

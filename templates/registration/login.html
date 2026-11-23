@@ -1,104 +1,67 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
 <head>
   {% include "partials/_head_assets.html" %}
-  <title>Login — FKF Meru County League</title>
+  <title>Log in — FKF Meru County League</title>
 </head>
 <body class="login-page">
-
-  <div class="login-card">
-    <!-- Header -->
+  <main class="login-card">
     <div class="login-card-header">
-      <div class="login-logo"><i class="fas fa-futbol"></i></div>
-      <h3>FKF Meru County</h3>
+      <div class="login-logo"><i class="fas fa-futbol" aria-hidden="true"></i></div>
+      <h1>FKF Meru County</h1>
       <p>League Management System</p>
     </div>
 
-    <!-- Body -->
     <div class="login-card-body">
       {% if form.errors %}
-      <div class="alert alert-danger mb-3">
-        <i class="fas fa-exclamation-circle me-2"></i>
-        Username or password is incorrect. Please try again.
+      <div class="alert alert-danger" role="alert">
+        <i class="fas fa-exclamation-circle me-2" aria-hidden="true"></i>Username or password is incorrect. Please try again.
       </div>
       {% endif %}
 
       {% if next %}
         {% if user.is_authenticated %}
-        <div class="alert alert-warning mb-3">
-          <i class="fas fa-lock me-2"></i>
-          Your account doesn't have access to that page. Please log in with a different account.
+        <div class="alert alert-warning" role="status">
+          <i class="fas fa-lock me-2" aria-hidden="true"></i>Your account doesn't have access to that page. Log in with a different account.
         </div>
         {% else %}
-        <div class="alert alert-info mb-3">
-          <i class="fas fa-info-circle me-2"></i>
-          Please log in to access this page.
+        <div class="alert alert-info" role="status">
+          <i class="fas fa-info-circle me-2" aria-hidden="true"></i>Please log in to access this page.
         </div>
         {% endif %}
       {% endif %}
 
-      <form method="post" action="{% url 'login' %}">
+      <form method="post" action="{% url 'login' %}" novalidate>
         {% csrf_token %}
         <div class="mb-3">
-          <label for="id_username" class="form-label">
-            <i class="fas fa-user me-1"></i>Username
-          </label>
-          <input type="text" name="username" id="id_username"
-                 class="form-control form-control-lg"
-                 placeholder="Enter your username"
-                 autofocus required autocomplete="username">
+          <label for="id_username" class="form-label">Username</label>
+          <input type="text" name="username" id="id_username" class="form-control form-control-lg"
+                 value="{{ form.username.value|default:'' }}" autofocus required autocomplete="username" autocapitalize="none">
         </div>
         <div class="mb-4">
-          <label for="id_password" class="form-label">
-            <i class="fas fa-lock me-1"></i>Password
-          </label>
-          <div class="position-relative">
-            <input type="password" name="password" id="id_password"
-                   class="form-control form-control-lg"
-                   placeholder="Enter your password"
-                   required autocomplete="current-password">
-            <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y pe-3 text-body-secondary password-toggle"
-                    data-toggle-password="id_password" aria-label="Show password" aria-pressed="false">
+          <label for="id_password" class="form-label">Password</label>
+          <div class="password-field">
+            <input type="password" name="password" id="id_password" class="form-control form-control-lg" required autocomplete="current-password">
+            <button type="button" class="btn btn-icon password-toggle" data-toggle-password="id_password" aria-label="Show password" aria-pressed="false">
               <i class="fas fa-eye" aria-hidden="true"></i>
             </button>
           </div>
         </div>
         <input type="hidden" name="next" value="{{ next }}">
-        <button type="submit" class="btn login-btn">
-          <i class="fas fa-sign-in-alt me-2"></i>Login
-        </button>
+        <button type="submit" class="btn btn-primary btn-lg login-btn">Log in</button>
       </form>
 
-      <div class="text-center mt-4">
-        <a href="{% url 'password_reset' %}" class="text-muted small">
-          <i class="fas fa-key me-1"></i>Forgot password?
-        </a>
-      </div>
+      <p class="text-center mt-3 mb-4">
+        <a href="{% url 'password_reset' %}" class="small">Forgot password?</a>
+      </p>
 
-      <hr class="my-4" style="border-color:var(--border-light);">
-
-      <div class="row g-2 text-center">
-        <div class="col-6">
-          <a href="{% url 'teams:team_registration' %}"
-             class="d-block p-2 rounded text-decoration-none"
-             style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;">
-            <i class="fas fa-users d-block mb-1" style="font-size:1.3rem;"></i>
-            <small class="fw-600">Register Team</small>
-          </a>
-        </div>
-        <div class="col-6">
-          <a href="{% url 'referees:referee_registration' %}"
-             class="d-block p-2 rounded text-decoration-none"
-             style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;">
-            <i class="fas fa-whistle d-block mb-1" style="font-size:1.3rem;"></i>
-            <small class="fw-600">Referee Sign-up</small>
-          </a>
-        </div>
+      <div class="login-links">
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'teams:team_registration' %}"><i class="fas fa-users me-1" aria-hidden="true"></i>Register team</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'referees:referee_registration' %}"><i class="fas fa-flag me-1" aria-hidden="true"></i>Referee sign-up</a>
       </div>
+      <p class="text-center mt-4 mb-0"><a class="small" href="{% url 'frontend:home' %}"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to the league portal</a></p>
     </div>
-  </div>
-
+  </main>
   <script src="{% static 'js/app.js' %}" defer></script>
 </body>
 </html>

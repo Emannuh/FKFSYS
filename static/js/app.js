@@ -153,6 +153,14 @@
       storage.set('fkf-theme', next);
       sync();
     }));
+    // Follow OS changes until the user picks a theme explicitly.
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    media.addEventListener('change', (e) => {
+      const saved = storage.get('fkf-theme');
+      if (saved === 'light' || saved === 'dark') return;
+      root.setAttribute('data-bs-theme', e.matches ? 'dark' : 'light');
+      sync();
+    });
     sync();
   }
 

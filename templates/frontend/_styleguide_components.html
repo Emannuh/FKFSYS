@@ -1,0 +1,161 @@
+{% load fkf_tags %}{% comment %}
+Component gallery, included twice by styleguide.html (light + dark). `theme` makes ids unique.
+Markup here is the reference: copy it, don't reinvent it.
+{% endcomment %}
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-header">
+    <h3 class="sg-heading" id="sg-{{ theme }}-header">Page header <code>.page-header</code></h3>
+    <div class="page-header mb-0">
+        <div>
+            <span class="page-eyebrow">Teams</span>
+            <h4 class="page-title h2">Manage players</h4>
+            <p class="page-subtitle">Short description of the page, one sentence.</p>
+        </div>
+        <div class="page-actions">
+            <button type="button" class="btn btn-outline-secondary">Export</button>
+            <button type="button" class="btn btn-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i>Add player</button>
+        </div>
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-buttons">
+    <h3 class="sg-heading" id="sg-{{ theme }}-buttons">Buttons <code>.btn-*</code></h3>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary">Primary</button>
+        <button type="button" class="btn btn-outline-primary">Outline</button>
+        <button type="button" class="btn btn-outline-secondary">Secondary</button>
+        <button type="button" class="btn btn-ghost">Ghost</button>
+        <button type="button" class="btn btn-success">Approve</button>
+        <button type="button" class="btn btn-danger">Delete</button>
+        <button type="button" class="btn btn-primary" disabled>Disabled</button>
+        <button type="button" class="btn btn-outline-secondary btn-icon" aria-label="Edit"><i class="fas fa-pen" aria-hidden="true"></i></button>
+        <button type="button" class="btn btn-primary btn-sm">Small</button>
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-stats">
+    <h3 class="sg-heading" id="sg-{{ theme }}-stats">Stat tiles <code>.stat-tile</code></h3>
+    <div class="row g-2">
+        <div class="col-6"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-users" aria-hidden="true"></i>Teams</span><span class="stat-tile__value">48</span><span class="stat-tile__meta">6 pending approval</span></div></div>
+        <div class="col-6"><div class="stat-tile stat-tile--accent"><span class="stat-tile__label">Live now</span><span class="stat-tile__value">3</span><span class="stat-tile__meta">matches in progress</span></div></div>
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-badges">
+    <h3 class="sg-heading" id="sg-{{ theme }}-badges">Status badges <code>{% templatetag openblock %} squad_badge {% templatetag closeblock %}</code> &middot; <code>.status-badge</code></h3>
+    <div class="d-flex flex-wrap gap-2 mb-2">{% for s in sample_statuses %}{% squad_badge s %}{% endfor %}</div>
+    <div class="d-flex flex-wrap gap-2">{% for s in sample_match_statuses %}{% match_badge s %}{% endfor %}<span class="status-badge status-accent status-live">LIVE</span></div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-alerts">
+    <h3 class="sg-heading" id="sg-{{ theme }}-alerts">Alerts <code>.alert-*</code></h3>
+    <div class="alert alert-success mb-2" role="status">Team approved.</div>
+    <div class="alert alert-warning mb-2" role="status">Player registration closes in 2 days.</div>
+    <div class="alert alert-danger mb-2" role="alert">Payment failed. Try again.</div>
+    <div class="alert alert-info mb-0" role="status">Fixtures are generated per zone.</div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-forms">
+    <h3 class="sg-heading" id="sg-{{ theme }}-forms">Form controls</h3>
+    <div class="row g-3">
+        <div class="col-sm-6">
+            <label class="form-label" for="sg-{{ theme }}-name">Team name</label>
+            <input class="form-control" id="sg-{{ theme }}-name" placeholder="e.g. Meru Stars FC">
+            <div class="form-text">Must be unique.</div>
+        </div>
+        <div class="col-sm-6">
+            <label class="form-label" for="sg-{{ theme }}-zone">Zone</label>
+            <select class="form-select" id="sg-{{ theme }}-zone"><option>Zone A</option><option>Zone B</option></select>
+        </div>
+        <div class="col-sm-6">
+            <label class="form-label" for="sg-{{ theme }}-phone">Phone</label>
+            <input class="form-control is-invalid" id="sg-{{ theme }}-phone" value="0712" aria-describedby="sg-{{ theme }}-phone-err">
+            <div class="invalid-feedback" id="sg-{{ theme }}-phone-err">Enter +254 followed by 9 digits.</div>
+        </div>
+        <div class="col-sm-6 d-flex align-items-end">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="sg-{{ theme }}-open" checked>
+                <label class="form-check-label" for="sg-{{ theme }}-open">Registration open</label>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-tabs">
+    <h3 class="sg-heading" id="sg-{{ theme }}-tabs">Tabs <code>.nav-tabs</code> &middot; segmented <code>.nav-segmented</code></h3>
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="#sg-{{ theme }}-tabs">Squad</a></li>
+        <li class="nav-item"><a class="nav-link" href="#sg-{{ theme }}-tabs">Officials</a></li>
+        <li class="nav-item"><a class="nav-link" href="#sg-{{ theme }}-tabs">Transfers</a></li>
+    </ul>
+    <div class="nav nav-segmented" role="group" aria-label="Zone">
+        <button type="button" class="nav-link active" aria-pressed="true">Zone A</button>
+        <button type="button" class="nav-link" aria-pressed="false">Zone B</button>
+        <button type="button" class="nav-link" aria-pressed="false">Zone C</button>
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-fixtures">
+    <h3 class="sg-heading" id="sg-{{ theme }}-fixtures">Fixture / result card <code>partials/_fixture_card.html</code></h3>
+    <div class="fixture-list">
+        <div class="fixture-card is-live">
+            <span class="fixture-card__team"><span class="team-crest" aria-hidden="true">Me</span><span>Meru Stars</span></span>
+            <span class="fixture-card__centre"><span class="fixture-card__score">2&ndash;1</span><span class="d-block mt-1">{% match_badge "live" %}</span></span>
+            <span class="fixture-card__team fixture-card__team--away"><span class="team-crest" aria-hidden="true">Ny</span><span>Nyambene United</span></span>
+            <span class="fixture-card__meta"><span>Sat 14 Mar</span><span>Zone A &middot; Round 4</span><span>Kinoru Stadium</span></span>
+        </div>
+        <div class="fixture-card">
+            <span class="fixture-card__team"><span class="team-crest" aria-hidden="true">Ti</span><span>Tigania FC</span></span>
+            <span class="fixture-card__centre"><span class="fixture-card__time">15:00</span><span class="d-block mt-1">{% match_badge "scheduled" %}</span></span>
+            <span class="fixture-card__team fixture-card__team--away"><span class="team-crest" aria-hidden="true">Im</span><span>Imenti Rangers</span></span>
+            <span class="fixture-card__meta"><span>Sun 15 Mar</span><span>Zone B &middot; Round 4</span></span>
+        </div>
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-table">
+    <h3 class="sg-heading" id="sg-{{ theme }}-table">Data table + league table <code>.data-table .league-table</code></h3>
+    <div class="data-table-wrap">
+        <table class="table data-table league-table">
+            <thead><tr><th scope="col" class="pos">#</th><th scope="col">Team</th><th scope="col" class="num">P</th><th scope="col" class="num">GD</th><th scope="col" class="num">Pts</th><th scope="col">Form</th></tr></thead>
+            <tbody>
+                <tr class="is-leader"><td class="pos">1</td><td class="team-cell"><span class="chip"><span class="team-crest team-crest--sm" aria-hidden="true">Me</span><span>Meru Stars</span></span></td><td class="num">8</td><td class="num">+11</td><td class="num pts">20</td><td>{% form_string "WWDWL" %}</td></tr>
+                <tr><td class="pos">2</td><td class="team-cell"><span class="chip"><span class="team-crest team-crest--sm" aria-hidden="true">Ny</span><span>Nyambene United</span></span></td><td class="num">8</td><td class="num">+6</td><td class="num pts">17</td><td>{% form_string "DWWLW" %}</td></tr>
+                <tr><td class="pos">3</td><td class="team-cell"><span class="chip"><span class="team-crest team-crest--sm" aria-hidden="true">Ti</span><span>Tigania FC</span></span></td><td class="num">8</td><td class="num">0</td><td class="num pts">12</td><td>{% form_string "" %}</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-chips">
+    <h3 class="sg-heading" id="sg-{{ theme }}-chips">Team / player chips <code>.chip</code> &middot; crest <code>.team-crest</code></h3>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="chip"><span class="team-crest team-crest--sm" aria-hidden="true">Me</span><span>Meru Stars</span></span>
+        <span class="chip"><span class="team-crest team-crest--sm" aria-hidden="true">#9</span><span>J. Mwenda <span class="chip__meta">FW</span></span></span>
+        <span class="team-crest team-crest--lg" aria-hidden="true">Me</span>
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-panel">
+    <h3 class="sg-heading" id="sg-{{ theme }}-panel">Panel <code>.panel</code> &middot; empty state <code>{% templatetag openblock %} empty_state {% templatetag closeblock %}</code></h3>
+    <div class="panel">
+        <div class="panel-header"><h4 class="panel-title"><i class="fas fa-calendar" aria-hidden="true"></i>Upcoming fixtures</h4><a href="#sg-{{ theme }}-panel">All</a></div>
+        {% empty_state icon="calendar-xmark" title="No upcoming fixtures" message="Fixtures appear here once the schedule is published." %}
+        <div class="panel-footer">Panel footer</div>
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-reg">
+    <h3 class="sg-heading" id="sg-{{ theme }}-reg">Registration window <code>{% templatetag openblock %} reg_window_card {% templatetag closeblock %}</code></h3>
+    <div class="d-grid gap-2">
+        {% reg_window_card "Player registration" "fas fa-user-plus" True None None %}
+        {% reg_window_card "Transfer window" "fas fa-right-left" False None None %}
+    </div>
+</section>
+
+<section class="sg-block" aria-labelledby="sg-{{ theme }}-toast">
+    <h3 class="sg-heading" id="sg-{{ theme }}-toast">Toast <code>.toast</code></h3>
+    <div class="toast show" role="status" aria-live="polite" aria-atomic="true">
+        <div class="toast-header"><strong class="me-auto">Saved</strong><button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div>
+        <div class="toast-body">Kit colours updated.</div>
+    </div>
+</section>

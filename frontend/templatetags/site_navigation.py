@@ -8,7 +8,6 @@ markup lives in templates (base.html, base_dashboard.html, partials/).
     {% site_top_nav as items %}      public top navigation
     {% admin_dropdown as sections %} staff "Admin" menu (public layout)
     {% footer_sections as sections %}
-    {% social_links as links %}
     {% dashboard_nav as sections %}  dashboard sidebar
 
 Item dicts: ``title``, ``icon``, ``url`` (resolved), ``is_active``, optional ``danger``.
@@ -130,15 +129,6 @@ _FOOTER_SECTIONS: list[NavSection] = [
     ]},
 ]
 
-# Placeholder URLs until the league publishes official accounts; templates hide '#' links.
-_SOCIAL_LINKS: list[NavItem] = [
-    {'title': 'Facebook', 'icon': 'fab fa-facebook', 'url': '#'},
-    {'title': 'X (Twitter)', 'icon': 'fab fa-twitter', 'url': '#'},
-    {'title': 'Instagram', 'icon': 'fab fa-instagram', 'url': '#'},
-    {'title': 'YouTube', 'icon': 'fab fa-youtube', 'url': '#'},
-]
-
-
 @register.simple_tag(takes_context=True)
 def site_top_nav(context: template.Context) -> list[NavItem]:
     """Public top navigation (login/dashboard buttons are rendered by the layout)."""
@@ -161,11 +151,6 @@ def admin_dropdown(context: template.Context) -> list[NavSection]:
 @register.simple_tag
 def footer_sections() -> list[NavSection]:
     return _resolve_sections(_FOOTER_SECTIONS)
-
-
-@register.simple_tag
-def social_links() -> list[NavItem]:
-    return [dict(link) for link in _SOCIAL_LINKS]
 
 
 # ── Dashboard layout ──────────────────────────────────────────────────────

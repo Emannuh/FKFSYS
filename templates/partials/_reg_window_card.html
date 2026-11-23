@@ -1,25 +1,20 @@
-{% comment %} partials/_reg_window_card.html
-   Used by: {% load fkf_tags %}{% reg_window_card ... %}
-   Variables: label, icon, is_open, deadline, closed_date
+{% comment %}
+Registration-window status card. Used by: {% load fkf_tags %}{% reg_window_card label icon is_open deadline closed_date %}
 {% endcomment %}
-<div class="card border-0 reg-window-card {% if is_open %}reg-open{% else %}reg-closed{% endif %}">
-  <div class="card-body d-flex align-items-center gap-3">
+<div class="reg-window-card {% if is_open %}reg-open{% else %}reg-closed{% endif %}">
     <div class="reg-window-icon {% if is_open %}reg-icon-open{% else %}reg-icon-closed{% endif %}">
-      <i class="{{ icon }}"></i>
+        <i class="{{ icon }}" aria-hidden="true"></i>
     </div>
-    <div class="flex-grow-1">
-      <div class="d-flex align-items-center gap-2 mb-1">
-        <h6 class="mb-0 fw-bold">{{ label }}</h6>
-        <span class="badge {% if is_open %}bg-success{% else %}bg-danger{% endif %}">
-          {% if is_open %}OPEN{% else %}CLOSED{% endif %}
-        </span>
-      </div>
-      {% if is_open and deadline %}
-        <small class="text-muted">Closes: {{ deadline|date:"M d, Y H:i" }}</small>
-        <div class="countdown-timer fw-bold mt-1 small" data-deadline="{{ deadline|date:'c' }}"></div>
-      {% elif not is_open and closed_date %}
-        <small class="text-muted">Closed on: {{ closed_date|date:"M d, Y" }}</small>
-      {% endif %}
+    <div class="flex-grow-1 min-width-0">
+        <div class="d-flex align-items-center flex-wrap gap-2">
+            <span class="fw-semibold">{{ label }}</span>
+            {% if is_open %}<span class="status-badge status-success">Open</span>{% else %}<span class="status-badge status-danger">Closed</span>{% endif %}
+        </div>
+        {% if is_open and deadline %}
+            <small class="text-body-secondary">Closes {{ deadline|date:"j M Y, H:i" }}</small>
+            <div class="countdown-timer" data-deadline="{{ deadline|date:'c' }}"></div>
+        {% elif not is_open and closed_date %}
+            <small class="text-body-secondary">Closed {{ closed_date|date:"j M Y" }}</small>
+        {% endif %}
     </div>
-  </div>
 </div>
