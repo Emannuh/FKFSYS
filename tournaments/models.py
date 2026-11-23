@@ -1,30 +1,43 @@
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-from django.core.exceptions import ValidationError
+from datetime import datetime
 
-from teams.models import Team, Player, Zone
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.db.models import F
+from django.utils import timezone
+from django.utils.text import slugify
+
+from teams.models import Player, Team, Zone
+
+
+class Position(models.TextChoices):
+    GOALKEEPER = 'GK', 'Goalkeeper'
+    DEFENDER = 'DF', 'Defender'
+    MIDFIELDER = 'MF', 'Midfielder'
+    FORWARD = 'FW', 'Forward'
+
+
+# Single-segment URL paths under /tournaments/ that a slug must not shadow.
+RESERVED_SLUGS = frozenset({'my-matches', 'admin'})
 
 
 # ---------------------------------------------------------------------------
 #  TOURNAMENT
 # ---------------------------------------------------------------------------
 class Tournament(models.Model):
-    FORMAT_CHOICES = [
-        ('knockout', 'Knockout'),
-        ('group_knockout', 'Group Stage + Knockout'),
-        ('round_robin', 'Round Robin'),
-        ('swiss', 'Swiss System'),
-    ]
+    class Format(models.TextChoices):
+        KNOCKOUT = 'knockout', 'Knockout'
+        GROUP_KNOCKOUT = 'group_knockout', 'Group Stage + Knockout'
+        ROUND_ROBIN = 'round_robin', 'Round Robin'
+        SWISS = 'swiss', 'Swiss System'
 
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('registration', 'Registration Open'),
-        ('registration_closed', 'Registration Closed'),
-        ('ongoing', 'Ongoing'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-    ]
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        REGISTRATION = 'registration', 'Registration Open'
+        REGISTRATION_CLOSED = 'registration_closed', 'Registration Closed'
+        ONGOING = 'ongoing', 'Ongoing'
+        COMPLETED = 'completed', 'Completed'
+        CANCELLED = 'cancelled', 'Cancelled'
 
     # Core info
     name = models.CharField(max_length=200)
@@ -41,7 +54,7 @@ class Tournament(models.Model):
     )
 
     # Structure
-    format = models.CharField(max_length=20, choices=FORMAT_CHOICES, default='knockout')
+    format = models.CharField(max_length=20, choices=Format.choices, default=Format.KNOCKOUT)
     max_teams = models.PositiveIntegerField(default=16)
     min_squad_size = models.PositiveIntegerField(default=15)
     max_squad_size = models.PositiveIntegerField(default=25)
@@ -64,7 +77,7 @@ class Tournament(models.Model):
     venue = models.CharField(max_length=200, blank=True)
 
     # Status / workflow
-    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=25, choices=Status.choices, default=Status.DRAFT)
 
     # Rules (rich-text friendly; just stored as text for now)
     rules = models.TextField(blank=True, help_text="Tournament rules & regulations.")
@@ -89,11 +102,10 @@ class Tournament(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            from django.utils.text import slugify
-            base = slugify(self.name)
+            base = slugify(self.name) or 'tournament'
             slug = base
             n = 1
-            while Tournament.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+            while slug in RESERVED_SLUGS or                     Tournament.objects.filter(slug=slug).exclude(pk=self.pk).exists():
                 slug = f"{base}-{n}"
                 n += 1
             self.slug = slug
@@ -106,7 +118,7 @@ class Tournament(models.Model):
     @property
     def is_registration_open(self):
         return (
-            self.status == 'registration'
+            self.status == self.Status.REGISTRATION
             and timezone.now() <= self.registration_deadline
         )
 
@@ -146,8 +158,12 @@ class ExternalTeam(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('tournament', 'team_name')
         ordering = ['team_name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tournament', 'team_name'], name='uniq_external_team_name_per_tournament',
+            ),
+        ]
 
     def __str__(self):
         return self.team_name
@@ -157,13 +173,6 @@ class ExternalTeam(models.Model):
 #  EXTERNAL PLAYER  (players NOT in the FKF County League)
 # ---------------------------------------------------------------------------
 class ExternalPlayer(models.Model):
-    POSITION_CHOICES = [
-        ('GK', 'Goalkeeper'),
-        ('DF', 'Defender'),
-        ('MF', 'Midfielder'),
-        ('FW', 'Forward'),
-    ]
-
     external_team = models.ForeignKey(
         ExternalTeam, on_delete=models.CASCADE, related_name='players'
     )
@@ -172,14 +181,18 @@ class ExternalPlayer(models.Model):
     date_of_birth = models.DateField(null=True, blank=True)
     id_number = models.CharField(max_length=20, blank=True)
     photo = models.ImageField(upload_to='tournament_external_players/', blank=True, null=True)
-    position = models.CharField(max_length=2, choices=POSITION_CHOICES)
+    position = models.CharField(max_length=2, choices=Position.choices)
     jersey_number = models.PositiveIntegerField()
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('external_team', 'jersey_number')
         ordering = ['jersey_number']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['external_team', 'jersey_number'], name='uniq_external_player_jersey',
+            ),
+        ]
 
     @property
     def full_name(self):
@@ -193,17 +206,15 @@ class ExternalPlayer(models.Model):
 #  TOURNAMENT TEAM REGISTRATION  (supports LEAGUE teams + EXTERNAL teams)
 # ---------------------------------------------------------------------------
 class TournamentTeamRegistration(models.Model):
-    REG_STATUS = [
-        ('pending', 'Pending Review'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('withdrawn', 'Withdrawn'),
-    ]
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending Review'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+        WITHDRAWN = 'withdrawn', 'Withdrawn'
 
-    TEAM_TYPE_CHOICES = [
-        ('league', 'FKF League Team'),
-        ('external', 'External Team'),
-    ]
+    class TeamType(models.TextChoices):
+        LEAGUE = 'league', 'FKF League Team'
+        EXTERNAL = 'external', 'External Team'
 
     tournament = models.ForeignKey(
         Tournament, on_delete=models.CASCADE, related_name='registrations'
@@ -223,13 +234,13 @@ class TournamentTeamRegistration(models.Model):
         help_text="For teams NOT in the FKF County League."
     )
     team_type = models.CharField(
-        max_length=10, choices=TEAM_TYPE_CHOICES, default='league'
+        max_length=10, choices=TeamType.choices, default=TeamType.LEAGUE
     )
 
     registered_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
     )
-    status = models.CharField(max_length=15, choices=REG_STATUS, default='pending')
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
     rejection_reason = models.TextField(blank=True)
     payment_confirmed = models.BooleanField(default=False)
     seed = models.PositiveIntegerField(null=True, blank=True, help_text="Seeding number.")
@@ -264,12 +275,11 @@ class TournamentTeamRegistration(models.Model):
 #  Supports BOTH league players and external players
 # ---------------------------------------------------------------------------
 class TournamentPlayerRegistration(models.Model):
-    STATUS_CHOICES = [
-        ('registered', 'Registered'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('withdrawn', 'Withdrawn'),
-    ]
+    class Status(models.TextChoices):
+        REGISTERED = 'registered', 'Registered'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+        WITHDRAWN = 'withdrawn', 'Withdrawn'
 
     tournament = models.ForeignKey(
         Tournament, on_delete=models.CASCADE, related_name='player_registrations'
@@ -296,7 +306,7 @@ class TournamentPlayerRegistration(models.Model):
     jersey_number = models.PositiveIntegerField(
         help_text="Jersey number for this tournament."
     )
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='registered')
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.REGISTERED)
 
     registered_at = models.DateTimeField(auto_now_add=True)
 
@@ -328,8 +338,10 @@ class TournamentGroup(models.Model):
     )
 
     class Meta:
-        unique_together = ('tournament', 'name')
         ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(fields=['tournament', 'name'], name='uniq_group_name_per_tournament'),
+        ]
 
     def __str__(self):
         return f"{self.tournament} – {self.name}"
@@ -353,8 +365,16 @@ class TournamentGroupStanding(models.Model):
     goals_against = models.PositiveIntegerField(default=0)
 
     class Meta:
-        unique_together = ('group', 'team_registration')
-        ordering = ['-won', '-goals_for', 'goals_against']
+        # Points, goal difference, goals scored; pk keeps ties deterministic.
+        ordering = [
+            (F('won') * 3 + F('drawn')).desc(),
+            (F('goals_for') - F('goals_against')).desc(),
+            '-goals_for',
+            'pk',
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['group', 'team_registration'], name='uniq_standing_per_group_team'),
+        ]
 
     @property
     def points(self):
@@ -365,30 +385,28 @@ class TournamentGroupStanding(models.Model):
         return self.goals_for - self.goals_against
 
     def __str__(self):
-        return f"{self.team_registration.team} – {self.group}"
+        return f"{self.team_registration.display_name} – {self.group}"
 
 
 # ---------------------------------------------------------------------------
 #  TOURNAMENT MATCH
 # ---------------------------------------------------------------------------
 class TournamentMatch(models.Model):
-    STAGE_CHOICES = [
-        ('group', 'Group Stage'),
-        ('round_of_32', 'Round of 32'),
-        ('round_of_16', 'Round of 16'),
-        ('quarter_final', 'Quarter Final'),
-        ('semi_final', 'Semi Final'),
-        ('third_place', 'Third Place Playoff'),
-        ('final', 'Final'),
-    ]
+    class Stage(models.TextChoices):
+        GROUP = 'group', 'Group Stage'
+        ROUND_OF_32 = 'round_of_32', 'Round of 32'
+        ROUND_OF_16 = 'round_of_16', 'Round of 16'
+        QUARTER_FINAL = 'quarter_final', 'Quarter Final'
+        SEMI_FINAL = 'semi_final', 'Semi Final'
+        THIRD_PLACE = 'third_place', 'Third Place Playoff'
+        FINAL = 'final', 'Final'
 
-    STATUS_CHOICES = [
-        ('scheduled', 'Scheduled'),
-        ('live', 'Live'),
-        ('completed', 'Completed'),
-        ('postponed', 'Postponed'),
-        ('cancelled', 'Cancelled'),
-    ]
+    class Status(models.TextChoices):
+        SCHEDULED = 'scheduled', 'Scheduled'
+        LIVE = 'live', 'Live'
+        COMPLETED = 'completed', 'Completed'
+        POSTPONED = 'postponed', 'Postponed'
+        CANCELLED = 'cancelled', 'Cancelled'
 
     tournament = models.ForeignKey(
         Tournament, on_delete=models.CASCADE, related_name='matches'
@@ -397,7 +415,7 @@ class TournamentMatch(models.Model):
         TournamentGroup, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='matches'
     )
-    stage = models.CharField(max_length=20, choices=STAGE_CHOICES, default='group')
+    stage = models.CharField(max_length=20, choices=Stage.choices, default=Stage.GROUP)
     match_number = models.PositiveIntegerField(
         help_text="Sequence number within the stage."
     )
@@ -429,7 +447,7 @@ class TournamentMatch(models.Model):
         help_text="Extra time duration (if applicable) in minutes."
     )
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
     start_time = models.DateTimeField(null=True, blank=True)
 
     home_score = models.PositiveIntegerField(default=0)
@@ -451,7 +469,11 @@ class TournamentMatch(models.Model):
 
     class Meta:
         ordering = ['match_date', 'match_number']
-        unique_together = ('tournament', 'stage', 'match_number')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tournament', 'stage', 'match_number'], name='uniq_match_number_per_stage',
+            ),
+        ]
 
     def __str__(self):
         home = self.home_team.display_name if self.home_team else 'TBD'
@@ -459,8 +481,13 @@ class TournamentMatch(models.Model):
         return f"{home} vs {away} ({self.get_stage_display()})"
 
     @property
+    def is_knockout(self) -> bool:
+        return self.stage != self.Stage.GROUP
+
+    @property
     def winner(self):
-        if self.status != 'completed':
+        """Winning registration (penalties decide a drawn knockout), else None."""
+        if self.status != self.Status.COMPLETED:
             return None
         if self.home_penalties is not None and self.away_penalties is not None:
             if self.home_penalties > self.away_penalties:
@@ -516,10 +543,9 @@ class TournamentGoal(models.Model):
 #  TOURNAMENT CARD  (supports league + external players)
 # ---------------------------------------------------------------------------
 class TournamentCard(models.Model):
-    CARD_CHOICES = [
-        ('yellow', 'Yellow Card'),
-        ('red', 'Red Card'),
-    ]
+    class CardType(models.TextChoices):
+        YELLOW = 'yellow', 'Yellow Card'
+        RED = 'red', 'Red Card'
 
     match = models.ForeignKey(
         TournamentMatch, on_delete=models.CASCADE, related_name='cards'
@@ -535,7 +561,7 @@ class TournamentCard(models.Model):
     team_registration = models.ForeignKey(
         TournamentTeamRegistration, on_delete=models.CASCADE
     )
-    card_type = models.CharField(max_length=10, choices=CARD_CHOICES)
+    card_type = models.CharField(max_length=10, choices=CardType.choices)
     minute = models.PositiveIntegerField()
 
     class Meta:
@@ -557,12 +583,11 @@ class TournamentCard(models.Model):
 #  TOURNAMENT MATCH OFFICIALS  (mirror of league MatchOfficials)
 # ---------------------------------------------------------------------------
 class TournamentMatchOfficials(models.Model):
-    APPOINTMENT_STATUS = [
-        ('PENDING', 'Pending Appointment'),
-        ('APPOINTED', 'Appointed'),
-        ('CONFIRMED', 'Confirmed'),
-        ('COMPLETED', 'Match Completed'),
-    ]
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending Appointment'
+        APPOINTED = 'APPOINTED', 'Appointed'
+        CONFIRMED = 'CONFIRMED', 'Confirmed'
+        COMPLETED = 'COMPLETED', 'Match Completed'
 
     match = models.OneToOneField(
         TournamentMatch, on_delete=models.CASCADE, related_name='officials'
@@ -592,7 +617,7 @@ class TournamentMatchOfficials(models.Model):
         related_name='tournament_appointed_commissioner',
     )
 
-    status = models.CharField(max_length=20, choices=APPOINTMENT_STATUS, default='PENDING')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 
     appointed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -604,17 +629,22 @@ class TournamentMatchOfficials(models.Model):
     def __str__(self):
         return f"Officials for {self.match}"
 
+    def involves(self, referee) -> bool:
+        """True if ``referee`` holds any on-field appointment for the match."""
+        return referee is not None and referee.pk in {
+            self.main_referee_id, self.assistant_1_id, self.assistant_2_id, self.fourth_official_id,
+        }
+
 
 # ---------------------------------------------------------------------------
 #  TOURNAMENT MATCHDAY SQUAD  (mirrors league MatchdaySquad)
 # ---------------------------------------------------------------------------
 class TournamentMatchdaySquad(models.Model):
-    STATUS_CHOICES = [
-        ('pending', 'Pending Submission'),
-        ('submitted', 'Submitted – Awaiting Referee Approval'),
-        ('approved', 'Approved by Referee'),
-        ('locked', 'Locked (Match Started)'),
-    ]
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending Submission'
+        SUBMITTED = 'submitted', 'Submitted – Awaiting Referee Approval'
+        APPROVED = 'approved', 'Approved by Referee'
+        LOCKED = 'locked', 'Locked (Match Started)'
 
     match = models.ForeignKey(
         TournamentMatch, on_delete=models.CASCADE,
@@ -625,7 +655,7 @@ class TournamentMatchdaySquad(models.Model):
         related_name='matchday_squads'
     )
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 
     submitted_at = models.DateTimeField(null=True, blank=True)
     submitted_by = models.ForeignKey(
@@ -643,37 +673,36 @@ class TournamentMatchdaySquad(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('match', 'team_registration')
         ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['match', 'team_registration'], name='uniq_squad_per_match_team'),
+        ]
 
     def __str__(self):
         return f"{self.team_registration.display_name} – {self.match} ({self.get_status_display()})"
 
-    def is_locked(self):
-        if self.status == 'locked':
+    def kickoff_at(self) -> datetime | None:
+        """Kick-off as an aware datetime (``kickoff_time`` overrides the time part)."""
+        match_date = self.match.match_date
+        if not match_date:
+            return None
+        if self.match.kickoff_time:
+            try:
+                kickoff = datetime.strptime(self.match.kickoff_time, '%H:%M').time()
+            except ValueError:
+                return match_date
+            local_date = timezone.localtime(match_date).date()
+            return timezone.make_aware(datetime.combine(local_date, kickoff))
+        return match_date
+
+    def is_locked(self) -> bool:
+        if self.status == self.Status.LOCKED:
             return True
-        if not self.match.match_date:
-            return False
-        try:
-            kickoff = self.match.kickoff_time
-            if kickoff:
-                if isinstance(kickoff, str):
-                    from datetime import datetime as _dt
-                    kickoff = _dt.strptime(kickoff, '%H:%M').time()
-                match_dt = timezone.make_aware(
-                    timezone.datetime.combine(self.match.match_date.date(), kickoff)
-                )
-            else:
-                match_dt = self.match.match_date
-            return timezone.now() >= match_dt
-        except (ValueError, TypeError):
-            return False
+        kickoff = self.kickoff_at()
+        return kickoff is not None and timezone.now() >= kickoff
 
-    def can_edit(self):
-        return self.status in ('pending', 'submitted') and not self.is_locked()
-
-    def can_view_only(self):
-        return self.status in ('approved', 'locked') and self.is_locked()
+    def can_edit(self) -> bool:
+        return self.status in (self.Status.PENDING, self.Status.SUBMITTED) and not self.is_locked()
 
     def get_starting_eleven(self):
         return self.squad_players.filter(is_starting=True).order_by('position_order')

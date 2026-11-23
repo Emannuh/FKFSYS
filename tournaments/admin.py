@@ -4,7 +4,6 @@ from .models import (
     TournamentTeamRegistration,
     TournamentPlayerRegistration,
     TournamentGroup,
-    TournamentGroupStanding,
     TournamentMatch,
     TournamentMatchOfficials,
     TournamentGoal,
