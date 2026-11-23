@@ -1,43 +1,38 @@
-from django.db import models
-from django.db import transaction
-from django.db.models import F
+from datetime import datetime
+
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.utils import timezone
 
-from teams.models import Team, Player
+from teams.models import Player, Team
 
 
 class Match(models.Model):
-    STATUS_CHOICES = [
-        ('scheduled', 'Scheduled'),
-        ('live', 'Live'),
-        ('ongoing', 'Ongoing'),
-        ('completed', 'Completed'),
-        ('postponed', 'Postponed'),
-        ('cancelled', 'Cancelled'),
-    ]
-    
+    class Status(models.TextChoices):
+        SCHEDULED = 'scheduled', 'Scheduled'
+        LIVE = 'live', 'Live'
+        ONGOING = 'ongoing', 'Ongoing'
+        COMPLETED = 'completed', 'Completed'
+        POSTPONED = 'postponed', 'Postponed'
+        CANCELLED = 'cancelled', 'Cancelled'
+
+    # Kept for templates/views that iterate the choices.
+    STATUS_CHOICES = Status.choices
+
+
     home_team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='home_matches')
     away_team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='away_matches')
     zone = models.ForeignKey('teams.Zone', on_delete=models.CASCADE)
-    
-    # ⬇⬇⬇ NEW FIELD ADDED ⬇⬇⬇
     round_number = models.IntegerField(default=1)
-    # ⬆⬆⬆ NEW FIELD ADDED ⬆⬆⬆
-    
     match_date = models.DateTimeField()
-    
-    # ⬇⬇⬇ ADD kickoff_time HERE (BETWEEN match_date AND venue) ⬇⬇⬇
     kickoff_time = models.CharField(
         max_length=5, 
         blank=True, 
         null=True,
         help_text="Format: HH:MM (e.g., 15:00 for 3 PM)"
     )
-    # ⬆⬆⬆ ADD kickoff_time HERE ⬆⬆⬆
-    
     venue = models.CharField(max_length=200)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
     start_time = models.DateTimeField(null=True, blank=True, help_text="Time when match went live.")
     
     # Scores
@@ -52,11 +47,13 @@ class Match(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.match_date and timezone.is_naive(self.match_date):
-            self.match_date = timezone.make_aware(self.match_date)
-    
+    def __setattr__(self, name, value):
+        # Defensive: callers in other apps still pass naive datetimes; store them
+        # as aware (in TIME_ZONE) instead of letting Django warn and guess.
+        if name == 'match_date' and isinstance(value, datetime) and timezone.is_naive(value):
+            value = timezone.make_aware(value)
+        super().__setattr__(name, value)
+
     def __str__(self):
         return f"{self.home_team} vs {self.away_team} - {self.match_date.strftime('%Y-%m-%d')}"
     
@@ -69,33 +66,17 @@ class Match(models.Model):
     def is_live(self):
         return self.status == 'live'
 
-    @property
-    def is_upcoming(self):
-        return self.status in ('scheduled', 'ongoing')
-
-    @property
-    def is_scheduled(self):
-        return self.status == 'scheduled'
-
     # ── Score / result helpers ───────────────────────────────────────────
     @property
     def score_display(self):
         """e.g. '2 – 1'"""
         return f"{self.home_score} \u2013 {self.away_score}"
 
-    @property
-    def winner(self):
-        if self.home_score > self.away_score:
-            return self.home_team
-        elif self.away_score > self.home_score:
-            return self.away_team
-        return None
-
     def result_for(self, team):
         """Return 'W', 'D', or 'L' for a given team. Returns None if not completed."""
         if not self.is_completed:
             return None
-        if self.home_team_id == team.pk or self.home_team == team:
+        if self.home_team_id == team.pk:
             if self.home_score > self.away_score:
                 return 'W'
             if self.home_score < self.away_score:
@@ -116,9 +97,6 @@ class Match(models.Model):
         Eliminates the copy-pasted datetime.combine block from 3+ views.
         Falls back to match_date (already a datetime) when kickoff_time is absent.
         """
-        from datetime import datetime as _dt
-        from django.utils import timezone as _tz
-
         if not self.kickoff_time:
             return self.match_date  # match_date is already a DateTimeField
 
@@ -126,26 +104,15 @@ class Match(models.Model):
         if isinstance(t, str):
             for fmt in ('%H:%M:%S', '%H:%M'):
                 try:
-                    t = _dt.strptime(t, fmt).time()
+                    t = datetime.strptime(t, fmt).time()
                     break
                 except ValueError:
                     continue
             else:
                 return self.match_date  # unparseable, fall back
 
-        naive = _dt.combine(self.match_date.date(), t)
-        return _tz.make_aware(naive) if _tz.is_naive(naive) else naive
-    
-    def __setattr__(self, name, value):
-        if name == 'match_date' and value is not None:
-            # Check if it's a datetime and naive
-            if hasattr(value, 'tzinfo') and timezone.is_naive(value):
-                value = timezone.make_aware(value)
-        super().__setattr__(name, value)
-    
-    def clean(self):
-        if self.match_date and timezone.is_naive(self.match_date):
-            self.match_date = timezone.make_aware(self.match_date)
+        local_date = timezone.localtime(self.match_date).date()
+        return timezone.make_aware(datetime.combine(local_date, t))
 
 
 class Goal(models.Model):
@@ -199,22 +166,26 @@ class LeagueTable(models.Model):
     
     class Meta:
         ordering = ['-points', '-goal_difference', '-goals_for']
-        unique_together = ['team', 'zone']
+        constraints = [
+            models.UniqueConstraint(fields=['team', 'zone'], name='matches_leaguetable_unique_team_zone'),
+        ]
     
     def __str__(self):
         return f"{self.team.team_name} - {self.points} points"
     
-    def calculate_points(self):
-        self.points = (self.wins * 3) + (self.draws * 1)
+    POINTS_FOR_WIN = 3
+    POINTS_FOR_DRAW = 1
 
-    def update_stats(self):
-        # This will be updated when matches are recorded
-        pass
+    def calculate_points(self):
+        self.points = self.wins * self.POINTS_FOR_WIN + self.draws * self.POINTS_FOR_DRAW
 
     def save(self, *args, **kwargs):
-        """Auto-calculate goal difference and points on every save."""
+        """Goal difference and points are always derived, never trusted from input."""
         self.goal_difference = self.goals_for - self.goals_against
-        self.points = (self.wins * 3) + self.draws
+        self.calculate_points()
+        update_fields = kwargs.get('update_fields')
+        if update_fields is not None:
+            kwargs['update_fields'] = set(update_fields) | {'goal_difference', 'points'}
         super().save(*args, **kwargs)
 
 
@@ -275,29 +246,3 @@ class Suspension(models.Model):
                     is_suspended=False,
                     suspension_end=None,
                 )
-
-    def serve_match(self):
-        """Mark one match as served in a concurrency-safe way and close suspension when done."""
-        if not self.is_active:
-            return self.matches_served
-
-        with transaction.atomic():
-            s = Suspension.objects.select_for_update().get(pk=self.pk)
-            Suspension.objects.filter(pk=self.pk).update(matches_served=F('matches_served') + 1)
-            s.refresh_from_db()
-
-            if s.matches_served >= s.matches_missed:
-                s.is_active = False
-                s.end_date = s.end_date or timezone.now().date()
-                s.save()
-
-                other_active = Suspension.objects.filter(player=s.player, is_active=True).exclude(pk=s.pk).exists()
-                if not other_active:
-                    Player.objects.filter(pk=s.player.pk).update(
-                        is_suspended=False,
-                        suspension_end=None,
-                    )
-
-            return s.matches_served
-# Remove this duplicate line from the end of your file:
-# kickoff_time = models.CharField(max_length=5, blank=True, null=True, help_text="Format: HH:MM")

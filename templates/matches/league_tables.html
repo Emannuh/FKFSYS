@@ -1,5 +1,5 @@
-﻿{% extends 'base.html' %}
-{% load static %}
+{% extends 'base.html' %}
+{% load fkf_tags %}
 
 {% block title %}League Tables — FKF Meru County League{% endblock %}
 
@@ -80,7 +80,7 @@
 <!-- Zone tabs (pill style) -->
 <div class="zone-pills" id="zonePills">
   {% for zone in zones %}
-  <button class="zone-pill {% if forloop.first %}active{% endif %}"
+  <button type="button" class="zone-pill {% if forloop.first %}active{% endif %}"
           data-bs-toggle="tab"
           data-bs-target="#zone-{{ zone.id }}"
           onclick="activatePill(this, {{ forloop.counter0 }})">
@@ -101,7 +101,10 @@
         <h5 class="mb-0 text-white">
           <i class="fas fa-map-marker-alt me-2" style="color:var(--fkf-gold);"></i>{{ zone.name }} — League Table
         </h5>
-        <span class="badge bg-light text-dark fw-bold">{{ table|length }} Teams</span>
+        <span>
+          <a href="{% url 'matches:zone_fixtures' zone.id %}" class="btn btn-sm btn-light me-2">Zone fixtures</a>
+          <span class="badge bg-light text-dark fw-bold">{{ table|length }} Teams</span>
+        </span>
       </div>
 
       <!-- Legend -->
@@ -116,17 +119,17 @@
           <table class="table league-table mb-0">
             <thead>
               <tr>
-                <th style="width:50px;">#</th>
-                <th>Team</th>
-                <th title="Played">P</th>
-                <th title="Won">W</th>
-                <th title="Drawn">D</th>
-                <th title="Lost">L</th>
-                <th title="Goals For">GF</th>
-                <th title="Goals Against">GA</th>
-                <th title="Goal Difference">GD</th>
-                <th title="Points"><strong>Pts</strong></th>
-                <th>Form</th>
+                <th scope="col" style="width:50px;">#</th>
+                <th scope="col">Team</th>
+                <th scope="col" title="Played">P</th>
+                <th scope="col" title="Won">W</th>
+                <th scope="col" title="Drawn">D</th>
+                <th scope="col" title="Lost">L</th>
+                <th scope="col" title="Goals For">GF</th>
+                <th scope="col" title="Goals Against">GA</th>
+                <th scope="col" title="Goal Difference">GD</th>
+                <th scope="col" title="Points"><strong>Pts</strong></th>
+                <th scope="col">Form</th>
               </tr>
             </thead>
             <tbody>
@@ -148,19 +151,11 @@
                       {{ entry.team.team_name|slice:":2"|upper }}
                     </div>
                     {% endif %}
-                    <span class="fw-600">{{ entry.team.team_name }}</span>
-                    {% if request.user.is_superuser %}
-                    <a href="{% url 'matches:admin_edit_league_table' entry.id %}" class="btn btn-xs btn-outline-secondary ms-1" title="Edit" style="padding:1px 6px;font-size:0.7rem;">
-                      <i class="fas fa-edit"></i>
+                    <a class="fw-600 text-reset" href="{% url 'matches:team_fixtures' entry.team_id %}">{{ entry.team.team_name }}</a>
+                    {% if can_edit_tables %}
+                    <a href="{% url 'matches:admin_edit_league_table' entry.id %}" class="btn btn-xs btn-outline-secondary ms-1" style="padding:1px 6px;font-size:0.7rem;" aria-label="Edit {{ entry.team.team_name }} standings">
+                      <i class="fas fa-edit" aria-hidden="true"></i>
                     </a>
-                    {% else %}
-                    {% for group in request.user.groups.all %}
-                      {% if group.name == 'League Admin' %}
-                      <a href="{% url 'matches:admin_edit_league_table' entry.id %}" class="btn btn-xs btn-outline-secondary ms-1" title="Edit" style="padding:1px 6px;font-size:0.7rem;">
-                        <i class="fas fa-edit"></i>
-                      </a>
-                      {% endif %}
-                    {% endfor %}
                     {% endif %}
                   </div>
                 </td>
@@ -181,7 +176,7 @@
                 </td>
                 <td><strong style="font-size:1rem;color:var(--fkf-dark);">{{ entry.points }}</strong></td>
                 <td>
-                  {% load fkf_tags %}{% form_string entry.form %}
+                  {% form_string entry.form %}
                 </td>
               </tr>
               {% empty %}

@@ -1,266 +1,137 @@
-from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import path, reverse
 from django.utils.html import format_html
-from django.urls import path
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .models import Match, Goal, Card, LeagueTable, Suspension
+
 from teams.models import Zone
+
+from .models import Card, Goal, LeagueTable, Match, Suspension
 from .utils.fixture_generator import generate_fixtures_for_zone, regenerate_fixtures_for_zone, update_match_date
 
-class MatchAdminForm(forms.ModelForm):
-    class Meta:
-        model = Match
-        fields = '__all__'
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Ensure match_date field doesn't warn about naive datetimes
-        if 'match_date' in self.fields:
-            field = self.fields['match_date']
-            original_to_python = field.to_python
-            def safe_to_python(value):
-                result = original_to_python(value)
-                if result and hasattr(result, 'tzinfo') and timezone.is_naive(result):
-                    result = timezone.make_aware(result)
-                return result
-            field.to_python = safe_to_python
-    
-    def clean_match_date(self):
-        match_date = self.cleaned_data.get('match_date')
-        if match_date:
-            from django.utils import timezone
-            if timezone.is_naive(match_date):
-                match_date = timezone.make_aware(match_date)
-        return match_date
 
-# Zone Admin Configuration
-@admin.action(description="🎯 Generate fixtures for selected zones")
+# ── Zone (overrides teams' ZoneAdmin, whose fixture actions are disabled) ────
+
+@admin.action(description="Generate fixtures for selected zones")
 def generate_zone_fixtures(modeladmin, request, queryset):
     for zone in queryset:
-        success, message = generate_fixtures_for_zone(zone.id)
-        if success:
-            modeladmin.message_user(request, message)
-        else:
-            modeladmin.message_user(request, f"⚠️ {zone.name}: {message}", level='warning')
+        success, message = generate_fixtures_for_zone(zone.pk)
+        modeladmin.message_user(request, message if success else f"{zone.name}: {message}",
+                                level=messages.SUCCESS if success else messages.WARNING)
 
-@admin.action(description="🔄 Regenerate fixtures (delete & recreate)")
+
+@admin.action(description="Regenerate fixtures (only zones with no played matches)")
 def regenerate_zone_fixtures(modeladmin, request, queryset):
     for zone in queryset:
-        success, message = regenerate_fixtures_for_zone(zone.id)
-        if success:
-            modeladmin.message_user(request, message)
-        else:
-            modeladmin.message_user(request, f"⚠️ {zone.name}: {message}", level='warning')
+        success, message = regenerate_fixtures_for_zone(zone.pk)
+        modeladmin.message_user(request, message if success else f"{zone.name}: {message}",
+                                level=messages.SUCCESS if success else messages.WARNING)
+
 
 class ZoneAdmin(admin.ModelAdmin):
     list_display = ['name', 'fixtures_generated', 'fixture_generation_date', 'team_count']
     list_filter = ['fixtures_generated']
     actions = [generate_zone_fixtures, regenerate_zone_fixtures]
-    
+
+    @admin.display(description='Approved Teams')
     def team_count(self, obj):
         return obj.team_set.filter(status='approved').count()
-    team_count.short_description = 'Approved Teams'
 
-# Unregister and re-register Zone with new admin
-from django.contrib import admin
-try:
+
+if admin.site.is_registered(Zone):
     admin.site.unregister(Zone)
-except admin.sites.NotRegistered:
-    pass
+admin.site.register(Zone, ZoneAdmin)
 
-# SUPER ADMIN: Custom view for manual fixture generation
+
+# ── Match ────────────────────────────────────────────────────────────────────
+
+STATUS_COLOURS = {
+    'scheduled': 'blue', 'live': 'crimson', 'ongoing': 'orange',
+    'completed': 'green', 'postponed': 'red', 'cancelled': 'gray',
+}
+
+
+def _set_status(queryset, status):
+    """Save one by one so signals (league-table recalculation) run."""
+    count = 0
+    for match in queryset:
+        match.status = status
+        match.save(update_fields=['status', 'updated_at'])
+        count += 1
+    return count
+
+
+@admin.register(Match)
 class MatchAdmin(admin.ModelAdmin):
-    form = MatchAdminForm
-    # FIXED: Added 'status' to list_display so it can be in list_editable
-    list_display = ['match_display', 'zone', 'round_number', 'match_date_display', 
-                   'kickoff_time_display', 'status', 'status_badge', 'score_display', 'actions_column']
+    list_display = ['match_display', 'zone', 'round_number', 'match_date_display',
+                    'kickoff_time', 'status', 'status_badge', 'score', 'reschedule_link']
     list_filter = ['zone', 'status', 'round_number', 'match_date']
+    list_editable = ['status']
+    list_select_related = ['home_team', 'away_team', 'zone']
     search_fields = ['home_team__team_name', 'away_team__team_name', 'zone__name']
-    
-    # ⬇⬇⬇ FIXED LINE: OPTION A - Only 'status' is editable in list view ⬇⬇⬇
-    list_editable = ['status']  # Super Admin can only change status in list view
-    # ⬆⬆⬆ FIXED LINE ⬆⬆⬆
-    
     date_hierarchy = 'match_date'
     ordering = ['match_date']
-    
-    # SUPER ADMIN: Add custom actions
-    actions = ['reschedule_matches', 'postpone_matches', 'complete_matches']
-    
-    # SUPER ADMIN: Custom change form for editing dates and times
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        # Make match_date and kickoff_time editable for Super Admin
-        form.base_fields['match_date'].widget.attrs.update({
-            'style': 'width: 200px;'
-        })
-        # Add kickoff_time field if not already in form
-        if 'kickoff_time' in form.base_fields:
-            form.base_fields['kickoff_time'].help_text = "Format: HH:MM (e.g., 15:00 for 3 PM)"
-            form.base_fields['kickoff_time'].widget.attrs.update({
-                'style': 'width: 100px;',
-                'placeholder': '15:00'
-            })
-        return form
-    
-    def save_model(self, request, obj, form, change):
-        """Ensure match_date is timezone-aware before saving"""
-        from django.utils import timezone
-        if obj.match_date and timezone.is_naive(obj.match_date):
-            obj.match_date = timezone.make_aware(obj.match_date)
-        super().save_model(request, obj, form, change)
-    
-    # Custom display methods
-    def match_display(self, obj):
-        return format_html(
-            '<strong>{} vs {}</strong><br><small>Round {}</small>',
-            obj.home_team.team_name, obj.away_team.team_name, obj.round_number
-        )
-    match_display.short_description = 'Match'
-    
-    def match_date_display(self, obj):
-        return obj.match_date.strftime("%a, %b %d, %Y")
-    match_date_display.short_description = 'Date'
-    
-    def kickoff_time_display(self, obj):
-        if obj.kickoff_time:
-            return obj.kickoff_time
-        return obj.match_date.strftime("%I:%M %p")
-    kickoff_time_display.short_description = 'Kickoff'
-    
-    def status_badge(self, obj):
-        colors = {
-            'scheduled': 'blue',
-            'ongoing': 'orange',
-            'completed':'green',
-            'postponed': 'red',
-            'cancelled': 'gray'
-        }
-        return format_html(
-            '<span style="background: {}; color: white; padding: 3px 8px; '
-            'border-radius: 10px; font-size: 12px;">{}</span>',
-            colors.get(obj.status, 'gray'), obj.get_status_display()
-        )
-    status_badge.short_description = 'Status'
-    
-    def score_display(self, obj):
-        if obj.status == 'completed':
-            return format_html(
-                '<span style="font-weight: bold; font-size: 16px;">{} - {}</span>',
-                obj.home_score, obj.away_score
-            )
-        return "vs"
-    score_display.short_description = 'Score'
-    
-    def actions_column(self, obj):
-        """Quick action buttons for Super Admin"""
-        buttons = []
-        if obj.status == 'scheduled':
-            buttons.append(
-                f'<a href="/admin/matches/match/{obj.id}/reschedule/" '
-                f'class="button" style="background: purple; color: white; padding: 3px 8px; '
-                f'border-radius: 3px; text-decoration: none; font-size: 12px;">RESCHEDULE</a>'
-            )
-        if obj.status in ['scheduled', 'postponed']:
-            buttons.append(
-                f'<a href="/admin/matches/match/{obj.id}/mark_ongoing/" '
-                f'class="button" style="background: orange; color: white; padding: 3px 8px; '
-                f'border-radius: 3px; text-decoration: none; font-size: 12px;">START</a>'
-            )
-        return format_html(' '.join(buttons))
-    actions_column.short_description = 'Actions'
-    
-    # SUPER ADMIN: Custom actions
-    @admin.action(description="📅 Reschedule selected matches")
-    def reschedule_matches(self, request, queryset):
-        """Bulk reschedule matches to a new date"""
-        if 'apply' in request.POST:
-            new_date = request.POST.get('new_date')
-            new_time = request.POST.get('new_time')
-            
-            for match in queryset:
-                update_match_date(match.id, new_date, new_time)
-            
-            self.message_user(request, f"✅ Rescheduled {queryset.count()} matches")
-            return redirect(request.get_full_path())
-        
-        # Show reschedule form
-        context = {
-            'matches': queryset,
-            'action': 'reschedule_matches',
-        }
-        return render(request, 'admin/reschedule_matches.html', context)
-    
-    @admin.action(description="⏸️ Postpone selected matches")
-    def postpone_matches(self, request, queryset):
-        """Bulk postpone matches"""
-        updated = queryset.update(status='postponed')
-        self.message_user(request, f"✅ Postponed {updated} matches")
-    
-    @admin.action(description="✅ Mark as completed")
-    def complete_matches(self, request, queryset):
-        """Bulk mark matches as completed"""
-        updated = queryset.update(status='completed')
-        self.message_user(request, f"✅ Marked {updated} matches as completed")
-    
-    # SUPER ADMIN: Custom URLs for match actions
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [
-            path('generate/', self.admin_site.admin_view(self.generate_fixtures_view), 
-                 name='matches_match_generate'),
-            path('<path:object_id>/reschedule/', self.admin_site.admin_view(self.reschedule_single_view),
-                 name='matches_match_reschedule'),
-            path('<path:object_id>/mark_ongoing/', self.admin_site.admin_view(self.mark_ongoing_view),
-                 name='matches_match_mark_ongoing'),
-        ]
-        return custom_urls + urls
-    
-    def generate_fixtures_view(self, request):
-        """Custom view for manual fixture generation"""
-        zone_id = request.GET.get('zone')
-        
-        if zone_id:
-            success, message = generate_fixtures_for_zone(zone_id)
-            if success:
-                messages.success(request, message)
-            else:
-                messages.error(request, message)
-            return redirect('/admin/teams/zone/')
-        
-        zones = Zone.objects.filter(fixtures_generated=False)
-        return render(request, 'admin/generate_fixtures.html', {'zones': zones})
-    
-    def reschedule_single_view(self, request, object_id):
-        """Reschedule single match"""
-        match = Match.objects.get(id=object_id)
-        
-        if request.method == 'POST':
-            new_date = request.POST.get('new_date')
-            new_time = request.POST.get('new_time')
-            
-            success, message = update_match_date(match.id, new_date, new_time)
-            if success:
-                messages.success(request, message)
-            else:
-                messages.error(request, message)
-            
-            return redirect('/admin/matches/match/')
-        
-        return render(request, 'admin/reschedule_single.html', {'match': match})
-    
-    def mark_ongoing_view(self, request, object_id):
-        """Mark match as ongoing"""
-        match = Match.objects.get(id=object_id)
-        match.status = 'ongoing'
-        match.save()
-        messages.success(request, f"✅ Match marked as ongoing: {match}")
-        return redirect('/admin/matches/match/')
+    actions = ['mark_ongoing', 'postpone_matches', 'complete_matches']
 
-# Register models
-admin.site.register(Zone, ZoneAdmin)
-admin.site.register(Match, MatchAdmin)
+    @admin.display(description='Match')
+    def match_display(self, obj):
+        return format_html('<strong>{} vs {}</strong><br><small>Round {}</small>',
+                           obj.home_team.team_name, obj.away_team.team_name, obj.round_number)
+
+    @admin.display(description='Date', ordering='match_date')
+    def match_date_display(self, obj):
+        return f"{obj.match_date:%a, %b %d, %Y}"
+
+    @admin.display(description='Status')
+    def status_badge(self, obj):
+        return format_html(
+            '<span style="background:{};color:white;padding:3px 8px;border-radius:10px;font-size:12px;">{}</span>',
+            STATUS_COLOURS.get(obj.status, 'gray'), obj.get_status_display(),
+        )
+
+    @admin.display(description='Score')
+    def score(self, obj):
+        return obj.score_display if obj.status == 'completed' else 'vs'
+
+    @admin.display(description='Reschedule')
+    def reschedule_link(self, obj):
+        if obj.status not in ('scheduled', 'postponed'):
+            return ''
+        url = reverse('admin:matches_match_reschedule', args=[obj.pk])
+        return format_html('<a class="button" href="{}">Reschedule</a>', url)
+
+    @admin.action(description="Mark selected matches as ongoing")
+    def mark_ongoing(self, request, queryset):
+        self.message_user(request, f"Marked {_set_status(queryset, 'ongoing')} matches as ongoing")
+
+    @admin.action(description="Postpone selected matches")
+    def postpone_matches(self, request, queryset):
+        self.message_user(request, f"Postponed {_set_status(queryset, 'postponed')} matches")
+
+    @admin.action(description="Mark selected matches as completed")
+    def complete_matches(self, request, queryset):
+        self.message_user(request, f"Marked {_set_status(queryset, 'completed')} matches as completed")
+
+    def get_urls(self):
+        custom = [
+            path('<int:object_id>/reschedule/', self.admin_site.admin_view(self.reschedule_single_view),
+                 name='matches_match_reschedule'),
+        ]
+        return custom + super().get_urls()
+
+    def reschedule_single_view(self, request, object_id):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+        match = get_object_or_404(Match, pk=object_id)
+        if request.method == 'POST':
+            success, message = update_match_date(match.pk, request.POST.get('new_date'), request.POST.get('new_time'))
+            self.message_user(request, message, level=messages.SUCCESS if success else messages.ERROR)
+            return redirect('admin:matches_match_changelist')
+        return render(request, 'admin/reschedule_single.html', {
+            **self.admin_site.each_context(request), 'match': match,
+        })
+
+
 admin.site.register(Goal)
 admin.site.register(Card)
 admin.site.register(LeagueTable)
