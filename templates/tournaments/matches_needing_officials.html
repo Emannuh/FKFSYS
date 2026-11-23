@@ -1,73 +1,51 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
 {% block title %}Matches Needing Officials – {{ tournament.name }}{% endblock %}
+{% block page_title %}Matches needing officials{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">{{ tournament.name }}</span>
+        <h1 class="page-title h2">Matches Needing Officials</h1>
+        <p class="page-subtitle">Appoint referees for upcoming tournament matches.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Fixtures</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3><i class="fas fa-user-tie text-warning me-2"></i>Matches Needing Officials</h3>
-        <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i>Back to Fixtures
-        </a>
+<section class="panel" aria-labelledby="mno-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="mno-title"><i class="fas fa-user-tie" aria-hidden="true"></i>Pending appointments</h2>
+        <span class="count-pill{% if not matches %} count-pill--muted{% endif %}">{{ matches|length }}</span>
     </div>
-
-
     {% if matches %}
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>#</th>
-                            <th>Stage</th>
-                            <th>Home Team</th>
-                            <th>Away Team</th>
-                            <th>Date</th>
-                            <th>Venue</th>
-                            <th>Officials Status</th>
-                            <th class="text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in matches %}
-                        <tr>
-                            <td>{{ match.match_number }}</td>
-                            <td><span class="badge bg-secondary">{{ match.get_stage_display }}</span></td>
-                            <td>
-                                {% if match.home_team %}{{ match.home_team.display_name }}{% else %}<em class="text-muted">TBD</em>{% endif %}
-                            </td>
-                            <td>
-                                {% if match.away_team %}{{ match.away_team.display_name }}{% else %}<em class="text-muted">TBD</em>{% endif %}
-                            </td>
-                            <td>
-                                {% if match.match_date %}{{ match.match_date|date:"d M Y H:i" }}{% else %}<em class="text-muted">TBD</em>{% endif %}
-                            </td>
-                            <td>{{ match.venue|default:"–" }}</td>
-                            <td>
-                                {% if not match.officials %}
-                                <span class="badge bg-danger">No Officials</span>
-                                {% else %}
-                                <span class="badge bg-warning text-dark">Pending</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <a href="{% url 'tournaments:appoint_officials' match.pk %}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-user-plus me-1"></i>Appoint
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <div class="data-table-wrap">
+        <table class="table data-table mb-0">
+            <thead><tr><th scope="col" class="num">#</th><th scope="col" class="hide-sm">Stage</th><th scope="col">Home Team</th><th scope="col">Away Team</th><th scope="col" class="hide-sm">Date</th><th scope="col" class="hide-sm">Venue</th><th scope="col">Officials Status</th><th scope="col" class="text-end">Action</th></tr></thead>
+            <tbody>
+                {% for match in matches %}
+                <tr>
+                    <td class="num">{{ match.match_number }}</td>
+                    <td class="hide-sm">{{ match.get_stage_display }}</td>
+                    <td class="fw-semibold">{% if match.home_team %}{{ match.home_team.display_name }}{% else %}<em class="text-body-secondary">TBD</em>{% endif %}</td>
+                    <td class="fw-semibold">{% if match.away_team %}{{ match.away_team.display_name }}{% else %}<em class="text-body-secondary">TBD</em>{% endif %}</td>
+                    <td class="hide-sm col-min">{% if match.match_date %}{{ match.match_date|date:"d M Y H:i" }}{% else %}<em class="text-body-secondary">TBD</em>{% endif %}</td>
+                    <td class="hide-sm">{{ match.venue|default:"–" }}</td>
+                    <td>{% if not match.officials %}<span class="badge status-badge status-danger">No Officials</span>{% else %}<span class="badge status-badge status-warning">Pending</span>{% endif %}</td>
+                    <td class="actions"><a href="{% url 'tournaments:appoint_officials' match.pk %}" class="btn btn-sm btn-primary"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Appoint</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     {% else %}
-    <div class="text-center py-5">
-        <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
-        <h5>All matches have officials appointed!</h5>
-        <p class="text-muted">There are no matches pending official appointments.</p>
-    </div>
+    {% empty_state icon="circle-check" title="All matches have officials appointed!" message="There are no matches pending official appointments." %}
     {% endif %}
-</div>
+</section>
 {% endblock %}
