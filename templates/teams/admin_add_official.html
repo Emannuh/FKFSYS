@@ -1,33 +1,37 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
+{% load static %}
 
 {% block title %}Add Team Official{% endblock %}
+{% block page_title %}Add official{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/teams.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
-                <div class="card-header" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;">
-                    <h5><i class="fas fa-user-plus"></i> Add Team Official</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" enctype="multipart/form-data" novalidate>
-                        {% csrf_token %}
-                        {% include "teams/partials/form_fields.html" %}
-
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-save"></i> Add Official
-                            </button>
-                            <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-secondary btn-lg">
-                                <i class="fas fa-times"></i> Cancel
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+{% block page_header %}
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'teams:admin_manage_officials' %}">Team Officials</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Add</li>
+    </ol>
+</nav>
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">League admin</span>
+        <h1 class="page-title">Add Team Official</h1>
+        <p class="page-subtitle">Register a coach, doctor or patron to any approved team.</p>
     </div>
 </div>
 {% endblock %}
 
+{% block content %}
+<form method="post" enctype="multipart/form-data" novalidate class="panel form-page">
+    {% csrf_token %}
+    <div class="panel-body">
+        {% include "teams/partials/form_fields.html" %}
+    </div>
+    <div class="panel-footer d-flex flex-wrap justify-content-end gap-2">
+        <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk me-1" aria-hidden="true"></i>Add Official</button>
+    </div>
+</form>
+{% endblock %}

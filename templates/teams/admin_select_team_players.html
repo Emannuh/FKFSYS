@@ -1,75 +1,51 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags %}
 
 {% block title %}Select Team - Manage Players{% endblock %}
+{% block page_title %}Add players{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/teams.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="text-primary"><i class="fas fa-users me-2"></i>Select Team to Manage Players</h2>
-            <p class="lead">Choose a team to add or manage players</p>
-        </div>
-    </div>
-
-    <div class="row">
-        {% for team in teams %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 shadow-sm hover-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        {% if team.logo %}
-                        <img src="{{ team.logo.url }}" alt="{{ team.team_name }}" 
-                             style="width: 60px; height: 60px; object-fit: contain;" class="me-3">
-                        {% else %}
-                        <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center me-3"
-                             style="width: 60px; height: 60px;">
-                            <i class="fas fa-shield-alt fa-2x"></i>
-                        </div>
-                        {% endif %}
-                        <div>
-                            <h5 class="mb-0">{{ team.team_name }}</h5>
-                            <small class="text-muted">{{ team.zone.name }}</small>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <small class="text-muted d-block">
-                            <i class="fas fa-users me-1"></i>
-                            {{ team.players.count }} Players
-                        </small>
-                        <small class="text-muted d-block">
-                            <i class="fas fa-user-tie me-1"></i>
-                            {{ team.contact_person }}
-                        </small>
-                    </div>
-                    
-                    <a href="{% url 'teams:add_players_approved' %}?team_id={{ team.id }}" 
-                       class="btn btn-primary w-100">
-                        <i class="fas fa-user-plus me-2"></i>Manage Players
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                No approved teams found.
-            </div>
-        </div>
-        {% endfor %}
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Players</span>
+        <h1 class="page-title">Select Team to Manage Players</h1>
+        <p class="page-subtitle">Choose a team to add or manage players.</p>
     </div>
 </div>
+{% endblock %}
 
-<style>
-.hover-card {
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.hover-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-}
-</style>
+{% block content %}
+<section class="panel" aria-label="Approved teams">
+    {% if teams %}
+    <div class="data-table-wrap">
+        <table class="table data-table mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Team</th>
+                    <th scope="col" class="hide-sm">Zone</th>
+                    <th scope="col" class="num">Players</th>
+                    <th scope="col" class="hide-sm">Contact</th>
+                    <th scope="col" class="col-min"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team in teams %}
+                <tr>
+                    <td><span class="chip">{% include "partials/_team_crest.html" with team=team size="sm" %}<span>{{ team.team_name }}</span></span></td>
+                    <td class="hide-sm">{{ team.zone.name }}</td>
+                    <td class="num">{{ team.players.count }}</td>
+                    <td class="hide-sm text-body-secondary">{{ team.contact_person }}</td>
+                    <td class="col-min"><a href="{% url 'teams:add_players_approved' %}?team_id={{ team.id }}" class="btn btn-sm btn-primary text-nowrap"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Manage Players</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% empty_state icon="shield-halved" title="No approved teams found." %}
+    {% endif %}
+</section>
 {% endblock %}

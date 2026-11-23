@@ -1,169 +1,143 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags %}
 
 {% block title %}Manage Team Officials - Admin{% endblock %}
+{% block page_title %}Team officials{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/teams.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">League admin</span>
+        <h1 class="page-title">Manage Team Officials</h1>
+        <p class="page-subtitle">Add, delete, or manage team officials across all teams.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'teams:admin_add_official' %}" class="btn btn-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i>Add New Official</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2><i class="fas fa-user-tie"></i> Manage Team Officials</h2>
-            <p class="text-muted">Add, delete, or manage team officials across all teams</p>
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="stat-tile">
+            <span class="stat-tile__label"><i class="fas fa-user-tie" aria-hidden="true"></i>Total Officials</span>
+            <span class="stat-tile__value">{{ total_officials }}</span>
         </div>
     </div>
-
-    <!-- Stats & Actions -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5><i class="fas fa-users"></i> Total Officials</h5>
-                    <h2>{{ total_officials }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5><i class="fas fa-check-circle"></i> Active</h5>
-                    <h2>{{ active_officials }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h5><i class="fas fa-ban"></i> Suspended</h5>
-                    <h2>{{ suspended_officials }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <a href="{% url 'teams:admin_add_official' %}" class="btn btn-success btn-lg">
-                        <i class="fas fa-plus-circle"></i> Add New Official
-                    </a>
-                </div>
-            </div>
+    <div class="col-sm-4">
+        <div class="stat-tile">
+            <span class="stat-tile__label"><i class="fas fa-circle-check" aria-hidden="true"></i>Active</span>
+            <span class="stat-tile__value">{{ active_officials }}</span>
         </div>
     </div>
-
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <input type="text" name="search" class="form-control" placeholder="Search name, phone, email..." value="{{ search_query }}">
-                </div>
-                <div class="col-md-3">
-                    <select name="team" class="form-control">
-                        <option value="">All Teams</option>
-                        {% for team in teams %}
-                        <option value="{{ team.id }}" {% if team_filter == team.id|stringformat:"s" %}selected{% endif %}>
-                            {{ team.team_name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select name="position" class="form-control">
-                        <option value="">All Positions</option>
-                        {% for code, name in position_choices %}
-                        <option value="{{ code }}" {% if position_filter == code %}selected{% endif %}>{{ name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select name="status" class="form-control">
-                        <option value="">All Status</option>
-                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
-                        <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary me-2"><i class="fas fa-search"></i> Search</button>
-                    <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Clear</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Officials Table -->
-    <div class="card">
-        <div class="card-header">
-            <h5><i class="fas fa-list"></i> Team Officials ({{ officials.count }})</h5>
-        </div>
-        <div class="card-body">
-            {% if officials %}
-            <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                    <thead class="thead-dark">
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Team</th>
-                            <th>Position</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for official in officials %}
-                        <tr {% if official.is_suspended %}class="table-danger"{% endif %}>
-                            <td>{{ official.id }}</td>
-                            <td><strong>{{ official.full_name }}</strong></td>
-                            <td>
-                                <a href="{% url 'teams:team_detail' official.team.id %}">
-                                    {{ official.team.team_name }}
-                                </a>
-                            </td>
-                            <td><span class="badge badge-info">{{ official.get_position_display }}</span></td>
-                            <td><i class="fas fa-phone"></i> {{ official.phone_number }}</td>
-                            <td>
-                                {% if official.email %}
-                                    <i class="fas fa-envelope"></i> {{ official.email }}
-                                {% else %}
-                                    <span class="text-muted">N/A</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if official.is_suspended %}
-                                    <span class="badge bg-danger" title="{{ official.suspension_reason }}">
-                                        Suspended ({{ official.suspension_matches }} matches)
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-success">Active</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if official.is_suspended %}
-                                    <a href="{% url 'teams:admin_unsuspend_official' official.id %}" class="btn btn-sm btn-success" title="Unsuspend">
-                                        <i class="fas fa-check"></i> Unsuspend
-                                    </a>
-                                {% else %}
-                                    <a href="{% url 'teams:admin_suspend_official' official.id %}" class="btn btn-sm btn-warning" title="Suspend">
-                                        <i class="fas fa-ban"></i> Suspend
-                                    </a>
-                                {% endif %}
-                                <a href="{% url 'teams:admin_delete_team_official' official.id %}" class="btn btn-sm btn-danger"
-                                   title="Delete" onclick="return confirm('Delete {{ official.full_name|escapejs }}?')">
-                                    <i class="fas fa-trash"></i> Delete
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> No officials found.
-                <a href="{% url 'teams:admin_add_official' %}" class="alert-link">Add your first official</a>
-            </div>
-            {% endif %}
+    <div class="col-sm-4">
+        <div class="stat-tile">
+            <span class="stat-tile__label"><i class="fas fa-ban" aria-hidden="true"></i>Suspended</span>
+            <span class="stat-tile__value">{{ suspended_officials }}</span>
         </div>
     </div>
 </div>
+
+<div class="panel mb-4">
+    <form method="get" class="panel-body row g-3 align-items-end" role="search" aria-label="Filter officials">
+        <div class="col-md-6 col-xl">
+            <label class="form-label" for="f-search">Search</label>
+            <input type="search" id="f-search" name="search" class="form-control" placeholder="Name or phone..." value="{{ search_query }}">
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <label class="form-label" for="f-team">Team</label>
+            <select name="team" id="f-team" class="form-select">
+                <option value="">All Teams</option>
+                {% for team in teams %}
+                <option value="{{ team.id }}" {% if team_filter == team.id|stringformat:"s" %}selected{% endif %}>{{ team.team_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-xl-2">
+            <label class="form-label" for="f-position">Position</label>
+            <select name="position" id="f-position" class="form-select">
+                <option value="">All Positions</option>
+                {% for code, name in position_choices %}
+                <option value="{{ code }}" {% if position_filter == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-xl-2">
+            <label class="form-label" for="f-status">Status</label>
+            <select name="status" id="f-status" class="form-select">
+                <option value="">All Status</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
+            </select>
+        </div>
+        <div class="col-xl-auto d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-magnifying-glass me-1" aria-hidden="true"></i>Search</button>
+            <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </form>
+</div>
+
+<section class="panel" aria-labelledby="officials-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="officials-title"><i class="fas fa-list" aria-hidden="true"></i>Team Officials ({{ officials.count }})</h2>
+    </div>
+    {% if officials %}
+    <div class="data-table-wrap data-table-wrap--tall">
+        <table class="table data-table mb-0">
+            <thead>
+                <tr>
+                    <th scope="col" class="num hide-sm">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Team</th>
+                    <th scope="col">Position</th>
+                    <th scope="col" class="hide-sm">Phone</th>
+                    <th scope="col" class="hide-sm">Email</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="col-min"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for official in officials %}
+                <tr{% if official.is_suspended %} class="is-flagged"{% endif %}>
+                    <td class="num hide-sm text-body-secondary">{{ official.id }}</td>
+                    <td class="fw-semibold">{{ official.full_name }}</td>
+                    <td class="text-nowrap"><a href="{% url 'teams:team_detail' official.team.id %}">{{ official.team.team_name }}</a></td>
+                    <td>{{ official.get_position_display }}</td>
+                    <td class="hide-sm text-nowrap">{{ official.phone_number }}</td>
+                    <td class="hide-sm">{% if official.email %}{{ official.email }}{% else %}<span class="text-body-secondary">N/A</span>{% endif %}</td>
+                    <td>
+                        {% if official.is_suspended %}
+                        <span class="badge status-badge status-danger" title="{{ official.suspension_reason }}">Suspended ({{ official.suspension_matches }} matches)</span>
+                        {% else %}
+                        <span class="badge status-badge status-success">Active</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-min">
+                        <div class="d-flex gap-1">
+                            {% if official.is_suspended %}
+                            <a href="{% url 'teams:admin_unsuspend_official' official.id %}" class="btn btn-sm btn-outline-success" title="Unsuspend">Unsuspend</a>
+                            {% else %}
+                            <a href="{% url 'teams:admin_suspend_official' official.id %}" class="btn btn-sm btn-outline-secondary" title="Suspend">Suspend</a>
+                            {% endif %}
+                            <a href="{% url 'teams:admin_delete_team_official' official.id %}" class="btn btn-sm btn-outline-danger btn-icon"
+                               title="Delete" aria-label="Delete {{ official.full_name }}" onclick="return confirm('Delete {{ official.full_name|escapejs }}?')"><i class="fas fa-trash" aria-hidden="true"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state__icon"><i class="fas fa-user-tie" aria-hidden="true"></i></div>
+        <p class="empty-state__title">No officials found.</p>
+        <a href="{% url 'teams:admin_add_official' %}" class="btn btn-outline-primary">Add your first official</a>
+    </div>
+    {% endif %}
+</section>
 {% endblock %}
