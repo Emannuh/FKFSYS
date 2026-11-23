@@ -147,8 +147,8 @@
                                         <i class="fas fa-ban"></i> Suspend
                                     </a>
                                 {% endif %}
-                                <a href="{% url 'teams:admin_delete_team_official' official.id %}" class="btn btn-sm btn-danger" 
-                                   title="Delete" onclick="return confirm('Delete {{ official.full_name }}?')">
+                                <a href="{% url 'teams:admin_delete_team_official' official.id %}" class="btn btn-sm btn-danger"
+                                   title="Delete" onclick="return confirm('Delete {{ official.full_name|escapejs }}?')">
                                     <i class="fas fa-trash"></i> Delete
                                 </a>
                             </td>
@@ -159,7 +159,7 @@
             </div>
             {% else %}
             <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> No officials found. 
+                <i class="fas fa-info-circle"></i> No officials found.
                 <a href="{% url 'teams:admin_add_official' %}" class="alert-link">Add your first official</a>
             </div>
             {% endif %}

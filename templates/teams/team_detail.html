@@ -1,4 +1,4 @@
-﻿<!-- templates/teams/team_detail.html -->
+<!-- templates/teams/team_detail.html -->
 {% extends 'base.html' %}
 
 {% block title %}{{ team.team_name }} - FKF Meru League{% endblock %}
@@ -11,10 +11,10 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-4">
                         {% if team.logo %}
-                        <img src="{{ team.logo.url }}" alt="{{ team.team_name }}" 
+                        <img src="{{ team.logo.url }}" alt="{{ team.team_name }}"
                              class="rounded-circle me-3" width="100" height="100">
                         {% else %}
-                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-3" 
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-3"
                              style="width: 100px; height: 100px;">
                             <i class="fas fa-shield-alt fa-3x text-white"></i>
                         </div>
@@ -29,20 +29,20 @@
                                     {{ team.get_status_display }}
                                 </span>
                                 {% if team.zone %}
-                                <span class="badge zone-{{ team.zone.zone_id|lower }} ms-1">{{ team.zone.name }}</span>
+                                <span class="badge bg-secondary ms-1">{{ team.zone.name }}</span>
                                 {% endif %}
                                 {% if team.payment_status %}
                                 <span class="badge bg-success ms-1">Paid</span>
                                 {% else %}
                                 <span class="badge bg-danger ms-1">Unpaid</span>
                                 {% endif %}
-                    {% if request.user.is_staff or request.user.is_superuser or 'League Admin' in request.user.groups.all|join:' ' or 'League Manager' in request.user.groups.all|join:' ' %}
+                    {% if can_edit %}
                         <a href="{% url 'teams:edit_team_info' team.id %}" class="btn btn-warning mb-3">Edit Team Info</a>
                     {% endif %}
                             </div>
                         </div>
                     </div>
-                    
+
                     <h5>Team Information</h5>
                     <div class="row mb-4">
                         <div class="col-md-6">
@@ -54,15 +54,10 @@
                             <p><strong>Email:</strong> {{ team.email|default:"Not provided" }}</p>
                         </div>
                     </div>
-                    
-                    {% if team.coordinates %}
-                    <div class="alert alert-info">
-                        <strong><i class="fas fa-map-marker-alt"></i> Coordinates:</strong> {{ team.coordinates }}
-                    </div>
-                    {% endif %}
+
                 </div>
             </div>
-            
+
             <!-- Players Section -->
             <div class="card mt-4">
                 <div class="card-header">
@@ -102,7 +97,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Sidebar -->
         <div class="col-md-4">
             <div class="card">
@@ -110,18 +105,22 @@
                     <h5 class="mb-0">Quick Actions</h5>
                 </div>
                 <div class="card-body">
-                    <a href="/admin/teams/team/{{ team.id }}/change/" class="btn btn-primary-custom w-100 mb-2">
-                        <i class="fas fa-edit"></i> Edit in Admin
+                    {% if request.user.is_staff %}
+                    <a href="{% url 'admin:teams_team_change' team.id %}" class="btn btn-primary-custom w-100 mb-2">
+                        <i class="fas fa-edit" aria-hidden="true"></i> Edit in Admin
                     </a>
+                    {% endif %}
+                    {% if can_edit %}
                     <a href="{% url 'teams:all_teams' %}" class="btn btn-outline-primary w-100 mb-2">
-                        <i class="fas fa-arrow-left"></i> Back to All Teams
+                        <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to All Teams
                     </a>
+                    {% endif %}
                     <a href="/" class="btn btn-outline-secondary w-100">
                         <i class="fas fa-home"></i> Go to Home
                     </a>
                 </div>
             </div>
-            
+
             <!-- Registration Info -->
             <div class="card mt-4">
                 <div class="card-body">

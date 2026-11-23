@@ -47,15 +47,6 @@
                 </div>
             </div>
 
-            {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                {{ message|safe }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-            {% endif %}
-
             <div class="card shadow">
                 <div class="card-header bg-danger text-white py-3">
                     <h4 class="mb-0"><i class="fas fa-futbol me-2"></i>Team Registration</h4>
@@ -128,45 +119,6 @@
                                     {% endif %}
                                 </div>
                                 
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_captain_name" class="form-label fw-bold">Team Captain Name</label>
-                                    {{ form.captain_name }}
-                                    <div class="form-text">Optional - can be added later</div>
-                                    {% if form.captain_name.errors %}
-                                    <div class="text-danger small mt-1">{{ form.captain_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Kit Information Section -->
-                        <div class="registration-section mb-4">
-                            <h5 class="section-title"><i class="fas fa-tshirt me-2"></i>Team Kit Information</h5>
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label for="id_primary_kit_color" class="form-label fw-bold">Primary Kit Color *</label>
-                                    {{ form.primary_kit_color }}
-                                    {% if form.primary_kit_color.errors %}
-                                    <div class="text-danger small mt-1">{{ form.primary_kit_color.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="col-md-4 mb-3">
-                                    <label for="id_secondary_kit_color" class="form-label fw-bold">Secondary Kit Color</label>
-                                    {{ form.secondary_kit_color }}
-                                    <div class="form-text">For away matches</div>
-                                    {% if form.secondary_kit_color.errors %}
-                                    <div class="text-danger small mt-1">{{ form.secondary_kit_color.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="col-md-4 mb-3">
-                                    <label for="id_goalkeeper_kit_color" class="form-label fw-bold">Goalkeeper Kit Color</label>
-                                    {{ form.goalkeeper_kit_color }}
-                                    {% if form.goalkeeper_kit_color.errors %}
-                                    <div class="text-danger small mt-1">{{ form.goalkeeper_kit_color.errors }}</div>
-                                    {% endif %}
-                                </div>
                             </div>
                         </div>
 

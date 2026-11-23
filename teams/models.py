@@ -1,9 +1,12 @@
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-from django.core.exceptions import ValidationError
-from fkf_league.validators import validate_kenya_phone
 import uuid
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.utils import timezone
+
+from fkf_league.validators import validate_kenya_phone
+
 
 class Zone(models.Model):
     name = models.CharField(max_length=100)
@@ -24,16 +27,17 @@ class Zone(models.Model):
     
     @property
     def approved_teams_count(self):
-        return self.team_set.filter(status='approved').count()
+        return self.team_set.filter(status=Team.Status.APPROVED).count()
 
 
 class Team(models.Model):
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('suspended', 'Suspended'),
-    ]
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+        SUSPENDED = 'suspended', 'Suspended'
+
+    STATUS_CHOICES = Status.choices
     
     # Team Information
     team_name = models.CharField(max_length=200, unique=True)
@@ -59,7 +63,7 @@ class Team(models.Model):
     
     # League Details
     zone = models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     
     # Team Manager
     manager = models.ForeignKey(
@@ -142,14 +146,6 @@ class Team(models.Model):
     
     # ── Convenience properties ───────────────────────────────────────────
     @property
-    def is_approved(self):
-        return self.status == 'approved'
-
-    @property
-    def is_pending(self):
-        return self.status == 'pending'
-
-    @property
     def player_count(self):
         return self.players.count()
 
@@ -157,22 +153,18 @@ class Team(models.Model):
     def captain(self):
         return self.players.filter(is_captain=True).first()
 
-    @property
-    def kit_is_complete(self):
-        """Alias kept for template compatibility."""
-        return self.kit_colors_set
-
     class Meta:
         ordering = ['team_name']
 
 
 class Player(models.Model):
-    POSITION_CHOICES = [
-        ('GK', 'Goalkeeper'),
-        ('DF', 'Defender'),
-        ('MF', 'Midfielder'),
-        ('FW', 'Forward'),
-    ]
+    class Position(models.TextChoices):
+        GOALKEEPER = 'GK', 'Goalkeeper'
+        DEFENDER = 'DF', 'Defender'
+        MIDFIELDER = 'MF', 'Midfielder'
+        FORWARD = 'FW', 'Forward'
+
+    POSITION_CHOICES = Position.choices
     
     # Personal Information
     first_name = models.CharField(max_length=100)
@@ -201,7 +193,7 @@ class Player(models.Model):
     
     # Team Information
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='players')
-    position = models.CharField(max_length=2, choices=POSITION_CHOICES)
+    position = models.CharField(max_length=2, choices=Position.choices)
     jersey_number = models.IntegerField()
     is_captain = models.BooleanField(default=False)
     
@@ -227,36 +219,21 @@ class Player(models.Model):
     
     @property
     def age(self):
-        from datetime import date
-        today = date.today()
+        today = timezone.localdate()
         return today.year - self.date_of_birth.year - (
             (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
         )
-
-    @property
-    def is_license_expired(self):
-        from datetime import date
-        return bool(self.license_expiry_date and self.license_expiry_date < date.today())
-
-    @property
-    def card_summary(self):
-        return f"{self.yellow_cards}Y / {self.red_cards}R"
-
-    @property
-    def status_label(self):
-        """Human-readable status for use in templates."""
-        if self.is_suspended:
-            return 'Suspended'
-        if self.is_captain:
-            return 'Captain'
-        return 'Active'
 
     def __str__(self):
         return self.full_name
     
     class Meta:
         ordering = ['team', 'jersey_number']
-        unique_together = ['team', 'jersey_number']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['team', 'jersey_number'], name='uniq_player_team_jersey'
+            ),
+        ]
 
 
 class LeagueSettings(models.Model):
@@ -324,68 +301,37 @@ class LeagueSettings(models.Model):
         verbose_name = "League Settings"
         verbose_name_plural = "League Settings"
     
+    # (open-flag field, closed-date field) for each registration window
+    WINDOWS = (
+        ('team_registration_open', 'team_registration_closed_date'),
+        ('player_registration_open', 'player_registration_closed_date'),
+        ('transfer_window_open', 'transfer_window_closed_date'),
+    )
+
     def save(self, *args, **kwargs):
-        # Ensure only one instance exists
-        self.pk = 1
-        
-        # Record closure dates when windows are manually closed
-        # Only process if update_fields doesn't exist or includes the open fields
-        update_fields = kwargs.get('update_fields', None)
-        process_closure_dates = (
-            update_fields is None or 
-            'team_registration_open' in update_fields or
-            'player_registration_open' in update_fields or
-            'transfer_window_open' in update_fields
+        self.pk = 1  # singleton
+        update_fields = kwargs.get('update_fields')
+        touched = update_fields is None or any(
+            open_field in update_fields for open_field, _ in self.WINDOWS
         )
-        
-        if self.pk and process_closure_dates:
-            try:
-                old_instance = LeagueSettings.objects.get(pk=self.pk)
+        if touched:
+            old = LeagueSettings.objects.filter(pk=1).first()
+            if old is not None:
                 now = timezone.now()
-                
-                # Team registration closed
-                if old_instance.team_registration_open and not self.team_registration_open:
-                    self.team_registration_closed_date = now
-                    if update_fields and 'team_registration_closed_date' not in update_fields:
-                        update_fields = list(update_fields) + ['team_registration_closed_date']
-                        kwargs['update_fields'] = update_fields
-                # Team registration reopened
-                elif not old_instance.team_registration_open and self.team_registration_open:
-                    self.team_registration_closed_date = None
-                    if update_fields and 'team_registration_closed_date' not in update_fields:
-                        update_fields = list(update_fields) + ['team_registration_closed_date']
-                        kwargs['update_fields'] = update_fields
-                
-                # Player registration closed
-                if old_instance.player_registration_open and not self.player_registration_open:
-                    self.player_registration_closed_date = now
-                    if update_fields and 'player_registration_closed_date' not in update_fields:
-                        update_fields = list(update_fields) + ['player_registration_closed_date']
-                        kwargs['update_fields'] = update_fields
-                # Player registration reopened
-                elif not old_instance.player_registration_open and self.player_registration_open:
-                    self.player_registration_closed_date = None
-                    if update_fields and 'player_registration_closed_date' not in update_fields:
-                        update_fields = list(update_fields) + ['player_registration_closed_date']
-                        kwargs['update_fields'] = update_fields
-                
-                # Transfer window closed
-                if old_instance.transfer_window_open and not self.transfer_window_open:
-                    self.transfer_window_closed_date = now
-                    if update_fields and 'transfer_window_closed_date' not in update_fields:
-                        update_fields = list(update_fields) + ['transfer_window_closed_date']
-                        kwargs['update_fields'] = update_fields
-                # Transfer window reopened
-                elif not old_instance.transfer_window_open and self.transfer_window_open:
-                    self.transfer_window_closed_date = None
-                    if update_fields and 'transfer_window_closed_date' not in update_fields:
-                        update_fields = list(update_fields) + ['transfer_window_closed_date']
-                        kwargs['update_fields'] = update_fields
-            except LeagueSettings.DoesNotExist:
-                pass
-        
+                extra = []
+                for open_field, closed_field in self.WINDOWS:
+                    if getattr(old, open_field) == getattr(self, open_field):
+                        continue
+                    if getattr(self, open_field):
+                        setattr(self, closed_field, None)  # reopened
+                    elif getattr(self, closed_field) == getattr(old, closed_field):
+                        # Manually closed: stamp it (deadline auto-close sets its own date).
+                        setattr(self, closed_field, now)
+                    extra.append(closed_field)
+                if update_fields is not None and extra:
+                    kwargs['update_fields'] = list(dict.fromkeys([*update_fields, *extra]))
         super().save(*args, **kwargs)
-    
+
     def delete(self, *args, **kwargs):
         # Prevent deletion
         pass
@@ -393,12 +339,9 @@ class LeagueSettings(models.Model):
     @classmethod
     def get_settings(cls):
         """Get or create the singleton instance"""
-        settings, created = cls.objects.get_or_create(pk=1)
-        # Refresh from database to avoid stale data
-        if not created:
-            settings.refresh_from_db()
-        settings._auto_close_by_deadline()
-        return settings
+        obj, _ = cls.objects.get_or_create(pk=1)
+        obj._auto_close_by_deadline()
+        return obj
 
     def _auto_close_by_deadline(self):
         """Auto-close windows when deadlines pass"""
@@ -437,20 +380,23 @@ class LeagueSettings(models.Model):
 class TeamOfficial(models.Model):
     """Model for team officials (coaches, doctor, patron)"""
     
-    POSITION_CHOICES = [
-        ('head_coach', 'Head Coach'),
-        ('assistant_coach', 'Assistant Coach'),
-        ('goalkeeper_coach', 'Goalkeeper Coach'),
-        ('team_doctor', 'Team Doctor'),
-        ('team_patron', 'Team Patron'),
-    ]
+    class Position(models.TextChoices):
+        HEAD_COACH = 'head_coach', 'Head Coach'
+        ASSISTANT_COACH = 'assistant_coach', 'Assistant Coach'
+        GOALKEEPER_COACH = 'goalkeeper_coach', 'Goalkeeper Coach'
+        TEAM_DOCTOR = 'team_doctor', 'Team Doctor'
+        TEAM_PATRON = 'team_patron', 'Team Patron'
+
+    POSITION_CHOICES = Position.choices
+    # Positions that must hold a CAF coaching licence.
+    COACH_POSITIONS = (Position.HEAD_COACH, Position.ASSISTANT_COACH, Position.GOALKEEPER_COACH)
     
     team = models.ForeignKey(
         Team,
         on_delete=models.CASCADE,
         related_name='officials'
     )
-    position = models.CharField(max_length=20, choices=POSITION_CHOICES)
+    position = models.CharField(max_length=20, choices=Position.choices)
     full_name = models.CharField(max_length=200)
     id_number = models.CharField(max_length=20)
     phone_number = models.CharField(max_length=20)
@@ -484,7 +430,11 @@ class TeamOfficial(models.Model):
     
     class Meta:
         ordering = ['team', 'position']
-        unique_together = ['team', 'position']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['team', 'position'], name='uniq_official_team_position'
+            ),
+        ]
     
     def __str__(self):
         return f"{self.full_name} - {self.get_position_display()} ({self.team.team_name})"
@@ -493,12 +443,13 @@ class TeamOfficial(models.Model):
 class TransferRequest(models.Model):
     """Model for tracking player transfer requests between teams"""
     
-    STATUS_CHOICES = [
-        ('pending_parent', 'Pending Parent Club Decision'),
-        ('approved', 'Approved - Transfer Complete'),
-        ('rejected', 'Rejected by Parent Club'),
-        ('cancelled', 'Cancelled by Requester'),
-    ]
+    class Status(models.TextChoices):
+        PENDING_PARENT = 'pending_parent', 'Pending Parent Club Decision'
+        APPROVED = 'approved', 'Approved - Transfer Complete'
+        REJECTED = 'rejected', 'Rejected by Parent Club'
+        CANCELLED = 'cancelled', 'Cancelled by Requester'
+
+    STATUS_CHOICES = Status.choices
     
     # Transfer Details
     player = models.ForeignKey(
@@ -522,8 +473,8 @@ class TransferRequest(models.Model):
     # Request Information
     status = models.CharField(
         max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending_parent'
+        choices=Status.choices,
+        default=Status.PENDING_PARENT,
     )
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -580,7 +531,7 @@ class TransferRequest(models.Model):
             duplicate = TransferRequest.objects.filter(
                 player=self.player,
                 to_team=self.to_team,
-                status='pending_parent'
+                status=self.Status.PENDING_PARENT,
             ).exists()
             if duplicate:
                 raise ValidationError(
@@ -591,85 +542,76 @@ class TransferRequest(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
     
+    @transaction.atomic
     def approve_by_parent(self, user, execute_transfer=True):
-        """Parent club approves the transfer"""
-        self.status = 'approved'
+        """Parent club approves the transfer (and, by default, executes it)."""
+        self.status = self.Status.APPROVED
         self.parent_decision_by = user
         self.parent_decision_date = timezone.now()
         self.save()
-        
         if execute_transfer:
             self.execute_transfer()
-    
+
     def reject_by_parent(self, user, reason):
-        """Parent club rejects the transfer"""
-        self.status = 'rejected'
+        """Parent club rejects the transfer."""
+        self.status = self.Status.REJECTED
         self.parent_decision_by = user
         self.parent_decision_reason = reason
         self.parent_decision_date = timezone.now()
         self.save()
-    
+
+    @transaction.atomic
     def override_by_admin(self, user, reason):
-        """Admin overrides rejection and forces transfer"""
-        self.status = 'approved'
+        """Admin overrides a rejection and forces the transfer."""
+        self.status = self.Status.APPROVED
         self.admin_override = True
         self.admin_override_by = user
         self.admin_override_reason = reason
         self.admin_override_date = timezone.now()
         self.save()
-        
         self.execute_transfer()
-    
+
     def cancel_by_requester(self):
-        """Requester cancels the transfer request"""
-        if self.status == 'pending_parent':
-            self.status = 'cancelled'
+        """Requester cancels a still-pending request. Returns True on success."""
+        if self.status == self.Status.PENDING_PARENT:
+            self.status = self.Status.CANCELLED
             self.save()
             return True
         return False
-    
+
+    @transaction.atomic
     def execute_transfer(self):
-        """Execute the actual player transfer"""
-        if self.status == 'approved':
-            # Check if jersey number is already taken on destination team
-            existing_player = Player.objects.filter(
-                team=self.to_team, 
-                jersey_number=self.player.jersey_number
-            ).exclude(id=self.player.id).first()
-            
-            if existing_player:
-                # Find next available jersey number
-                taken_numbers = set(
-                    Player.objects.filter(team=self.to_team)
-                    .values_list('jersey_number', flat=True)
-                )
-                # Find first available number from 1-99
-                new_number = None
-                for num in range(1, 100):
-                    if num not in taken_numbers:
-                        new_number = num
-                        break
-                
-                if new_number:
-                    self.player.jersey_number = new_number
-                else:
-                    # Fallback: use a high number if 1-99 are all taken
-                    self.player.jersey_number = max(taken_numbers) + 1
-            
-            # Transfer the player
-            self.player.team = self.to_team
-            self.player.save()
-            
-            # Log transfer history
-            TransferHistory.objects.create(
-                transfer_request=self,
-                player=self.player,
-                from_team=self.from_team,
-                to_team=self.to_team,
-                approved_by=self.parent_decision_by,
-                admin_override=self.admin_override
-            )
-    
+        """Move the player to ``to_team`` and record history (approved requests only)."""
+        if self.status != self.Status.APPROVED:
+            return
+        player = Player.objects.select_for_update().get(pk=self.player_id)
+        taken = set(
+            Player.objects.filter(team=self.to_team)
+            .exclude(pk=player.pk)
+            .values_list('jersey_number', flat=True)
+        )
+        if player.jersey_number in taken:
+            free = next((n for n in range(1, 100) if n not in taken), None)
+            player.jersey_number = free if free is not None else max(taken) + 1
+        player.team = self.to_team
+        player.is_captain = False  # captaincy does not travel with the player
+        player.save()
+        self.player = player
+
+        # Any other open request for this player is now stale (its from_team is wrong).
+        TransferRequest.objects.filter(
+            player=player, status=self.Status.PENDING_PARENT
+        ).exclude(pk=self.pk).update(status=self.Status.CANCELLED, updated_at=timezone.now())
+
+        TransferHistory.objects.create(
+            transfer_request=self,
+            player=player,
+            from_team=self.from_team,
+            to_team=self.to_team,
+            approved_by=self.admin_override_by if self.admin_override else self.parent_decision_by,
+            admin_override=self.admin_override,
+        )
+
     def __str__(self):
         return f"{self.player}: {self.from_team} → {self.to_team} ({self.get_status_display()})"
 

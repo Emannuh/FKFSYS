@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}Edit Player - {{ player.full_name }}{% endblock %}
 
@@ -25,41 +25,41 @@
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+
                         <!-- Personal Information -->
                         <fieldset class="border p-3 mb-4">
                             <legend class="w-auto px-2"><h5>Personal Information</h5></legend>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="first_name" class="form-label">First Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="first_name" name="first_name" 
+                                    <input type="text" class="form-control" id="first_name" name="first_name"
                                            value="{{ player.first_name }}" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="last_name" class="form-label">Last Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="last_name" name="last_name" 
+                                    <input type="text" class="form-control" id="last_name" name="last_name"
                                            value="{{ player.last_name }}" required>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
+                                    <input type="date" class="form-control" id="date_of_birth" name="date_of_birth"
                                            value="{{ player.date_of_birth|date:'Y-m-d' }}" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="nationality" class="form-label">Nationality</label>
-                                    <input type="text" class="form-control" id="nationality" name="nationality" 
+                                    <input type="text" class="form-control" id="nationality" name="nationality"
                                            value="{{ player.nationality }}" placeholder="e.g., Kenyan">
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="id_number" class="form-label">National ID Number <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="id_number" name="id_number" 
+                                    <input type="text" class="form-control" id="id_number" name="id_number"
                                            value="{{ player.id_number }}" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
@@ -75,16 +75,16 @@
                         <!-- FKF License Information -->
                         <fieldset class="border p-3 mb-4">
                             <legend class="w-auto px-2"><h5>FKF License Information</h5></legend>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="fkf_license_number" class="form-label">FKF License Number</label>
-                                    <input type="text" class="form-control" id="fkf_license_number" name="fkf_license_number" 
+                                    <input type="text" class="form-control" id="fkf_license_number" name="fkf_license_number"
                                            value="{{ player.fkf_license_number }}" placeholder="e.g., FKF-2024-12345">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="license_expiry_date" class="form-label">License Expiry Date</label>
-                                    <input type="date" class="form-control" id="license_expiry_date" name="license_expiry_date" 
+                                    <input type="date" class="form-control" id="license_expiry_date" name="license_expiry_date"
                                            value="{% if player.license_expiry_date %}{{ player.license_expiry_date|date:'Y-m-d' }}{% endif %}">
                                 </div>
                             </div>
@@ -93,7 +93,7 @@
                         <!-- Team Information -->
                         <fieldset class="border p-3 mb-4">
                             <legend class="w-auto px-2"><h5>Team Information</h5></legend>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="team" class="form-label">Team <span class="text-danger">*</span></label>
@@ -116,16 +116,16 @@
                                     </select>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="jersey_number" class="form-label">Jersey Number <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="jersey_number" name="jersey_number" 
+                                    <input type="number" class="form-control" id="jersey_number" name="jersey_number"
                                            value="{{ player.jersey_number }}" min="1" max="99" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <div class="form-check mt-4">
-                                        <input class="form-check-input" type="checkbox" id="is_captain" name="is_captain" 
+                                        <input class="form-check-input" type="checkbox" id="is_captain" name="is_captain"
                                                {% if player.is_captain %}checked{% endif %}>
                                         <label class="form-check-label" for="is_captain">
                                             <i class="fas fa-star text-warning"></i> Team Captain
@@ -137,31 +137,36 @@
 
                         <!-- Statistics -->
                         <fieldset class="border p-3 mb-4">
-                            <legend class="w-auto px-2"><h5>Statistics (Manual Adjustment)</h5></legend>
-                            <p class="text-muted small">Admin can manually adjust player statistics if needed</p>
-                            
+                            <legend class="w-auto px-2"><h5>Statistics</h5></legend>
+                            {% if can_edit_stats %}
+                            <p class="text-muted small">Statistics come from match reports. Manual corrections are League Admin only and are audit-logged.</p>
                             <div class="row">
                                 <div class="col-md-3 mb-3">
-                                    <label for="goals_scored" class="form-label">âš½ Goals Scored</label>
-                                    <input type="number" class="form-control" id="goals_scored" name="goals_scored" 
-                                           value="{{ player.goals_scored }}" min="0">
+                                    <label for="goals_scored" class="form-label">Goals Scored</label>
+                                    <input type="number" class="form-control" id="goals_scored" name="goals_scored" value="{{ player.goals_scored }}" min="0" required>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="yellow_cards" class="form-label">ðŸŸ¨ Yellow Cards</label>
-                                    <input type="number" class="form-control" id="yellow_cards" name="yellow_cards" 
-                                           value="{{ player.yellow_cards }}" min="0">
+                                    <label for="yellow_cards" class="form-label">Yellow Cards</label>
+                                    <input type="number" class="form-control" id="yellow_cards" name="yellow_cards" value="{{ player.yellow_cards }}" min="0" required>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="red_cards" class="form-label">ðŸŸ¥ Red Cards</label>
-                                    <input type="number" class="form-control" id="red_cards" name="red_cards" 
-                                           value="{{ player.red_cards }}" min="0">
+                                    <label for="red_cards" class="form-label">Red Cards</label>
+                                    <input type="number" class="form-control" id="red_cards" name="red_cards" value="{{ player.red_cards }}" min="0" required>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="matches_played" class="form-label">ðŸ“Š Matches Played</label>
-                                    <input type="number" class="form-control" id="matches_played" name="matches_played" 
-                                           value="{{ player.matches_played }}" min="0">
+                                    <label for="matches_played" class="form-label">Matches Played</label>
+                                    <input type="number" class="form-control" id="matches_played" name="matches_played" value="{{ player.matches_played }}" min="0" required>
                                 </div>
                             </div>
+                            {% else %}
+                            <p class="text-muted small mb-2">Statistics come from match reports; only League Admins can correct them.</p>
+                            <ul class="list-inline mb-0">
+                                <li class="list-inline-item">Goals: <strong>{{ player.goals_scored }}</strong></li>
+                                <li class="list-inline-item">Yellow cards: <strong>{{ player.yellow_cards }}</strong></li>
+                                <li class="list-inline-item">Red cards: <strong>{{ player.red_cards }}</strong></li>
+                                <li class="list-inline-item">Matches: <strong>{{ player.matches_played }}</strong></li>
+                            </ul>
+                            {% endif %}
                         </fieldset>
 
                         <!-- Action Buttons -->
@@ -209,15 +214,15 @@
                     <div class="row text-center">
                         <div class="col-4">
                             <strong>Goals</strong>
-                            <p>âš½ {{ player.goals_scored }}</p>
+                            <p>⚽ {{ player.goals_scored }}</p>
                         </div>
                         <div class="col-4">
                             <strong>Yellow</strong>
-                            <p>ðŸŸ¨ {{ player.yellow_cards }}</p>
+                            <p>🟨 {{ player.yellow_cards }}</p>
                         </div>
                         <div class="col-4">
                             <strong>Red</strong>
-                            <p>ðŸŸ¥ {{ player.red_cards }}</p>
+                            <p>🟥 {{ player.red_cards }}</p>
                         </div>
                     </div>
                     <hr>
@@ -254,12 +259,12 @@
     fieldset {
         border-radius: 8px;
     }
-    
+
     fieldset legend h5 {
         font-size: 1rem;
         margin-bottom: 0;
     }
-    
+
     .card {
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         border-radius: 8px;
