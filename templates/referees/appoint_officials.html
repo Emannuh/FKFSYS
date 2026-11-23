@@ -28,7 +28,7 @@
         </div>
     </div>
 
-    <!-- MESSAGES DISPLAY - UPDATED WITH |safe FILTER -->
+    <!-- Messages -->
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
@@ -42,7 +42,7 @@
             {% else %}
             <i class="fas fa-info-circle me-2"></i>
             {% endif %}
-            {{ message|safe }}
+            {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}

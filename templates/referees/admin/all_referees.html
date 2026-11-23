@@ -102,19 +102,18 @@
                             <label for="status" class="form-label">Status</label>
                             <select class="form-select" id="status" name="status">
                                 <option value="">All Status</option>
-                                <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
-                                <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
-                                <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label for="grade" class="form-label">Grade</label>
-                            <select class="form-select" id="grade" name="grade">
-                                <option value="">All Grades</option>
-                                <option value="fifa" {% if request.GET.grade == 'fifa' %}selected{% endif %}>FIFA</option>
-                                <option value="national" {% if request.GET.grade == 'national' %}selected{% endif %}>National</option>
-                                <option value="regional" {% if request.GET.grade == 'regional' %}selected{% endif %}>Regional</option>
-                                <option value="county" {% if request.GET.grade == 'county' %}selected{% endif %}>County</option>
+                            <label for="level" class="form-label">Level</label>
+                            <select class="form-select" id="level" name="level">
+                                <option value="">All Levels</option>
+                                {% for value, label in level_choices %}
+                                <option value="{{ value }}" {% if request.GET.level == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -190,7 +189,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">{{ referee.get_grade_display }}</span>
+                                    <span class="badge bg-info">{{ referee.get_level_display|default:"-" }}</span>
                                 </td>
                                 <td>{{ referee.county|default:"-" }}</td>
                                 <td>
@@ -198,6 +197,8 @@
                                     <span class="badge bg-success">Approved</span>
                                     {% elif referee.status == 'pending' %}
                                     <span class="badge bg-warning">Pending</span>
+                                    {% elif referee.status == 'suspended' %}
+                                    <span class="badge bg-dark">Suspended</span>
                                     {% else %}
                                     <span class="badge bg-danger">Rejected</span>
                                     {% endif %}
@@ -217,14 +218,14 @@
                                            title="Edit" target="_blank">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        {% if referee.status != 'approved' %}
+                                        {% if referee.status == 'pending' or referee.status == 'rejected' %}
                                         <a href="{% url 'referees:approve_referee' referee.id %}" 
                                            class="btn btn-outline-success" 
                                            title="Approve">
                                             <i class="fas fa-check"></i>
                                         </a>
                                         {% endif %}
-                                        {% if referee.status != 'rejected' %}
+                                        {% if referee.status == 'pending' %}
                                         <a href="{% url 'referees:reject_referee' referee.id %}" 
                                            class="btn btn-outline-danger" 
                                            title="Reject">
@@ -232,6 +233,23 @@
                                         </a>
                                         {% endif %}
                                     </div>
+                                    {% if referee.status == 'approved' %}
+                                    <form method="post" action="{% url 'referees:suspend_referee' referee.id %}" class="d-flex gap-1 mt-1">
+                                        {% csrf_token %}
+                                        <label for="suspend-reason-{{ referee.id }}" class="visually-hidden">Suspension reason for {{ referee.full_name }}</label>
+                                        <input type="text" id="suspend-reason-{{ referee.id }}" name="suspension_reason" class="form-control form-control-sm" placeholder="Reason" required maxlength="500">
+                                        <button type="submit" class="btn btn-sm btn-outline-dark" title="Suspend">
+                                            <i class="fas fa-ban" aria-hidden="true"></i><span class="visually-hidden">Suspend</span>
+                                        </button>
+                                    </form>
+                                    {% elif referee.status == 'suspended' %}
+                                    <form method="post" action="{% url 'referees:reactivate_referee' referee.id %}" class="mt-1">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivate">
+                                            <i class="fas fa-undo" aria-hidden="true"></i> Reactivate
+                                        </button>
+                                    </form>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}

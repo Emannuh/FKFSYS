@@ -1,31 +1,30 @@
-# referees/admin.py - FIXED VERSION FOR MERGED MODELS
 from django.contrib import admin
 from django.utils import timezone
 from django.contrib import messages
 from django.utils.html import format_html
+from . import services
 from .models import (
     Referee, RefereeAvailability, MatchReport, MatchOfficials, TeamOfficial, PlayingKit,
-    MatchVenueDetails, StartingLineup, ReservePlayer, 
+    MatchVenueDetails, StartingLineup, ReservePlayer,
     Substitution, Caution, Expulsion, MatchGoal
 )
 
 # ========== REFEREE ADMIN ==========
 @admin.register(Referee)
 class RefereeAdmin(admin.ModelAdmin):
-    # ✅ FIXED: Changed 'grade' to 'level', removed 'id_number' from list_display
     list_display = [
-        'full_name', 'fkf_number', 'email', 'level', 
+        'full_name', 'fkf_number', 'email', 'level',
         'status_badge', 'is_active', 'date_joined', 'approved_at_short'
     ]
     list_filter = ['level', 'county', 'is_active', 'status']
     search_fields = ['first_name', 'last_name', 'fkf_number', 'email', 'id_number']
-    list_editable = ['is_active', 'level']  # ✅ Changed 'grade' to 'level'
+    list_editable = ['is_active', 'level']
     readonly_fields = [
         'date_joined', 'updated_at', 'approved_at', 'unique_id',
         'full_name', 'status_badge_display', 'user'
     ]
     actions = ['approve_selected_referees', 'reject_selected_referees', 'suspend_selected_referees', 'mark_as_pending']
-    
+
     fieldsets = (
         ('Personal Information', {
             'fields': ('first_name', 'last_name', 'email', 'phone_number', 'photo')
@@ -53,7 +52,7 @@ class RefereeAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
+
     # Custom display methods
     def status_badge(self, obj):
         """Display status with colored badge"""
@@ -69,60 +68,41 @@ class RefereeAdmin(admin.ModelAdmin):
             obj.get_status_display().upper()
         )
     status_badge.short_description = 'Status'
-    
+
     def status_badge_display(self, obj):
         """Display in readonly fields"""
         return self.status_badge(obj)
     status_badge_display.short_description = 'Current Status'
-    
+
     def approved_at_short(self, obj):
         """Display short approved date"""
         if obj.approved_at:
             return obj.approved_at.strftime("%Y-%m-%d %H:%M")
         return "Not approved"
     approved_at_short.short_description = 'Approved'
-    
+
     # Custom actions
+    @admin.action(description="Approve selected referees")
     def approve_selected_referees(self, request, queryset):
-        """Admin action to approve selected referees"""
-        approved_count = 0
-        credentials = []
-        
-        for referee in queryset:
-            if referee.status != 'approved':
-                unique_id, password = referee.approve(request.user)
-                approved_count += 1
-                credentials.append({
-                    'name': referee.full_name,
-                    'unique_id': unique_id,
-                    'password': password
-                })
-        
-        if approved_count > 0:
-            # Show credentials in success message
-            cred_text = "<br>".join([
-                f"<strong>{c['name']}</strong>: ID={c['unique_id']}, Password={c['password']}"
-                for c in credentials
-            ])
-            
-            self.message_user(
-                request, 
-                format_html(
-                    "Successfully approved {} referee(s).<br><br>"
-                    "<strong>Login Credentials:</strong><br>{}",
-                    approved_count,
-                    cred_text
-                ),
-                messages.SUCCESS
-            )
-        else:
+        """Approve referees and email each a set-password link (no passwords are generated)."""
+        approved = failed_email = 0
+        for referee in queryset.exclude(status=Referee.Status.APPROVED):
+            _, email_sent = services.approve_referee(referee, request.user, request)
+            approved += 1
+            failed_email += not email_sent
+        if not approved:
+            self.message_user(request, "No referees needed approval (already approved).", messages.WARNING)
+            return
+        self.message_user(
+            request, f"Approved {approved} referee(s); set-password links emailed.", messages.SUCCESS,
+        )
+        if failed_email:
             self.message_user(
                 request,
-                "No referees needed approval (already approved).",
-                messages.WARNING
+                f"{failed_email} set-password email(s) could not be sent; those referees should use 'Forgot password'.",
+                messages.WARNING,
             )
-    approve_selected_referees.short_description = "✅ Approve selected referees"
-    
+
     def reject_selected_referees(self, request, queryset):
         """Admin action to reject selected referees"""
         rejected_count = 0
@@ -130,7 +110,7 @@ class RefereeAdmin(admin.ModelAdmin):
             if referee.status != 'rejected':
                 referee.reject("Rejected by admin via admin panel")
                 rejected_count += 1
-        
+
         if rejected_count > 0:
             self.message_user(
                 request,
@@ -144,7 +124,7 @@ class RefereeAdmin(admin.ModelAdmin):
                 messages.WARNING
             )
     reject_selected_referees.short_description = "❌ Reject selected referees"
-    
+
     def suspend_selected_referees(self, request, queryset):
         """Admin action to suspend selected referees"""
         suspended_count = 0
@@ -152,7 +132,7 @@ class RefereeAdmin(admin.ModelAdmin):
             if referee.status == 'approved':
                 referee.suspend("Suspended by admin via admin panel")
                 suspended_count += 1
-        
+
         if suspended_count > 0:
             self.message_user(
                 request,
@@ -166,7 +146,7 @@ class RefereeAdmin(admin.ModelAdmin):
                 messages.WARNING
             )
     suspend_selected_referees.short_description = "🚫 Suspend selected referees"
-    
+
     def mark_as_pending(self, request, queryset):
         """Admin action to mark referees as pending"""
         updated_count = queryset.update(
@@ -182,7 +162,7 @@ class RefereeAdmin(admin.ModelAdmin):
             messages.SUCCESS
         )
     mark_as_pending.short_description = "⏳ Mark selected as pending"
-    
+
     # Customize change list view
     def changelist_view(self, request, extra_context=None):
         """Add statistics to the changelist view"""
@@ -192,7 +172,7 @@ class RefereeAdmin(admin.ModelAdmin):
         pending = Referee.objects.filter(status='pending').count()
         rejected = Referee.objects.filter(status='rejected').count()
         suspended = Referee.objects.filter(status='suspended').count()
-        
+
         extra_context['stats'] = {
             'total': total,
             'approved': approved,
@@ -201,7 +181,7 @@ class RefereeAdmin(admin.ModelAdmin):
             'suspended': suspended,
             'approval_rate': (approved / total * 100) if total > 0 else 0,
         }
-        
+
         return super().changelist_view(request, extra_context=extra_context)
 
 
@@ -217,21 +197,20 @@ class RefereeAvailabilityAdmin(admin.ModelAdmin):
 # ========== MATCH OFFICIALS ADMIN ==========
 @admin.register(MatchOfficials)
 class MatchOfficialsAdmin(admin.ModelAdmin):
-    # ✅ FIXED: Removed 'position' and 'name' fields (don't exist in merged model)
     list_display = [
-        'match', 'status', 'get_main_referee', 'get_assistant_1', 
+        'match', 'status', 'get_main_referee', 'get_assistant_1',
         'get_assistant_2', 'appointment_made_at'
     ]
     list_filter = ['status', 'appointment_made_at']
     search_fields = [
-        'match__home_team__name', 'match__away_team__name',
+        'match__home_team__team_name', 'match__away_team__team_name',
         'main_referee__first_name', 'main_referee__last_name'
     ]
     readonly_fields = [
-        'appointment_made_at', 'appointment_made_by', 
+        'appointment_made_at', 'appointment_made_by',
         'last_reminder_sent', 'created_at', 'updated_at'
     ]
-    
+
     fieldsets = (
         ('Match Information', {
             'fields': ('match', 'status')
@@ -270,15 +249,15 @@ class MatchOfficialsAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def get_main_referee(self, obj):
         return obj.main_referee.full_name if obj.main_referee else obj.main_referee_name or "Not Assigned"
     get_main_referee.short_description = 'Main Referee'
-    
+
     def get_assistant_1(self, obj):
         return obj.assistant_1.full_name if obj.assistant_1 else obj.ar1_name or "Not Assigned"
     get_assistant_1.short_description = 'AR1'
-    
+
     def get_assistant_2(self, obj):
         return obj.assistant_2.full_name if obj.assistant_2 else obj.ar2_name or "Not Assigned"
     get_assistant_2.short_description = 'AR2'
@@ -289,10 +268,10 @@ class MatchOfficialsAdmin(admin.ModelAdmin):
 class MatchReportAdmin(admin.ModelAdmin):
     list_display = ['match_display', 'referee_name', 'status', 'submitted_at', 'approved_at']
     list_filter = ['status', 'submitted_at', 'league_level']
-    search_fields = ['match__home_team__name', 'match__away_team__name', 'referee__first_name', 'referee__last_name']
+    search_fields = ['match__home_team__team_name', 'match__away_team__team_name', 'referee__first_name', 'referee__last_name']
     readonly_fields = ['created_at', 'updated_at', 'submitted_at', 'approved_at']
     actions = ['approve_reports', 'reject_reports']
-    
+
     fieldsets = (
         ('Match Information', {
             'fields': ('match', 'referee', 'status', 'match_number', 'round_number', 'league_level')
@@ -310,17 +289,17 @@ class MatchReportAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def match_display(self, obj):
         """Display match teams"""
         return f"{obj.match.home_team} vs {obj.match.away_team}"
     match_display.short_description = 'Match'
-    
+
     def referee_name(self, obj):
         """Display referee full name"""
         return obj.referee.full_name if obj.referee else "N/A"
     referee_name.short_description = 'Referee'
-    
+
     def approve_reports(self, request, queryset):
         """Approve selected reports"""
         updated = queryset.filter(status='submitted').update(
@@ -330,7 +309,7 @@ class MatchReportAdmin(admin.ModelAdmin):
         )
         self.message_user(request, f"Approved {updated} report(s).", messages.SUCCESS)
     approve_reports.short_description = "✅ Approve selected reports"
-    
+
     def reject_reports(self, request, queryset):
         """Reject selected reports"""
         updated = queryset.filter(status='submitted').update(
@@ -353,14 +332,14 @@ class TeamOfficialAdmin(admin.ModelAdmin):
 class PlayingKitAdmin(admin.ModelAdmin):
     list_display = ['match', 'team', 'item', 'condition', 'notes']
     list_filter = ['condition', 'item', 'team']
-    search_fields = ['team__name', 'notes']
+    search_fields = ['team__team_name', 'notes']
 
 
 @admin.register(MatchVenueDetails)
 class MatchVenueDetailsAdmin(admin.ModelAdmin):
     list_display = ['match', 'pitch_condition', 'attendance', 'weather_during']
     list_filter = ['pitch_condition']
-    search_fields = ['match__home_team__name', 'match__away_team__name']
+    search_fields = ['match__home_team__team_name', 'match__away_team__team_name']
 
 
 @admin.register(StartingLineup)
@@ -391,7 +370,7 @@ class CautionAdmin(admin.ModelAdmin):
     list_filter = ['team']
     search_fields = ['player__first_name', 'player__last_name', 'reason']
     ordering = ['match', 'minute']
-    
+
     def reason_short(self, obj):
         """Show first 50 chars of reason"""
         return obj.reason[:50] + '...' if len(obj.reason) > 50 else obj.reason
@@ -404,7 +383,7 @@ class ExpulsionAdmin(admin.ModelAdmin):
     list_filter = ['team']
     search_fields = ['player__first_name', 'player__last_name', 'reason']
     ordering = ['match', 'minute']
-    
+
     def reason_short(self, obj):
         """Show first 50 chars of reason"""
         return obj.reason[:50] + '...' if len(obj.reason) > 50 else obj.reason

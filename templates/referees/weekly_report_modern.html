@@ -441,9 +441,6 @@
                 <button class="btn-export excel" onclick="exportToExcel()">
                     <i class="fas fa-file-excel"></i>Export Excel
                 </button>
-                <button class="btn-export pdf" onclick="exportToPDF()">
-                    <i class="fas fa-file-pdf"></i>Export PDF
-                </button>
             </div>
         </div>
         <div class="p-4">
@@ -533,7 +530,7 @@ async function loadReport() {
     showLoading(true);
     
     try {
-        const response = await fetch(`/referees/api/generate-weekly-report/?start_date=${startDate}&end_date=${endDate}`);
+        const response = await fetch(`{% url 'referees:generate_weekly_report' %}?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`);
         currentData = await response.json();
         
         updateStatistics(currentData);
@@ -561,6 +558,13 @@ function updateOfficialsNeeded(data) {
     document.getElementById('refereesNeeded').textContent = data.summary.officials_needed.referees;
     document.getElementById('ar1Needed').textContent = data.summary.officials_needed.assistant_referee_1;
     document.getElementById('ar2Needed').textContent = data.summary.officials_needed.assistant_referee_2;
+}
+
+// Escape text before inserting into HTML
+function esc(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
 }
 
 // Update matches list
@@ -601,42 +605,42 @@ function updateMatchesList(data) {
             <div class="match-card ${statusClass}">
                 <div class="row align-items-center">
                     <div class="col-md-3">
-                        <div class="match-date-badge">${formatDate(match.date)}</div>
+                        <div class="match-date-badge">${esc(formatDate(match.date))}</div>
                         <div class="mt-2 text-muted small">
-                            <i class="fas fa-clock me-1"></i>${formatTime(match.time)}
+                            <i class="fas fa-clock me-1"></i>${esc(formatTime(match.time))}
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="match-teams">${match.teams}</div>
+                        <div class="match-teams">${esc(match.teams)}</div>
                         <div class="match-venue">
                             <i class="fas fa-map-marker-alt"></i>
-                            <span>${match.venue || match.venue_details || 'Venue TBD'}</span>
-                            ${match.zone ? `<span class="badge bg-secondary ms-2">${match.zone}</span>` : ''}
+                            <span>${esc(match.venue || 'Venue TBD')}</span>
+                            ${match.zone ? `<span class="badge bg-secondary ms-2">${esc(match.zone)}</span>` : ''}
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div>
                             <span class="official-badge ${match.officials.referee ? 'assigned' : 'vacant'}">
                                 <i class="fas fa-user-tie"></i>
-                                Referee: ${match.officials.referee || 'VACANT'}
+                                Referee: ${esc(match.officials.referee || 'VACANT')}
                             </span>
                         </div>
                         <div>
                             <span class="official-badge ${match.officials.assistant_referee_1 ? 'assigned' : 'vacant'}">
                                 <i class="fas fa-flag"></i>
-                                AR1: ${match.officials.assistant_referee_1 || 'VACANT'}
+                                AR1: ${esc(match.officials.assistant_referee_1 || 'VACANT')}
                             </span>
                         </div>
                         <div>
                             <span class="official-badge ${match.officials.assistant_referee_2 ? 'assigned' : 'vacant'}">
                                 <i class="fas fa-flag"></i>
-                                AR2: ${match.officials.assistant_referee_2 || 'VACANT'}
+                                AR2: ${esc(match.officials.assistant_referee_2 || 'VACANT')}
                             </span>
                         </div>
                     </div>
                     <div class="col-md-1 text-end">
                         <span class="status-pill ${statusPillClass}">${statusLabel}</span>
-                        <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="window.location.href='/referees/match/${match.id}/appoint/'">
+                        <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="window.location.href='/referees/match/${Number(match.id)}/appoint/'">
                             <i class="fas fa-edit"></i> Assign
                         </button>
                     </div>
@@ -695,19 +699,7 @@ function exportToExcel() {
     
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    window.open(`/referees/export/excel/?start_date=${startDate}&end_date=${endDate}`, '_blank');
-}
-
-// Export to PDF
-function exportToPDF() {
-    if (!currentData) {
-        alert('Please load a report first');
-        return;
-    }
-    
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    window.open(`/referees/export/pdf/?start_date=${startDate}&end_date=${endDate}`, '_blank');
+    window.open(`{% url 'referees:export_appointments_excel' %}?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`, '_blank');
 }
 
 // Initialize
