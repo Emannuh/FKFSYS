@@ -20,24 +20,7 @@ def action_approve_teams(modeladmin, request, queryset):
     modeladmin.message_user(request, f"Approved {updated} teams")
 
 
-@admin.register(Zone)
-class ZoneAdmin(admin.ModelAdmin):
-    list_display = ['name', 'approved_teams_display', 'fixtures_status',
-                    'fixture_generation_date', 'match_day_of_week']
-    list_filter = ['fixtures_generated', 'match_day_of_week']
-    search_fields = ['name']
-
-    @admin.display(description='Approved Teams')
-    def approved_teams_display(self, obj):
-        count = obj.approved_teams_count
-        color = 'green' if count >= MIN_TEAMS_FOR_FIXTURES else 'orange' if count >= 2 else 'red'
-        return format_html('<span style="color: {}; font-weight: bold;">{} approved</span>', color, count)
-
-    @admin.display(description='Fixtures Status')
-    def fixtures_status(self, obj):
-        if obj.fixtures_generated:
-            return format_html('<span style="color: {};">{}</span>', 'green', 'GENERATED')
-        return format_html('<span style="color: {};">{}</span>', 'orange', 'PENDING')
+# Zone is registered by matches/admin.py (fixture-generation tooling lives there).
 
 
 @admin.register(Team)
