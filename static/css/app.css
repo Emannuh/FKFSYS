@@ -904,3 +904,15 @@ body:not(.db-layout) main.container { flex: 1; padding-top: 24px; padding-bottom
 .ch-teal   { background: linear-gradient(90deg, var(--fkf-teal),       var(--fkf-teal-dark))  !important; color: white !important; }
 .ch-purple { background: linear-gradient(90deg, var(--fkf-purple),     var(--fkf-purple-dark))!important; color: white !important; }
 .ch-forest { background: linear-gradient(90deg, #198754,               #0f5132)               !important; color: white !important; }
+
+/* ===== LAYOUT PARTIALS (base templates) ===== */
+.loader-inner { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.loader-balls { display: flex; }
+.loader-text { color: rgba(255,255,255,0.8); font-weight: 700; font-size: 0.85rem; letter-spacing: 2px; margin: 0; }
+.logout-form { display: contents; }
+.navbar-logout { border: none; background: none; }
+.sb-logout-btn { width: calc(100% - 16px); background: none; border: none; text-align: left; cursor: pointer; }
+.admin-dropdown-menu { min-width: 280px; }
+.site-footer { background: linear-gradient(135deg, #198754 0%, #0f5132 100%); color: white; }
+.site-footer-meta p { color: rgba(255,255,255,0.7); }
+.password-toggle { border: none; background: none; z-index: 2; }

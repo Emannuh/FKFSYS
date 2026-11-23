@@ -1,226 +1,72 @@
 <!DOCTYPE html>
+{% load static site_navigation %}
 <html lang="en">
 <head>
-    {% load static site_navigation %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include "partials/_head_assets.html" %}
     <title>{% block title %}FKF Meru County League{% endblock %}</title>
-
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <!-- AOS Animation -->
-    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
-    <!-- NProgress -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.css">
-    <!-- styles moved to static/css/app.css from templates/base.html -->
-    <!-- Project CSS -->
-    <link rel="stylesheet" href="{% static 'css/app.css' %}">
-
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-
-    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
         <div class="container">
             <a class="navbar-brand" href="{% url 'frontend:home' %}">
-                <span class="brand-icon"><i class="fas fa-futbol"></i></span>
+                <span class="brand-icon"><i class="fas fa-futbol" aria-hidden="true"></i></span>
                 FKF Meru County
             </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     {% site_top_nav as top_nav %}
                     {% for item in top_nav %}
                         <li class="nav-item">
                             <a class="nav-link{% if item.is_active %} active{% endif %}" href="{{ item.url }}">
-                                {% if item.icon %}<i class="{{ item.icon }}"></i> {% endif %}{{ item.title }}
+                                {% if item.icon %}<i class="{{ item.icon }}" aria-hidden="true"></i> {% endif %}{{ item.title }}
                             </a>
                         </li>
                     {% endfor %}
-
                     {% if user.is_authenticated and user.is_staff %}
                         {% admin_dropdown as admin_sections %}
                         {% if admin_sections %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-user-shield"></i> Admin Panel
+                                    <i class="fas fa-user-shield" aria-hidden="true"></i> Admin Panel
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown" style="min-width: 280px;">
+                                <ul class="dropdown-menu dropdown-menu-end admin-dropdown-menu" aria-labelledby="adminDropdown">
                                     {% for section in admin_sections %}
-                                        <li class="dropdown-header" style="font-weight: 600; color: #DC3545;">
-                                            <i class="{{ section.icon }}"></i> {{ section.title }}
-                                        </li>
+                                        <li class="dropdown-header"><i class="{{ section.icon }}" aria-hidden="true"></i> {{ section.title }}</li>
                                         {% for item in section.items %}
-                                            <li>
-                                                <a class="dropdown-item" href="{{ item.url }}">
-                                                    <i class="{{ item.icon }}"></i> {{ item.title }}
-                                                </a>
-                                            </li>
+                                            <li><a class="dropdown-item" href="{{ item.url }}"><i class="{{ item.icon }}" aria-hidden="true"></i> {{ item.title }}</a></li>
                                         {% endfor %}
-                                        {% if not forloop.last %}
-                                            <li><hr class="dropdown-divider"></li>
-                                        {% endif %}
+                                        {% if not forloop.last %}<li><hr class="dropdown-divider"></li>{% endif %}
                                     {% endfor %}
                                 </ul>
                             </li>
                         {% endif %}
                     {% endif %}
-
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <form method="POST" action="{% url 'logout' %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="nav-link btn btn-link" style="border: none; background: none; padding: 8px 0;">
-                                    <i class="fas fa-sign-out-alt"></i> Logout
-                                </button>
-                            </form>
-                        </li>
+                    {% if not user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Login</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Dashboard</a></li>
+                        <li class="nav-item">{% include "partials/_logout_form.html" with button_class="nav-link btn btn-link navbar-logout" %}</li>
                     {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
-    
-    <!-- Page Loader -->
-    <div id="page-loader">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
-            <div style="display:flex;">
-                <div class="loader-ball"></div>
-                <div class="loader-ball"></div>
-                <div class="loader-ball"></div>
-            </div>
-            <p style="color:rgba(255,255,255,0.8);font-family:'Poppins',sans-serif;font-weight:700;font-size:0.85rem;letter-spacing:2px;margin:0;">FKF MERU</p>
-        </div>
-    </div>
 
-    <!-- Scroll To Top -->
-    <button id="scroll-top" title="Back to top"><i class="fas fa-chevron-up"></i></button>
+    {% include "partials/_page_chrome.html" %}
 
-    <!-- Main Content -->
     <main class="container py-4">
-        <!-- Messages -->
-        {% if messages %}
-            <div class="messages-container mb-4">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {% if message.tags == 'error' %}
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                        {% elif message.tags == 'success' %}
-                            <i class="fas fa-check-circle me-2"></i>
-                        {% elif message.tags == 'warning' %}
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                        {% elif message.tags == 'info' %}
-                            <i class="fas fa-info-circle me-2"></i>
-                        {% endif %}
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-        
+        {% if messages %}<div class="messages-container mb-4">{% include "partials/_messages.html" %}</div>{% endif %}
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
-    <footer class="mt-5" style="background: linear-gradient(135deg, #198754 0%, #0f5132 100%); color: white;">
-        <div class="container py-5">
-            <div class="row g-4">
-                <!-- About Section -->
-                <div class="col-lg-4 col-md-6">
-                    <h5 class="text-white mb-3">
-                        <i class="fas fa-futbol me-2"></i>FKF Meru County League
-                    </h5>
-                    <p class="text-white-50">
-                        Official Football Kenya Federation Meru County League Management System.
-                        Promoting grassroots football development and competitive excellence in Meru County.
-                    </p>
-                    <div class="social-links mt-3">
-                        {% social_links as social_links %}
-                        {% for social in social_links %}
-                            <a href="{{ social.url }}" class="text-white me-3" title="{{ social.title }}">
-                                <i class="{{ social.icon }}"></i>
-                            </a>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                {% footer_sections as footer_sections %}
-                {% for section in footer_sections %}
-                    <div class="col-lg-2 col-md-6">
-                        <h6 class="text-white mb-3">{{ section.title }}</h6>
-                        <ul class="list-unstyled footer-links">
-                            {% for item in section.items %}
-                                <li><a href="{{ item.url }}"><i class="fas fa-chevron-right me-2"></i>{{ item.title }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endfor %}
-
-                <!-- Contact Info -->
-                <div class="col-lg-3 col-md-6">
-                    <h6 class="text-white mb-3">Contact Us</h6>
-                    <ul class="list-unstyled text-white-50">
-                        <li class="mb-2">
-                            <i class="fas fa-map-marker-alt me-2"></i>
-                            Meru County, Kenya
-                        </li>
-                        <li class="mb-2">
-                            <i class="fas fa-phone me-2"></i>
-                            +254 XXX XXX XXX
-                        </li>
-                        <li class="mb-2">
-                            <i class="fas fa-envelope me-2"></i>
-                            info@fkfmeru.co.ke
-                        </li>
-                        <li class="mb-2">
-                            <i class="fas fa-clock me-2"></i>
-                            Mon - Fri: 9AM - 5PM
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            
-            <hr class="bg-white-50 my-4">
-            
-            <!-- Copyright -->
-            <div class="row">
-                <div class="col-md-6 text-center text-md-start">
-                    <p class="mb-0" style="color: rgba(255,255,255,0.7);">
-                        &copy; 2026 FKF Meru County League. All rights reserved.
-                    </p>
-                </div>
-                <div class="col-md-6 text-center text-md-end">
-                    <p class="mb-0" style="color: rgba(255,255,255,0.7);">
-                        Powered by Emmanuel Technology Services
-                    </p>
-                    <p class="mb-0 fst-italic" style="color: rgba(255,255,255,0.6); font-size: 0.9em;">
-                        Code the Future
-                    </p>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- AOS Animation -->
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <!-- NProgress -->
-    <script src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js"></script>
-    <!-- Project JS (handles NProgress, AOS, sidebar, scroll, tooltips, countdowns) -->
-    <script src="{% static 'js/app.js' %}"></script>
-
+    {% include "partials/_site_footer.html" %}
+    {% include "partials/_body_scripts.html" %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

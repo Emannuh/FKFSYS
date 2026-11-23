@@ -1,178 +1,90 @@
-{% load static site_navigation %}
 <!DOCTYPE html>
+{% load static site_navigation fkf_tags %}
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include "partials/_head_assets.html" %}
     <title>{% block title %}FKF Meru County League{% endblock %}</title>
-
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <!-- AOS Animation -->
-    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
-    <!-- NProgress -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.css">
-    <!-- styles moved to static/css/app.css from templates/base_dashboard.html -->
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Project CSS -->
-    <link rel="stylesheet" href="{% static 'css/app.css' %}">
-
     {% block extra_css %}{% endblock %}
 </head>
 <body class="db-layout">
-
-    <!-- Page Loader -->
-    <div id="page-loader">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
-            <div style="display:flex;">
-                <div class="loader-ball"></div><div class="loader-ball"></div><div class="loader-ball"></div>
-            </div>
-            <p style="color:rgba(255,255,255,0.8);font-family:'Poppins',sans-serif;font-weight:600;font-size:0.9rem;letter-spacing:1px;">FKF MERU</p>
-        </div>
-    </div>
-
-    <!-- Sidebar Overlay (mobile) -->
+    {% include "partials/_page_chrome.html" %}
     <div class="sb-overlay" id="sbOverlay"></div>
 
-    <!-- ===== SIDEBAR ===== -->
-    <aside class="db-sidebar" id="dbSidebar">
-
-        <!-- Brand -->
+    <aside class="db-sidebar" id="dbSidebar" aria-label="Dashboard navigation">
         <div class="sb-brand">
             <a href="{% url 'frontend:home' %}" class="sb-brand-link">
-                <div class="sb-brand-icon"><i class="fas fa-futbol"></i></div>
+                <div class="sb-brand-icon"><i class="fas fa-futbol" aria-hidden="true"></i></div>
                 <div class="sb-brand-text">
                     <span class="sb-brand-name">FKF Meru</span>
                     <span class="sb-brand-sub">County League</span>
                 </div>
             </a>
-            <button class="sb-toggle-btn" id="sbToggleBtn" title="Collapse sidebar">
-                <i class="fas fa-bars"></i>
+            <button type="button" class="sb-toggle-btn" id="sbToggleBtn" title="Collapse sidebar" aria-label="Collapse sidebar" aria-controls="dbSidebar">
+                <i class="fas fa-bars" aria-hidden="true"></i>
             </button>
         </div>
-
-        <!-- User -->
         <div class="sb-user">
             <div class="sb-avatar">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</div>
             <div class="sb-user-info">
                 <span class="sb-user-name">{{ user.get_full_name|default:user.username }}</span>
-                <span class="sb-user-role">{% load fkf_tags %}{% user_role %}</span>
+                <span class="sb-user-role">{% user_role %}</span>
             </div>
         </div>
-
-        <!-- Navigation -->
         <nav class="sb-nav">
             {% dashboard_nav as menu_sections %}
             {% for section in menu_sections %}
                 <span class="sb-section-label">{{ section.title }}</span>
                 {% for item in section.items %}
-                    <a href="{{ item.url }}" class="sb-nav-item{% if item.is_active %} active{% endif %}{% if item.danger %} danger{% endif %}">
-                        <span class="nav-icon"><i class="{{ item.icon }}"></i></span>
+                    <a href="{{ item.url }}" class="sb-nav-item{% if item.is_active %} active{% endif %}{% if item.danger %} danger{% endif %}"{% if item.is_active %} aria-current="page"{% endif %}>
+                        <span class="nav-icon"><i class="{{ item.icon }}" aria-hidden="true"></i></span>
                         <span class="nav-label">{{ item.title }}</span>
                     </a>
                 {% endfor %}
             {% endfor %}
         </nav>
-
-        <!-- Sidebar Footer -->
         <div class="sb-footer">
             <a href="{% url 'frontend:home' %}" class="sb-nav-item">
-                <span class="nav-icon"><i class="fas fa-home"></i></span>
+                <span class="nav-icon"><i class="fas fa-home" aria-hidden="true"></i></span>
                 <span class="nav-label">Home</span>
             </a>
-            <form method="POST" action="{% url 'logout' %}" style="display:contents;">
-                {% csrf_token %}
-                <button type="submit" class="sb-nav-item danger" style="width:100%;background:none;border:none;text-align:left;cursor:pointer;">
-                    <span class="nav-icon"><i class="fas fa-sign-out-alt"></i></span>
-                    <span class="nav-label">Logout</span>
-                </button>
-            </form>
+            {% include "partials/_logout_form.html" with button_class="sb-nav-item danger sb-logout-btn" nav_label=True %}
         </div>
-
     </aside>
-    <!-- ===== END SIDEBAR ===== -->
 
-    <!-- ===== MAIN ===== -->
     <div class="db-main" id="dbMain">
-
-        <!-- Topbar -->
         <header class="db-topbar">
-            <button class="topbar-toggle" id="topbarToggle" title="Toggle sidebar">
-                <i class="fas fa-bars"></i>
+            <button type="button" class="topbar-toggle" id="topbarToggle" title="Toggle sidebar" aria-label="Toggle sidebar" aria-controls="dbSidebar">
+                <i class="fas fa-bars" aria-hidden="true"></i>
             </button>
             <span class="topbar-page-title">{% block page_title %}Dashboard{% endblock %}</span>
             <div class="topbar-spacer"></div>
             <span class="topbar-date" id="topbarDate"></span>
-            <a href="{% url 'frontend:home' %}" class="topbar-icon-btn" title="Home">
-                <i class="fas fa-home"></i>
-            </a>
+            <a href="{% url 'frontend:home' %}" class="topbar-icon-btn" title="Home" aria-label="Home"><i class="fas fa-home" aria-hidden="true"></i></a>
             <div class="topbar-dropdown dropdown">
-                <a href="#" class="topbar-user-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration:none;">
+                <a href="#" class="topbar-user-btn dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <div class="topbar-user-avatar">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</div>
                     <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
-                    <i class="fas fa-chevron-down ms-1" style="font-size:0.65rem;color:#94a3b8;"></i>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end topbar-dropdown">
-                    <li><h6 class="dropdown-header" style="font-size:0.72rem;color:#94a3b8;">{{ user.email }}</h6></li>
+                    <li><h6 class="dropdown-header">{{ user.email }}</h6></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="{% url 'frontend:home' %}"><i class="fas fa-home"></i>Home</a></li>
-                    <li>
-                        <form method="POST" action="{% url 'logout' %}" style="display:contents;">
-                            {% csrf_token %}
-                            <button type="submit" class="dropdown-item text-danger" style="border:none;background:none;width:100%;text-align:left;padding:8px 18px;">
-                                <i class="fas fa-sign-out-alt"></i>Logout
-                            </button>
-                        </form>
-                    </li>
+                    <li><a class="dropdown-item" href="{% url 'frontend:home' %}"><i class="fas fa-home" aria-hidden="true"></i>Home</a></li>
+                    <li>{% include "partials/_logout_form.html" with button_class="dropdown-item text-danger" %}</li>
                 </ul>
             </div>
         </header>
 
-        <!-- Messages -->
-        {% if messages %}
-        <div class="px-4 pt-3">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {% if message.tags == 'error' %}<i class="fas fa-exclamation-circle me-2"></i>
-                {% elif message.tags == 'success' %}<i class="fas fa-check-circle me-2"></i>
-                {% elif message.tags == 'warning' %}<i class="fas fa-exclamation-triangle me-2"></i>
-                {% else %}<i class="fas fa-info-circle me-2"></i>{% endif %}
-                {{ message|safe }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
+        {% if messages %}<div class="px-4 pt-3">{% include "partials/_messages.html" %}</div>{% endif %}
 
-        <!-- Page Content -->
         <main class="db-content">
             {% block content %}{% endblock %}
         </main>
 
-        <!-- Footer -->
-        <footer class="db-footer">
-            &copy; {% now "Y" %} FKF Meru County League &mdash; All rights reserved.
-        </footer>
-
+        <footer class="db-footer">&copy; {% now "Y" %} FKF Meru County League &mdash; All rights reserved.</footer>
     </div>
-    <!-- ===== END MAIN ===== -->
 
-    <!-- Scroll to Top -->
-    <button id="scroll-top" title="Back to top"><i class="fas fa-chevron-up"></i></button>
-
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js"></script>
-    <!-- NProgress kick-off before DOMContentLoaded -->
-    <script>if(typeof NProgress!=='undefined'){NProgress.configure({showSpinner:false,speed:380,minimum:0.15});NProgress.start();}</script>
-    <script src="{% static 'js/app.js' %}"></script>
-
+    {% include "partials/_body_scripts.html" %}
+    {% block chart_js %}<script src="{% static 'vendor/chartjs-4.4.0/chart.umd.js' %}"></script>{% endblock %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

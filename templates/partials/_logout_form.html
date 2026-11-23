@@ -1,0 +1,9 @@
+{% comment %} POST logout form (Django 5 removed GET logout). Pass button_class / extra label via `with`.
+   {% include "partials/_logout_form.html" with button_class="dropdown-item text-danger" %} {% endcomment %}
+<form method="post" action="{% url 'logout' %}" class="logout-form">
+    {% csrf_token %}
+    <button type="submit" class="{{ button_class|default:'btn btn-link' }}">
+        {% if nav_label %}<span class="nav-icon"><i class="fas fa-sign-out-alt" aria-hidden="true"></i></span>
+        <span class="nav-label">Logout</span>{% else %}<i class="fas fa-sign-out-alt" aria-hidden="true"></i> Logout{% endif %}
+    </button>
+</form>
