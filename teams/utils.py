@@ -32,7 +32,7 @@ def get_match_squad_data(team, limit=5):
     upcoming_qs = (
         Match.objects.filter(
             Q(home_team=team) | Q(away_team=team),
-            match_date__gte=today.date(),
+            match_date__date__gte=timezone.localdate(),
             status='scheduled',
         )
         .select_related('home_team', 'away_team', 'zone')

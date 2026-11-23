@@ -1,110 +1,43 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Team, Player, Zone, LeagueSettings, TransferRequest, TransferHistory, TeamOfficial
 from import_export.admin import ImportExportModelAdmin
-from matches.utils.fixture_generator import generate_fixtures_for_zone, regenerate_fixtures_for_zone
-from matches.models import Match
 
-# ⬇⬇⬇ NEW ADMIN ACTIONS FOR FIXTURE GENERATION ⬇⬇⬇
-@admin.action(description="⚽ GENERATE FIXTURES for selected zones")
-def action_generate_fixtures(modeladmin, request, queryset):
-    """Super Admin: Manually generate fixtures for zones"""
-    for zone in queryset:
-        success, message = generate_fixtures_for_zone(zone.id)
-        if success:
-            modeladmin.message_user(request, message)
-        else:
-            modeladmin.message_user(request, f"❌ {zone.name}: {message}", level='error')
+from matches.utils.fixture_generator import generate_fixtures_for_zone
 
-@admin.action(description="🔄 REGENERATE FIXTURES (delete & recreate)")
-def action_regenerate_fixtures(modeladmin, request, queryset):
-    """Super Admin: Delete and regenerate fixtures"""
-    for zone in queryset:
-        success, message = regenerate_fixtures_for_zone(zone.id)
-        if success:
-            modeladmin.message_user(request, message)
-        else:
-            modeladmin.message_user(request, f"❌ {zone.name}: {message}", level='error')
+from .models import LeagueSettings, Player, Team, TeamOfficial, TransferHistory, TransferRequest, Zone
 
-@admin.action(description="✅ APPROVE teams & auto-generate if zone ready")
+MIN_TEAMS_FOR_FIXTURES = 4
+
+
+@admin.action(description="Approve teams & auto-generate fixtures if zone ready")
 def action_approve_teams(modeladmin, request, queryset):
-    """Approve teams and trigger fixture generation if zone ready"""
-    for team in queryset:
-        team.status = 'approved'
-        team.save()
-    
-    # Trigger fixture generation for zones that now have enough teams
-    zones_with_updated_teams = Zone.objects.filter(
-        team__in=queryset
-    ).distinct()
-    
-    for zone in zones_with_updated_teams:
-        approved_count = Team.objects.filter(zone=zone, status='approved').count()
-        if approved_count >= 4 and not zone.fixtures_generated:
+    """Approve teams and trigger fixture generation for zones that now have enough teams."""
+    team_ids = list(queryset.values_list('pk', flat=True))
+    updated = Team.objects.filter(pk__in=team_ids).update(status=Team.Status.APPROVED)
+    for zone in Zone.objects.filter(team__pk__in=team_ids, fixtures_generated=False).distinct():
+        if zone.approved_teams_count >= MIN_TEAMS_FOR_FIXTURES:
             generate_fixtures_for_zone(zone.id)
-    
-    modeladmin.message_user(request, f"✅ Approved {queryset.count()} teams")
-# ⬆⬆⬆ NEW ADMIN ACTIONS FOR FIXTURE GENERATION ⬆⬆⬆
+    modeladmin.message_user(request, f"Approved {updated} teams")
 
 
 @admin.register(Zone)
 class ZoneAdmin(admin.ModelAdmin):
-    list_display = ['name', 'approved_teams_display', 'fixtures_status', 
-                   'fixture_generation_date', 'match_day_display']
+    list_display = ['name', 'approved_teams_display', 'fixtures_status',
+                    'fixture_generation_date', 'match_day_of_week']
     list_filter = ['fixtures_generated', 'match_day_of_week']
     search_fields = ['name']
-    
-    # ⬇⬇⬇ Temporarily disable actions due to Python 3.14 compatibility ⬇⬇⬇
-    # actions = ['generate_fixtures', 'regenerate_fixtures']
-    
-    def generate_fixtures(self, request, queryset):
-        """Super Admin: Manually generate fixtures for zones"""
-        for zone in queryset:
-            success, message = generate_fixtures_for_zone(zone.id)
-            if success:
-                self.message_user(request, message)
-            else:
-                self.message_user(request, f"❌ {zone.name}: {message}", level='error')
-    generate_fixtures.short_description = "⚽ GENERATE FIXTURES for selected zones"
-    
-    def regenerate_fixtures(self, request, queryset):
-        """Super Admin: Delete and regenerate fixtures"""
-        for zone in queryset:
-            success, message = regenerate_fixtures_for_zone(zone.id)
-            if success:
-                self.message_user(request, message)
-            else:
-                self.message_user(request, f"❌ {zone.name}: {message}", level='error')
-    regenerate_fixtures.short_description = "🔄 REGENERATE FIXTURES (delete & recreate)"
-    
+
+    @admin.display(description='Approved Teams')
     def approved_teams_display(self, obj):
-        count = obj.team_set.filter(status='approved').count()
-        color = 'green' if count >= 4 else 'orange' if count >= 2 else 'red'
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">{}</span>',
-            color, f"{count} approved"
-        )
-    approved_teams_display.short_description = 'Approved Teams'
-    
+        count = obj.approved_teams_count
+        color = 'green' if count >= MIN_TEAMS_FOR_FIXTURES else 'orange' if count >= 2 else 'red'
+        return format_html('<span style="color: {}; font-weight: bold;">{} approved</span>', color, count)
+
+    @admin.display(description='Fixtures Status')
     def fixtures_status(self, obj):
         if obj.fixtures_generated:
-            return format_html(
-                '<span style="color: green; font-weight: bold;">✓ GENERATED</span>'
-            )
-        return format_html(
-            '<span style="color: orange; font-weight: bold;">⏳ PENDING</span>'
-        )
-    fixtures_status.short_description = 'Fixtures Status'
-    
-    def match_day_display(self, obj):
-        days = {6: 'Saturday', 0: 'Sunday'}
-        return days.get(obj.match_day_of_week, 'Sunday')
-    match_day_display.short_description = 'Match Day'
-    
-    def actions_column(self, obj):
-        """Quick action buttons in list view - temporarily disabled due to Python 3.14 compatibility"""
-        return "Actions disabled"
-    # actions_column.short_description = 'Quick Actions'
+            return format_html('<span style="color: {};">{}</span>', 'green', 'GENERATED')
+        return format_html('<span style="color: {};">{}</span>', 'orange', 'PENDING')
 
 
 @admin.register(Team)
@@ -115,10 +48,9 @@ class TeamAdmin(ImportExportModelAdmin):
     list_editable = ['zone', 'status']  # Super Admin can change zone and status directly
     readonly_fields = ['team_code', 'registration_date']
     
-    # ⬇⬇⬇ ADD FIXTURE-AWARE TEAM APPROVAL ACTION ⬇⬇⬇
-    actions = ['approve_registration', 'mark_as_paid', action_approve_teams]
-    
-    # ⬇⬇⬇ UPDATED FIELDSETS ⬇⬇⬇
+    actions = ['mark_as_paid', action_approve_teams]
+    list_select_related = ['zone']
+
     fieldsets = (
         ('Team Information', {
             'fields': ('team_name', 'team_code', 'logo', 'status')
@@ -135,15 +67,10 @@ class TeamAdmin(ImportExportModelAdmin):
         }),
     )
     
-    def approve_registration(self, request, queryset):
-        updated = queryset.update(status='approved')
-        self.message_user(request, f'{updated} teams approved successfully.')
-    approve_registration.short_description = "Approve selected teams"
-    
+    @admin.action(description="Mark selected teams as paid")
     def mark_as_paid(self, request, queryset):
         updated = queryset.update(payment_status=True)
         self.message_user(request, f'{updated} teams marked as paid.')
-    mark_as_paid.short_description = "Mark selected teams as paid"
 
 
 @admin.register(Player)
@@ -172,16 +99,18 @@ class PlayerAdmin(ImportExportModelAdmin):
     )
     
     actions = ['suspend_players', 'clear_suspension']
-    
+    list_select_related = ['team']
+
+    @admin.action(description="Suspend selected players")
     def suspend_players(self, request, queryset):
         updated = queryset.update(is_suspended=True)
         self.message_user(request, f'{updated} players suspended.')
-    suspend_players.short_description = "Suspend selected players"
-    
+
+    @admin.action(description="Clear suspension for selected players")
     def clear_suspension(self, request, queryset):
-        updated = queryset.update(is_suspended=False, suspension_end=None, suspension_reason='')
+        updated = queryset.update(is_suspended=False, suspension_end=None, suspension_reason='',
+                                  suspension_matches=0)
         self.message_user(request, f'{updated} players suspension cleared.')
-    clear_suspension.short_description = "Clear suspension for selected players"
 
 
 @admin.register(LeagueSettings)
@@ -222,7 +151,8 @@ class LeagueSettingsAdmin(admin.ModelAdmin):
 class TransferRequestAdmin(admin.ModelAdmin):
     """Admin interface for managing transfer requests"""
     
-    list_display = ['player', 'from_team', 'to_team', 'status', 'request_date', 'admin_override', 'actions_column']
+    list_display = ['player', 'from_team', 'to_team', 'status', 'request_date', 'admin_override']
+    list_select_related = ['player', 'from_team', 'to_team']
     list_filter = ['status', 'admin_override', 'request_date']
     search_fields = ['player__first_name', 'player__last_name', 'from_team__team_name', 'to_team__team_name']
     readonly_fields = ['request_date', 'updated_at', 'parent_decision_date', 'admin_override_date']
@@ -246,51 +176,24 @@ class TransferRequestAdmin(admin.ModelAdmin):
     
     actions = ['force_approve_transfer', 'cancel_transfer']
     
+    @admin.action(description="Force approve selected rejected transfers (override)")
     def force_approve_transfer(self, request, queryset):
-        """Super admin can override rejections and force approval"""
+        """Super admin can override rejections and force approval."""
         count = 0
-        for transfer in queryset:
-            if transfer.status == 'rejected':
-                transfer.override_by_admin(
-                    user=request.user,
-                    reason="Admin override: Approved by super admin"
-                )
-                count += 1
-                self.message_user(request, f"✅ Forced approval: {transfer.player} → {transfer.to_team}")
-        
-        if count == 0:
-            self.message_user(request, "No rejected transfers selected", level='warning')
+        for transfer in queryset.filter(status=TransferRequest.Status.REJECTED):
+            transfer.override_by_admin(user=request.user, reason="Admin override: Approved by super admin")
+            count += 1
+        if count:
+            self.message_user(request, f"{count} transfer(s) force-approved")
         else:
-            self.message_user(request, f"✅ {count} transfer(s) forced approved")
-    
-    force_approve_transfer.short_description = "🔓 Force Approve Selected Transfers (Override Rejection)"
-    
+            self.message_user(request, "No rejected transfers selected", level='warning')
+
+    @admin.action(description="Cancel selected pending transfers")
     def cancel_transfer(self, request, queryset):
-        """Admin can cancel pending transfers"""
-        count = queryset.filter(status='pending_parent').update(status='cancelled')
-        self.message_user(request, f"❌ {count} transfer(s) cancelled")
-    
-    cancel_transfer.short_description = "❌ Cancel Selected Transfers"
-    
-    def actions_column(self, obj):
-        """Quick action buttons"""
-        if obj.status == 'rejected':
-            return format_html(
-                '<a href="#" onclick="return confirm(\'Force approve this transfer?\');" '
-                'style="background: green; color: white; padding: 5px 10px; '
-                'border-radius: 3px; text-decoration: none;">OVERRIDE & APPROVE</a>'
-            )
-        elif obj.status == 'pending_parent':
-            return format_html(
-                '<span style="color: orange;">⏳ Awaiting Parent Club</span>'
-            )
-        elif obj.status == 'approved':
-            return format_html(
-                '<span style="color: green;">✅ Complete</span>'
-            )
-        return '-'
-    
-    actions_column.short_description = 'Actions'
+        count = queryset.filter(status=TransferRequest.Status.PENDING_PARENT).update(
+            status=TransferRequest.Status.CANCELLED
+        )
+        self.message_user(request, f"{count} transfer(s) cancelled")
 
 
 @admin.register(TransferHistory)
