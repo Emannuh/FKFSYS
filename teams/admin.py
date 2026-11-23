@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
 
 from matches.utils.fixture_generator import generate_fixtures_for_zone
