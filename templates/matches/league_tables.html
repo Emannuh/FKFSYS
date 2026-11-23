@@ -13,14 +13,14 @@
     background: white; color: var(--text-secondary); box-shadow: var(--shadow-xs);
   }
   .zone-pill:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
-  .zone-pill.active-a { background: linear-gradient(135deg,#ff6b6b,#ee5a24); color: white; border-color: transparent; }
+  .zone-pill.active-a { background: linear-gradient(135deg,#e0213f,#ee5a24); color: white; border-color: transparent; }
   .zone-pill.active-b { background: linear-gradient(135deg,#4ecdc4,#0fb9b1); color: white; border-color: transparent; }
   .zone-pill.active-c { background: linear-gradient(135deg,#45b7d1,#0652DD); color: white; border-color: transparent; }
   .zone-pill.active-d { background: linear-gradient(135deg,var(--fkf-purple),var(--fkf-blue)); color: white; border-color: transparent; }
   .zone-pill.active   { background: linear-gradient(135deg,var(--fkf-red),var(--fkf-red-dark)); color: white; border-color: transparent; }
 
   /* Table */
-  .league-table thead th { background: linear-gradient(90deg,#1a1a2e,#2d3748); }
+  .league-table thead th { background: linear-gradient(90deg,#0a0a0b,#2a2a2e); }
   .league-table tbody tr { transition: background 0.15s ease; }
   .league-table tbody tr:hover td { background: #f0fdf4; }
   .league-table td { vertical-align: middle; padding: 0.75rem 0.9rem; font-size: 0.875rem; }
@@ -32,8 +32,8 @@
   .pos-relegate { background: linear-gradient(135deg,var(--fkf-red),var(--fkf-red-dark)); }
   .pos-normal   { background: transparent; }
   tr.row-champion { background: linear-gradient(90deg,rgba(255,215,0,0.07),transparent) !important; }
-  tr.row-promo    { background: linear-gradient(90deg,rgba(45,198,83,0.07),transparent) !important; }
-  tr.row-relegate { background: linear-gradient(90deg,rgba(230,57,70,0.07),transparent) !important; }
+  tr.row-promo    { background: linear-gradient(90deg,rgba(0,160,74,0.07),transparent) !important; }
+  tr.row-relegate { background: linear-gradient(90deg,rgba(224,33,63,0.07),transparent) !important; }
 
   /* Form badges */
   .form-badge { width: 24px; height: 24px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.72rem; }
@@ -97,7 +97,7 @@
 
     <div class="card mb-4" style="overflow:visible;">
       <div class="card-header d-flex align-items-center justify-content-between"
-           style="background:linear-gradient(90deg,#1a1a2e,#2d3748);">
+           style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);">
         <h5 class="mb-0 text-white">
           <i class="fas fa-map-marker-alt me-2" style="color:var(--fkf-gold);"></i>{{ zone.name }} — League Table
         </h5>
@@ -235,7 +235,7 @@
 
   <div class="col-md-6">
     <div class="stats-card">
-      <div class="stats-card-hdr" style="background:linear-gradient(90deg,var(--fkf-green-dark),#0f5132);">
+      <div class="stats-card-hdr" style="background:linear-gradient(90deg,var(--fkf-green-dark),#006b31);">
         <i class="fas fa-shield-alt me-2"></i>Top Goalkeepers
       </div>
       {% if goalkeepers %}

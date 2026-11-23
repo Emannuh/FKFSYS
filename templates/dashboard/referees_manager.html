@@ -1,7 +1,7 @@
 {% extends "base_dashboard.html" %}
 {% load static %}
 {% block title %}Referees Manager Dashboard — FKF Meru League{% endblock %}
-{% block page_title %}<i class="fas fa-whistle me-2" style="color:#198754;"></i> Referees Manager Dashboard{% endblock %}
+{% block page_title %}<i class="fas fa-whistle me-2" style="color:#00843d;"></i> Referees Manager Dashboard{% endblock %}
 {% block nav_active_ref_manager %}active{% endblock %}
 
 {% block extra_css %}{% endblock %}
@@ -91,33 +91,33 @@
     <div class="row g-3 mb-4" data-aos="fade-up">
         <div class="col-md-4">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#e63946,#c1121f);"><i class="fas fa-user-check"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#e0213f,#c8102e);"><i class="fas fa-user-check"></i></div>
                 <h6 class="fw-bold mb-1">Approve Referees {% if pending_referees_count > 0 %}<span class="badge bg-danger ms-1">{{ pending_referees_count }}</span>{% endif %}</h6>
                 <p class="text-muted small mb-3">Review and approve pending referee registrations</p>
-                <a href="{% url 'referees:pending_referees' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;border-radius:8px;">Approve Referees</a>
+                <a href="{% url 'referees:pending_referees' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;border-radius:8px;">Approve Referees</a>
             </div>
         </div>
         <div class="col-md-4">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#f4a261,#e76f51);"><i class="fas fa-user-plus"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#6e6e73,#4a4a4f);"><i class="fas fa-user-plus"></i></div>
                 <h6 class="fw-bold mb-1">Appoint Officials</h6>
                 <p class="text-muted small mb-3">Assign referees and officials to upcoming matches</p>
-                <a href="{% url 'referees:matches_needing_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;border-radius:8px;">Appoint Officials</a>
+                <a href="{% url 'referees:matches_needing_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;border-radius:8px;">Appoint Officials</a>
             </div>
         </div>
         <div class="col-md-4">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#2dc653,#198754);"><i class="fas fa-users"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#00a04a,#00843d);"><i class="fas fa-users"></i></div>
                 <h6 class="fw-bold mb-1">View All Referees</h6>
                 <p class="text-muted small mb-3">Browse all referee profiles and status</p>
-                <a href="{% url 'referees:all_referees' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;border-radius:8px;">All Referees</a>
+                <a href="{% url 'referees:all_referees' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;border-radius:8px;">All Referees</a>
             </div>
         </div>
     </div>
 
     <!-- Urgent: Matches Needing Officials -->
     <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;padding:1rem 1.5rem;">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;padding:1rem 1.5rem;">
             <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Urgent: Matches Needing Officials</h5>
             <span class="badge bg-white text-warning fs-6" id="urgentMatchesCount">0</span>
         </div>
@@ -140,7 +140,7 @@
 
     <!-- All Appointed Matches -->
     <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;padding:1rem 1.5rem;">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;padding:1rem 1.5rem;">
             <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>All Appointments</h5>
             <span class="badge bg-white text-primary fs-6" id="appointedMatchesCount">0</span>
         </div>
@@ -167,7 +167,7 @@
 
     <!-- Available Referees -->
     <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;padding:1rem 1.5rem;">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;padding:1rem 1.5rem;">
             <h5 class="mb-0"><i class="fas fa-user-check me-2"></i>Available Referees</h5>
             <span class="badge bg-white text-success fs-6" id="availableRefCountBadge">0</span>
         </div>
@@ -204,7 +204,7 @@
                 labels: ['Pending Approvals', 'Needs Officials', 'Pending Confirm.', 'Available'],
                 datasets: [{
                     data: [pendingApprovals, 0, 0, 0],  // AJAX data fills in dynamically
-                    backgroundColor: ['#e63946', '#f4a261', '#4361ee', '#2dc653'],
+                    backgroundColor: ['#e0213f', '#6e6e73', '#1f1f23', '#00a04a'],
                     borderWidth: 0, hoverOffset: 8
                 }]
             },
@@ -226,7 +226,7 @@
                 datasets: [{
                     label: 'Count',
                     data: [pendingApprovals, 0, 0, 0],
-                    backgroundColor: ['rgba(230,57,70,0.8)', 'rgba(244,162,97,0.85)', 'rgba(67,97,238,0.75)', 'rgba(45,198,83,0.75)'],
+                    backgroundColor: ['rgba(224,33,63,0.8)', 'rgba(110,110,115,0.85)', 'rgba(31,31,35,0.75)', 'rgba(0,160,74,0.75)'],
                     borderRadius: 10, borderSkipped: false
                 }]
             },

@@ -17,33 +17,41 @@
    ========================================================================== */
 :root,
 [data-bs-theme="light"] {
-  /* Brand — FKF red is the only accent colour */
-  --fkf-accent: #c1121f;            /* fills (buttons, active nav); white text 5.9:1 */
-  --fkf-accent-hover: #9f0e19;
-  --fkf-accent-rgb: 193, 18, 31;
-  --fkf-accent-text: #b0101c;       /* accent as text/link on surfaces: 6.6:1 */
-  --fkf-accent-subtle: #fdecee;
-  --fkf-accent-border: #f3b9be;
+  /* Brand — FKF red (primary), with FKF green, black and white */
+  --fkf-accent: #c8102e;            /* fills (buttons, active nav); white text 5.9:1 */
+  --fkf-accent-hover: #a10d26;
+  --fkf-accent-rgb: 200, 16, 46;
+  --fkf-accent-text: #b30e29;       /* accent as text/link on surfaces: 6.6:1 */
+  --fkf-accent-subtle: #fdebee;
+  --fkf-accent-border: #f4b8c2;
   --fkf-on-accent: #ffffff;
+  --fkf-red: #c8102e;
+  --fkf-green: #00843d;            /* fills; white text 4.9:1 */
+  --fkf-green-hover: #006b31;
+  --fkf-green-text: #006f33;       /* green as text on surfaces: 6.3:1 */
+  --fkf-green-rgb: 0, 132, 61;
+  --fkf-green-subtle: #e3f3e9;
+  --fkf-black: #0a0a0b;
+  --fkf-white: #ffffff;
 
   /* Neutrals */
-  --fkf-bg: #f5f6f8;                /* page background */
+  --fkf-bg: #f6f6f3;                /* page background */
   --fkf-surface: #ffffff;           /* cards, tables, menus */
   --fkf-surface-2: #f0f2f4;         /* table header, hover, inset */
   --fkf-surface-3: #e4e7eb;
-  --fkf-text: #15181c;              /* 17:1 on surface */
+  --fkf-text: #111113;              /* 17:1 on surface */
   --fkf-text-muted: #59616a;        /* 6.2:1 on surface, 5.7:1 on bg */
   --fkf-border: #e0e3e7;
   --fkf-border-strong: #c5cbd2;
-  --fkf-ink: #15181c;               /* always-dark chrome (site nav, sidebar, footer) */
-  --fkf-ink-2: #1f2328;
+  --fkf-ink: #0a0a0b;               /* always-dark chrome (site nav, sidebar, footer) */
+  --fkf-ink-2: #161618;
   --fkf-ink-text: #f2f3f5;
   --fkf-ink-muted: #a9b0b8;         /* 7.9:1 on ink */
 
   /* States (not decoration) */
-  --fkf-success: #146c43;           /* text: 6.4:1 */
-  --fkf-success-solid: #157347;     /* fill with white text: 5.9:1 */
-  --fkf-success-subtle: #e6f4ec;
+  --fkf-success: #006f33;           /* text: 6.4:1 */
+  --fkf-success-solid: #00843d;     /* fill with white text: 5.9:1 */
+  --fkf-success-subtle: #e3f3e9;
   --fkf-warning: #8a5300;           /* text: 6.0:1 */
   --fkf-warning-solid: #f2b01e;     /* fill with dark text: 10:1 */
   --fkf-warning-subtle: #fff4d9;
@@ -97,11 +105,11 @@
   --bs-body-font-size: 0.9375rem;
   --bs-body-line-height: var(--fkf-leading);
   --bs-body-color: var(--fkf-text);
-  --bs-body-color-rgb: 21, 24, 28;
+  --bs-body-color-rgb: 17, 17, 19;
   --bs-body-bg: var(--fkf-surface);           /* component surfaces; page bg set on <body> */
   --bs-body-bg-rgb: 255, 255, 255;
   --bs-emphasis-color: var(--fkf-text);
-  --bs-emphasis-color-rgb: 21, 24, 28;
+  --bs-emphasis-color-rgb: 17, 17, 19;
   --bs-heading-color: var(--fkf-text);
   --bs-secondary-color: var(--fkf-text-muted);
   --bs-secondary-color-rgb: 89, 97, 106;
@@ -114,17 +122,17 @@
   --bs-border-radius-sm: var(--fkf-radius-sm);
   --bs-border-radius-lg: var(--fkf-radius-lg);
   --bs-link-color: var(--fkf-accent-text);
-  --bs-link-color-rgb: 176, 16, 28;
+  --bs-link-color-rgb: 179, 14, 41;
   --bs-link-hover-color: var(--fkf-accent-hover);
-  --bs-link-hover-color-rgb: 159, 14, 25;
+  --bs-link-hover-color-rgb: 161, 13, 38;
   --bs-focus-ring-color: rgba(var(--fkf-accent-rgb), 0.35);
-  --bs-primary: #c1121f;
-  --bs-primary-rgb: 193, 18, 31;
-  --bs-primary-text-emphasis: #8c0d17;
+  --bs-primary: #c8102e;
+  --bs-primary-rgb: 200, 16, 46;
+  --bs-primary-text-emphasis: #8a0b20;
   --bs-primary-bg-subtle: var(--fkf-accent-subtle);
   --bs-primary-border-subtle: var(--fkf-accent-border);
-  --bs-success: #157347;
-  --bs-success-rgb: 21, 115, 71;
+  --bs-success: #00843d;
+  --bs-success-rgb: 0, 132, 61;
   --bs-success-text-emphasis: var(--fkf-success);
   --bs-success-bg-subtle: var(--fkf-success-subtle);
   --bs-warning: #f2b01e;
@@ -144,30 +152,32 @@
 
 [data-bs-theme="dark"] {
   color-scheme: dark;
-  --fkf-accent: #c1121f;
-  --fkf-accent-hover: #d9232f;
-  --fkf-accent-text: #ff8086;       /* 7.0:1 on surface */
-  --fkf-accent-subtle: rgba(193, 18, 31, 0.2);
-  --fkf-accent-border: rgba(255, 128, 134, 0.4);
+  --fkf-accent: #c8102e;
+  --fkf-accent-hover: #e0213f;
+  --fkf-accent-text: #ff7a8c;       /* 7.0:1 on surface */
+  --fkf-accent-subtle: rgba(200, 16, 46, 0.2);
+  --fkf-accent-border: rgba(255, 122, 140, 0.4);
+  --fkf-green-text: #3ddc84;       /* 8.9:1 on dark surface */
+  --fkf-green-subtle: rgba(61, 220, 132, 0.14);
 
-  --fkf-bg: #0d0f12;
-  --fkf-surface: #16191d;
-  --fkf-surface-2: #1e2227;
-  --fkf-surface-3: #282d33;
+  --fkf-bg: #08080a;
+  --fkf-surface: #121214;
+  --fkf-surface-2: #1a1a1d;
+  --fkf-surface-3: #242428;
   --fkf-text: #e9ebee;              /* 14.6:1 on surface */
   --fkf-text-muted: #a4acb5;        /* 7.6:1 on surface */
-  --fkf-border: #2b3036;
-  --fkf-border-strong: #3d434a;
+  --fkf-border: #26262a;
+  --fkf-border-strong: #38383d;
   --fkf-ink: #0a0b0d;
   --fkf-ink-2: #121417;
 
-  --fkf-success: #5fd39b;
-  --fkf-success-solid: #157347;
-  --fkf-success-subtle: rgba(95, 211, 155, 0.14);
+  --fkf-success: #3ddc84;
+  --fkf-success-solid: #00843d;
+  --fkf-success-subtle: rgba(61, 220, 132, 0.14);
   --fkf-warning: #f6c453;
   --fkf-warning-subtle: rgba(242, 176, 30, 0.16);
-  --fkf-danger: #ff8086;
-  --fkf-danger-subtle: rgba(255, 128, 134, 0.14);
+  --fkf-danger: #ff7a8c;
+  --fkf-danger-subtle: rgba(255, 122, 140, 0.14);
   --fkf-info: #b3bcc6;
   --fkf-info-subtle: rgba(179, 188, 198, 0.12);
 
@@ -178,7 +188,7 @@
   --bs-body-color: var(--fkf-text);
   --bs-body-color-rgb: 233, 235, 238;
   --bs-body-bg: var(--fkf-surface);
-  --bs-body-bg-rgb: 22, 25, 29;
+  --bs-body-bg-rgb: 18, 18, 20;
   --bs-emphasis-color: var(--fkf-text);
   --bs-emphasis-color-rgb: 233, 235, 238;
   --bs-heading-color: var(--fkf-text);
@@ -190,7 +200,7 @@
   --bs-border-color: var(--fkf-border);
   --bs-border-color-translucent: rgba(255, 255, 255, 0.1);
   --bs-link-color: var(--fkf-accent-text);
-  --bs-link-color-rgb: 255, 128, 134;
+  --bs-link-color-rgb: 255, 122, 140;
   --bs-link-hover-color: #ffa3a7;
   --bs-link-hover-color-rgb: 255, 163, 167;
   --bs-primary-text-emphasis: var(--fkf-accent-text);
@@ -293,8 +303,8 @@ a:hover { color: var(--bs-link-hover-color); }
 }
 .btn-success {
   --bs-btn-bg: var(--fkf-success-solid); --bs-btn-border-color: var(--fkf-success-solid);
-  --bs-btn-hover-bg: #0f5c38; --bs-btn-hover-border-color: #0f5c38;
-  --bs-btn-active-bg: #0f5c38; --bs-btn-active-border-color: #0f5c38;
+  --bs-btn-hover-bg: #006b31; --bs-btn-hover-border-color: #006b31;
+  --bs-btn-active-bg: #006b31; --bs-btn-active-border-color: #006b31;
 }
 .btn-outline-success { --bs-btn-color: var(--fkf-success); --bs-btn-border-color: var(--fkf-success); --bs-btn-hover-bg: var(--fkf-success-solid); --bs-btn-hover-border-color: var(--fkf-success-solid); }
 .btn-info, .btn-secondary, .btn-dark {
@@ -324,7 +334,7 @@ a:hover { color: var(--bs-link-hover-color); }
 .form-text { font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
 .form-check-input:checked { background-color: var(--fkf-accent); border-color: var(--fkf-accent); }
 .form-check-input:focus { border-color: var(--fkf-accent); box-shadow: var(--fkf-focus-ring); }
-.form-switch .form-check-input:focus { --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23c1121f'/%3e%3c/svg%3e"); }
+.form-switch .form-check-input:focus { --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23c8102e'/%3e%3c/svg%3e"); }
 .invalid-feedback, .errorlist { color: var(--fkf-danger); font-size: var(--fkf-text-xs); }
 
 .card {
@@ -794,6 +804,139 @@ a.chip:hover { border-color: var(--fkf-border-strong); color: var(--fkf-text); }
 .sg-swatch--success { background: var(--fkf-success-solid); }
 .sg-swatch--warning { background: var(--fkf-warning-solid); }
 .sg-swatch--danger { background: var(--fkf-danger); }
+
+/* ==========================================================================
+   5b. FKF BRAND LAYER — red · black · green · white
+   Signature: the Kenyan-flag stripe (black, red, green with white
+   fimbriation). Red = primary action, green = co-brand + positive,
+   black = chrome, white = space. Keep decoration to these four colours.
+   ========================================================================== */
+:root {
+  --fkf-stripe: linear-gradient(90deg,
+      var(--fkf-black) 0 31%, var(--fkf-white) 31% 34.5%,
+      var(--fkf-red) 34.5% 65.5%, var(--fkf-white) 65.5% 69%,
+      var(--fkf-green) 69% 100%);
+  --fkf-stripe-h: 4px;
+  /* Beneath black chrome the bands stack vertically, completing the flag */
+  --fkf-flag: linear-gradient(180deg, var(--fkf-white) 0 1px, var(--fkf-red) 1px 4px,
+      var(--fkf-white) 4px 5px, var(--fkf-green) 5px 8px);
+  --fkf-flag-up: linear-gradient(0deg, var(--fkf-white) 0 1px, var(--fkf-red) 1px 4px,
+      var(--fkf-white) 4px 5px, var(--fkf-green) 5px 8px);
+  --fkf-flag-h: 8px;
+}
+.fkf-stripe { display: block; height: var(--fkf-stripe-h); background: var(--fkf-stripe); }
+
+/* Headings: tighter, heavier — premium editorial feel */
+h1, .h1, h2, .h2 { font-weight: 800; letter-spacing: -0.025em; }
+.page-eyebrow { letter-spacing: 0.14em; }
+.page-eyebrow::before {
+  content: ""; display: inline-block; width: 18px; height: 3px; margin-right: 0.5rem;
+  vertical-align: middle; background: var(--fkf-stripe); border-radius: 1px;
+}
+
+/* Brand marks: red tile with a green base line (the two FKF accents) */
+.brand-mark, .sb-brand-icon {
+  background: var(--fkf-red); box-shadow: inset 0 -3px 0 var(--fkf-green);
+  border-radius: 8px;
+}
+
+/* Public nav: deep black with the stripe along its base */
+.site-nav { background: var(--fkf-black); border-bottom: 0; }
+.site-nav::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: calc(-1 * var(--fkf-flag-h));
+  height: var(--fkf-flag-h); background: var(--fkf-flag); pointer-events: none;
+}
+.site-nav .nav-link.active, .site-nav .nav-link[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--fkf-red); }
+
+/* Footer: stripe on top instead of a flat red rule */
+.site-footer { position: relative; background: var(--fkf-black); border-top: 0; }
+.site-footer::before { content: ""; position: absolute; left: 0; right: 0; top: calc(-1 * var(--fkf-flag-h)); height: var(--fkf-flag-h); background: var(--fkf-flag-up); }
+
+/* App shell: stripe under the sidebar brand */
+.db-sidebar { background: var(--fkf-black); }
+.sb-brand { position: relative; border-bottom: 0; }
+.sb-brand::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--fkf-flag-h); background: var(--fkf-flag); }
+.db-sidebar { border-right: 0; box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06); }
+.db-topbar { box-shadow: 0 1px 0 var(--fkf-border); border-bottom: 0; }
+
+/* Hero: black stage with a quiet red / green glow and the stripe beneath */
+.hub-hero {
+  position: relative; overflow: hidden; border-bottom: 0;
+  padding-block: var(--fkf-space-8) var(--fkf-space-7);
+  background:
+    radial-gradient(60% 120% at 100% 0%, rgba(var(--fkf-accent-rgb), 0.28) 0%, transparent 60%),
+    radial-gradient(50% 110% at 0% 100%, rgba(var(--fkf-green-rgb), 0.22) 0%, transparent 60%),
+    var(--fkf-black);
+}
+.hub-hero { margin-top: var(--fkf-flag-h); }
+.hub-hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--fkf-flag-h); background: var(--fkf-flag); }
+.hub-hero h1 { font-size: clamp(1.9rem, 4.2vw, 3rem); letter-spacing: -0.03em; }
+.hub-hero .page-eyebrow { color: #fff; }
+.hub-stat {
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.09);
+  border-top: 2px solid var(--fkf-green);
+}
+.hub-stat:nth-child(2) { border-top-color: var(--fkf-red); }
+.hub-stat:nth-child(3) { border-top-color: #fff; }
+.hub-stat strong { font-size: clamp(1.4rem, 2.6vw, 2rem); letter-spacing: -0.02em; }
+
+/* Green as the second brand colour */
+.btn-success, .btn-brand-green {
+  --bs-btn-color: #fff; --bs-btn-bg: var(--fkf-green); --bs-btn-border-color: var(--fkf-green);
+  --bs-btn-hover-color: #fff; --bs-btn-hover-bg: var(--fkf-green-hover); --bs-btn-hover-border-color: var(--fkf-green-hover);
+  --bs-btn-active-color: #fff; --bs-btn-active-bg: var(--fkf-green-hover); --bs-btn-active-border-color: var(--fkf-green-hover);
+}
+.btn-outline-success { --bs-btn-color: var(--fkf-green-text); --bs-btn-border-color: var(--fkf-green); --bs-btn-hover-color: #fff; --bs-btn-hover-bg: var(--fkf-green); --bs-btn-hover-border-color: var(--fkf-green); }
+.btn-primary { box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08), 0 4px 14px -6px rgba(var(--fkf-accent-rgb), 0.55); }
+.btn-dark, .btn-secondary, .btn-info { --bs-btn-bg: var(--fkf-black); --bs-btn-border-color: var(--fkf-black); }
+.text-success, .text-brand-green { color: var(--fkf-green-text) !important; }
+.stat-tile { border-top: 3px solid var(--fkf-border); }
+.stat-tile--green { background: var(--fkf-green); border-color: var(--fkf-green); }
+.stat-tile--green .stat-tile__label, .stat-tile--green .stat-tile__meta { color: rgba(255, 255, 255, 0.85); }
+.stat-tile--green .stat-tile__value { color: #fff; }
+.stat-tile--dark { background: var(--fkf-black); border-color: var(--fkf-black); }
+.stat-tile--dark .stat-tile__label, .stat-tile--dark .stat-tile__meta { color: rgba(255, 255, 255, 0.7); }
+.stat-tile--dark .stat-tile__value { color: #fff; }
+.row > [class*="col"]:nth-child(3n+1) > .stat-tile:not([class*="stat-tile--"]) { border-top-color: var(--fkf-red); }
+.row > [class*="col"]:nth-child(3n+2) > .stat-tile:not([class*="stat-tile--"]) { border-top-color: var(--fkf-green); }
+.row > [class*="col"]:nth-child(3n+3) > .stat-tile:not([class*="stat-tile--"]) { border-top-color: var(--fkf-black); }
+[data-bs-theme="dark"] .row > [class*="col"]:nth-child(3n+3) > .stat-tile:not([class*="stat-tile--"]) { border-top-color: #fff; }
+
+/* Panels & cards: crisp hairlines over heavy shadows */
+.panel, .card { box-shadow: 0 1px 2px rgba(10, 10, 11, 0.04); }
+.panel-title i { color: var(--fkf-red); }
+.section-title h2, .section-title h3 { position: relative; padding-left: 0.75rem; }
+.section-title h2::before, .section-title h3::before {
+  content: ""; position: absolute; left: 0; top: 0.15em; bottom: 0.15em; width: 3px; border-radius: 2px;
+  background: linear-gradient(var(--fkf-red) 0 50%, var(--fkf-green) 50% 100%);
+}
+
+/* Tables */
+.league-table tr.is-leader td.pos { color: var(--fkf-green-text); box-shadow: inset 3px 0 0 var(--fkf-green); }
+.form-badge.form-w { background: var(--fkf-green); }
+.form-badge.form-l { background: var(--fkf-red); }
+.form-badge.form-d { background: #6e6e73; }
+.rank-list li:first-child .rank { color: var(--fkf-green-text); }
+
+/* Fixture cards: score in a black capsule (white in dark mode) */
+.fixture-card { transition: border-color 0.15s var(--fkf-ease), transform 0.15s var(--fkf-ease); }
+.fixture-card:hover { border-color: var(--fkf-border-strong); transform: translateY(-1px); }
+.fixture-card__score {
+  display: inline-block; min-width: 3.6rem; padding: 0.15rem 0.6rem; border-radius: 6px;
+  background: var(--fkf-black); color: #fff;
+}
+[data-bs-theme="dark"] .fixture-card__score { background: #fff; color: var(--fkf-black); }
+
+/* Status, registration, controls: green means open / approved / on */
+.status-success { background: var(--fkf-green-subtle); color: var(--fkf-green-text); }
+.reg-window-card.reg-open { border-left-color: var(--fkf-green); }
+.reg-icon-open { background: var(--fkf-green-subtle); color: var(--fkf-green-text); }
+.nav-segmented .nav-link.active { background: var(--fkf-black); color: #fff; }
+[data-bs-theme="dark"] .nav-segmented .nav-link.active { background: #fff; color: var(--fkf-black); }
+.nav-tabs .nav-link.active { box-shadow: inset 0 -2px 0 var(--fkf-red); }
+.form-check-input:checked { background-color: var(--fkf-green); border-color: var(--fkf-green); }
+.progress { --bs-progress-bar-bg: var(--fkf-green); }
+#nprogress .bar { background: linear-gradient(90deg, var(--fkf-red), var(--fkf-green)) !important; }
 
 /* ==========================================================================
    6. LEGACY — pre-v3 class names and variables, re-pointed at the tokens so

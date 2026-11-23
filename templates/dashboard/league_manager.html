@@ -1,12 +1,12 @@
 {% extends "base_dashboard.html" %}
 {% block title %}League Manager Dashboard — FKF Meru League{% endblock %}
-{% block page_title %}<i class="fas fa-sitemap me-2" style="color:#198754;"></i> League Manager Dashboard{% endblock %}
+{% block page_title %}<i class="fas fa-sitemap me-2" style="color:#00843d;"></i> League Manager Dashboard{% endblock %}
 {% block nav_active_dashboard %}active{% endblock %}
 
 {% block extra_css %}
 <style>
     .hero-banner {
-        background: linear-gradient(135deg, #198754 0%, #1a1a2e 100%);
+        background: linear-gradient(135deg, #00843d 0%, #0a0a0b 100%);
         border-radius: 16px; padding: 1.6rem 2rem; color: white;
         position: relative; overflow: hidden; margin-bottom: 1.5rem;
     }
@@ -60,34 +60,34 @@
     <div class="row g-3 mb-4" data-aos="fade-up">
         <div class="col-6 col-md-3">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4361ee,#3a0ca3);"><i class="fas fa-users"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#0a0a0b);"><i class="fas fa-users"></i></div>
                 <h6 class="fw-bold mb-1">Team Management</h6>
                 <p class="text-muted small mb-3">Approve teams and manage registrations</p>
-                <a href="{% url 'teams:dashboard' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:8px;">Manage Teams</a>
+                <a href="{% url 'teams:dashboard' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;border-radius:8px;">Manage Teams</a>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#2dc653,#198754);"><i class="fas fa-user-friends"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#00a04a,#00843d);"><i class="fas fa-user-friends"></i></div>
                 <h6 class="fw-bold mb-1">Player Management</h6>
                 <p class="text-muted small mb-3">Oversee player registrations</p>
-                <a href="{% url 'teams:admin_manage_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;border-radius:8px;">Manage Players</a>
+                <a href="{% url 'teams:admin_manage_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;border-radius:8px;">Manage Players</a>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4cc9f0,#4361ee);"><i class="fas fa-user-tie"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4cc9f0,#1f1f23);"><i class="fas fa-user-tie"></i></div>
                 <h6 class="fw-bold mb-1">Officials Management</h6>
                 <p class="text-muted small mb-3">Manage team officials</p>
-                <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4cc9f0,#4361ee);color:white;border-radius:8px;">Manage Officials</a>
+                <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4cc9f0,#1f1f23);color:white;border-radius:8px;">Manage Officials</a>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#f4a261,#e76f51);"><i class="fas fa-futbol"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#6e6e73,#4a4a4f);"><i class="fas fa-futbol"></i></div>
                 <h6 class="fw-bold mb-1">Match Management</h6>
                 <p class="text-muted small mb-3">Manage fixtures &amp; matches</p>
-                <a href="{% url 'matches:manage_matches' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;border-radius:8px;">Manage Matches</a>
+                <a href="{% url 'matches:manage_matches' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;border-radius:8px;">Manage Matches</a>
             </div>
         </div>
     </div>
@@ -96,27 +96,27 @@
     <div class="row g-3 mb-4" data-aos="fade-up">
         <div class="col-md-4">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#f4a261,#f72585);"><i class="fas fa-exchange-alt"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#6e6e73,#f72585);"><i class="fas fa-exchange-alt"></i></div>
                 <h6 class="fw-bold mb-1">Pending Transfers {% if pending_transfers > 0 %}<span class="badge bg-warning text-dark ms-1">{{ pending_transfers }}</span>{% endif %}</h6>
                 <p class="text-muted small mb-3">Awaiting parent club decision</p>
-                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#f72585);color:white;border-radius:8px;">View Transfers</a>
+                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#6e6e73,#f72585);color:white;border-radius:8px;">View Transfers</a>
             </div>
         </div>
         <div class="col-md-4">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#e63946,#c1121f);"><i class="fas fa-times-circle"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#e0213f,#c8102e);"><i class="fas fa-times-circle"></i></div>
                 <h6 class="fw-bold mb-1">Rejected Transfers {% if rejected_transfers > 0 %}<span class="badge bg-danger ms-1">{{ rejected_transfers }}</span>{% endif %}</h6>
                 <p class="text-muted small mb-3">Transfers needing review/override</p>
-                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;border-radius:8px;">Review Rejections</a>
+                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;border-radius:8px;">Review Rejections</a>
             </div>
         </div>
         <div class="col-md-4">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4361ee,#3a0ca3);"><i class="fas fa-file-alt"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#0a0a0b);"><i class="fas fa-file-alt"></i></div>
                 <h6 class="fw-bold mb-1">Match Reports <span class="badge bg-info ms-1">{{ pending_reports_count }}</span></h6>
                 <p class="text-muted small mb-3">Pending match reports to review</p>
                 <div class="d-flex gap-2">
-                    <a href="{% url 'admin_dashboard:approve_reports' %}" class="btn btn-sm flex-fill" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:8px;">Review</a>
+                    <a href="{% url 'admin_dashboard:approve_reports' %}" class="btn btn-sm flex-fill" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;border-radius:8px;">Review</a>
                     <a href="{% url 'referees:all_referees' %}" class="btn btn-sm btn-outline-secondary flex-fill" style="border-radius:8px;">Referees</a>
                 </div>
             </div>
@@ -127,7 +127,7 @@
     <div class="row g-3 mb-4" data-aos="fade-up">
         <div class="col-md-4">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4361ee,#4cc9f0);"><i class="fas fa-calendar-alt"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#4cc9f0);"><i class="fas fa-calendar-alt"></i></div>
                 <h6 class="fw-bold mb-1">Generate Fixtures</h6>
                 <p class="text-muted small mb-3">Create match fixtures for the league</p>
                 <a href="{% url 'admin_dashboard:generate_fixtures_admin' %}" class="btn btn-sm w-100 btn-outline-primary" style="border-radius:8px;">
@@ -137,7 +137,7 @@
         </div>
         <div class="col-md-4">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#f4a261,#f72585);"><i class="fas fa-clock"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#6e6e73,#f72585);"><i class="fas fa-clock"></i></div>
                 <h6 class="fw-bold mb-1">Reschedule Fixtures</h6>
                 <p class="text-muted small mb-3">Update match dates and times</p>
                 <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="btn btn-sm w-100 btn-outline-warning" style="border-radius:8px;">
@@ -147,7 +147,7 @@
         </div>
         <div class="col-md-4">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#2dc653,#198754);"><i class="fas fa-chart-bar"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#00a04a,#00843d);"><i class="fas fa-chart-bar"></i></div>
                 <h6 class="fw-bold mb-1">View Statistics</h6>
                 <p class="text-muted small mb-3">League statistics and analytics</p>
                 <a href="{% url 'admin_dashboard:statistics_dashboard' %}" class="btn btn-sm w-100 btn-outline-success" style="border-radius:8px;">
@@ -159,7 +159,7 @@
 
     <!-- Registration Window Controls -->
     <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;padding:1rem 1.5rem;">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;padding:1rem 1.5rem;">
             <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Registration Window Controls</h5>
         </div>
         <div class="card-body">
@@ -215,7 +215,7 @@
 
     <!-- Deadline Controls -->
     <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;padding:1rem 1.5rem;">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);color:white;padding:1rem 1.5rem;">
             <h5 class="mb-0"><i class="fas fa-hourglass-half me-2"></i>Set / Update Deadlines</h5>
         </div>
         <div class="card-body">
@@ -263,7 +263,7 @@
                 labels: ['Pending Teams', 'Pending Reports'],
                 datasets: [{
                     data: [{{ pending_teams_count|default:0 }}, {{ pending_reports_count|default:0 }}],
-                    backgroundColor: ['#f4a261', '#4361ee'],
+                    backgroundColor: ['#6e6e73', '#1f1f23'],
                     borderWidth: 0, hoverOffset: 8
                 }]
             },
@@ -286,7 +286,7 @@
                 datasets: [{
                     label: 'Count',
                     data: [{{ pending_transfers|default:0 }}, {{ rejected_transfers|default:0 }}],
-                    backgroundColor: ['rgba(243,162,97,0.85)', 'rgba(230,57,70,0.75)'],
+                    backgroundColor: ['rgba(243,162,97,0.85)', 'rgba(224,33,63,0.75)'],
                     borderRadius: 10, borderSkipped: false
                 }]
             },

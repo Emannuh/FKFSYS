@@ -1,6 +1,6 @@
 {% extends "base_dashboard.html" %}
 {% block title %}{{ team.team_name }} — Team Manager Portal{% endblock %}
-{% block page_title %}<i class="fas fa-shield-alt me-2" style="color:#198754;"></i> {{ team.team_name }}{% endblock %}
+{% block page_title %}<i class="fas fa-shield-alt me-2" style="color:#00843d;"></i> {{ team.team_name }}{% endblock %}
 {% block nav_active_team_home %}active{% endblock %}
 
 {% block extra_css %}{% endblock %}
@@ -30,7 +30,7 @@
                 <p style="opacity:0.82;margin:0;font-size:0.9rem;">Welcome back, <strong>{{ team.contact_person }}</strong>!</p>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                     {% if team.zone %}<span style="background:rgba(255,255,255,0.18);color:white;padding:3px 12px;border-radius:20px;font-size:0.8rem;"><i class="fas fa-map-marker-alt me-1"></i>{{ team.zone.name }}</span>{% endif %}
-                    <span style="background:{% if team.payment_status %}rgba(45,198,83,0.3){% else %}rgba(230,57,70,0.3){% endif %};color:white;padding:3px 12px;border-radius:20px;font-size:0.8rem;">
+                    <span style="background:{% if team.payment_status %}rgba(0,160,74,0.3){% else %}rgba(224,33,63,0.3){% endif %};color:white;padding:3px 12px;border-radius:20px;font-size:0.8rem;">
                         <i class="fas fa-{% if team.payment_status %}check-circle{% else %}times-circle{% endif %} me-1"></i>
                         {% if team.payment_status %}Paid{% else %}Unpaid{% endif %}
                     </span>
@@ -154,41 +154,41 @@
     <div class="row g-3 mb-4" data-aos="fade-up">
         <div class="col-6 col-md-3">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4361ee,#3a0ca3);"><i class="fas fa-users"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#0a0a0b);"><i class="fas fa-users"></i></div>
                 <h6 class="fw-bold mb-1">Players</h6>
                 <p class="text-muted small mb-3">Manage squad</p>
-                <a href="{% url 'teams:add_players_approved' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:8px;">Add Players</a>
+                <a href="{% url 'teams:add_players_approved' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;border-radius:8px;">Add Players</a>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#2dc653,#198754);"><i class="fas fa-tshirt"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#00a04a,#00843d);"><i class="fas fa-tshirt"></i></div>
                 <h6 class="fw-bold mb-1">Kit Colors</h6>
                 <p class="text-muted small mb-3">Home & Away kits</p>
-                <a href="{% url 'teams:select_kit_colors' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;border-radius:8px;">Edit Kits</a>
+                <a href="{% url 'teams:select_kit_colors' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;border-radius:8px;">Edit Kits</a>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#0077b6,#023e8a);"><i class="fas fa-user-tie"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#0a0a0b);"><i class="fas fa-user-tie"></i></div>
                 <h6 class="fw-bold mb-1">Officials</h6>
                 <p class="text-muted small mb-3">Coaches & staff</p>
-                <a href="{% url 'teams:team_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#0077b6,#023e8a);color:white;border-radius:8px;">Manage</a>
+                <a href="{% url 'teams:team_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;border-radius:8px;">Manage</a>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#f4a261,#e76f51);"><i class="fas fa-exchange-alt"></i></div>
+                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#6e6e73,#4a4a4f);"><i class="fas fa-exchange-alt"></i></div>
                 <h6 class="fw-bold mb-1">Transfers</h6>
                 <p class="text-muted small mb-3">Request transfers</p>
-                <a href="{% url 'teams:search_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;border-radius:8px;">Search</a>
+                <a href="{% url 'teams:search_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;border-radius:8px;">Search</a>
             </div>
         </div>
     </div>
 
     <!-- Matchday Squad Selection -->
     <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;padding:1rem 1.5rem;">
+        <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;padding:1rem 1.5rem;">
             <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Matchday Squad Selection</h5>
         </div>
         <div class="card-body">
@@ -301,7 +301,7 @@
 
     <!-- Recent Players -->
     <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);color:white;padding:1rem 1.5rem;">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);color:white;padding:1rem 1.5rem;">
             <div class="d-flex align-items-center gap-2"><i class="fas fa-users"></i><span class="fw-bold">Squad ({{ player_count }} players)</span></div>
             <a href="{% url 'teams:add_players_approved' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border-radius:8px;">
                 <i class="fas fa-user-plus me-1"></i>Add Player
@@ -344,7 +344,7 @@
 
     <!-- Tournaments Section -->
     <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header" style="background:linear-gradient(90deg,#198754,#0f5132);color:white;padding:1rem 1.5rem;">
+        <div class="card-header" style="background:linear-gradient(90deg,#00843d,#006b31);color:white;padding:1rem 1.5rem;">
             <div class="d-flex align-items-center gap-2"><i class="fas fa-trophy"></i><span class="fw-bold">Tournaments</span></div>
         </div>
         <div class="card-body">
@@ -462,7 +462,7 @@
 
     <!-- Quick Actions -->
     <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header" style="background:linear-gradient(90deg,#c1121f,#1a1a2e);color:white;padding:1rem 1.5rem;">
+        <div class="card-header" style="background:linear-gradient(90deg,#c8102e,#0a0a0b);color:white;padding:1rem 1.5rem;">
             <div class="d-flex align-items-center gap-2"><i class="fas fa-bolt"></i><span class="fw-bold">Quick Actions</span></div>
         </div>
         <div class="card-body">
@@ -490,7 +490,7 @@
                 labels: ['Players', 'Remaining (25 max)'],
                 datasets: [{
                     data: [{{ player_count|default:0 }}, Math.max(0, 25 - {{ player_count|default:0 }})],
-                    backgroundColor: ['#198754', '#e9ecef'],
+                    backgroundColor: ['#00843d', '#e9ecef'],
                     borderWidth: 0, hoverOffset: 8
                 }]
             },
@@ -516,7 +516,7 @@
                         {{ league_settings.player_registration_open|yesno:"1,0" }},
                         {{ league_settings.transfer_window_open|yesno:"1,0" }}
                     ],
-                    backgroundColor: ['rgba(45,198,83,0.85)', 'rgba(243,162,97,0.85)'],
+                    backgroundColor: ['rgba(0,160,74,0.85)', 'rgba(243,162,97,0.85)'],
                     borderRadius: 10, borderSkipped: false
                 }]
             },
