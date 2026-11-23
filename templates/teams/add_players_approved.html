@@ -1,254 +1,206 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags %}
 
 {% block title %}Add Players - {{ team.team_name }}{% endblock %}
+{% block page_title %}Add players{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/teams.css' %}">{% endblock %}
+
+{% block page_header %}
+{% if is_admin %}
+<nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'teams:add_players_approved' %}">Select Team</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ team.team_name }}</li>
+    </ol>
+</nav>
+{% endif %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Players &middot; {{ team.team_name }}</span>
+        <h1 class="page-title">Add Players</h1>
+        <p class="page-subtitle">Register players one at a time. Each player is saved when you press <strong>Add Player &amp; Continue</strong>.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-check me-1" aria-hidden="true"></i>Finish &amp; Return to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container">
-    {% if is_admin %}
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'teams:add_players_approved' %}">Select Team</a></li>
-            <li class="breadcrumb-item active">{{ team.team_name }}</li>
-        </ol>
-    </nav>
-    {% endif %}
-
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;">
-                    <h4 class="mb-0"><i class="fas fa-user-plus"></i> Add Players - {{ team.team_name }}</h4>
-                    <p class="mb-0 small">Team Status: <span class="badge bg-success">Approved</span></p>
+<div class="row g-4">
+    <div class="col-xl-8">
+        <form method="POST" action="{% url 'teams:add_player_action' %}{% if is_admin %}?team_id={{ team.id }}{% endif %}" enctype="multipart/form-data" id="addPlayerForm" class="panel">
+            {% csrf_token %}
+            {% if is_admin %}<input type="hidden" name="team_id" value="{{ team.id }}">{% endif %}
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-user-plus" aria-hidden="true"></i>New player</h2></div>
+            <div class="panel-body">
+                {% if form.errors %}
+                <div class="alert alert-danger" role="alert">
+                    <ul class="mb-0">
+                        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+                        {% for field in form %}{% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}{% endfor %}
+                    </ul>
                 </div>
-                <div class="card-body">
+                {% endif %}
 
-                    <!-- FORM 1: Add Player -->
-                    <form method="POST" action="{% url 'teams:add_player_action' %}{% if is_admin %}?team_id={{ team.id }}{% endif %}" enctype="multipart/form-data" id="addPlayerForm">
-                        {% csrf_token %}
-                        {% if form.errors %}
-                        <div class="alert alert-danger" role="alert">
-                            <ul class="mb-0">
-                                {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-                                {% for field in form %}{% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}{% endfor %}
-                            </ul>
+                <fieldset class="form-section">
+                    <legend class="form-section__title">Player Information</legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ form.first_name.value|default_if_none:'' }}" required>
                         </div>
-                        {% endif %}
-                        {% if is_admin %}
-                        <input type="hidden" name="team_id" value="{{ team.id }}">
-                        {% endif %}
-
-                        <h5 class="text-primary mb-3"><i class="fas fa-id-card"></i> Player Information</h5>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="first_name" class="form-label">First Name *</label>
-                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ form.first_name.value|default_if_none:'' }}" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="last_name" class="form-label">Last Name *</label>
-                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ form.last_name.value|default_if_none:'' }}" required>
-                            </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ form.last_name.value|default_if_none:'' }}" required>
                         </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="date_of_birth" class="form-label">Date of Birth *</label>
-                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ form.date_of_birth.value|default_if_none:'' }}" required>
-                                <small class="text-muted">Player must be 16-45 years old</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="id_number" class="form-label">ID/Passport Number *</label>
-                                <input type="text" class="form-control" id="id_number" name="id_number" value="{{ form.id_number.value|default_if_none:'' }}" required>
-                                <small class="text-muted">National ID or Passport</small>
-                            </div>
+                        <div class="col-md-6">
+                            <label for="date_of_birth" class="form-label">Date of Birth *</label>
+                            <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ form.date_of_birth.value|default_if_none:'' }}" required aria-describedby="dob-help">
+                            <div class="form-text" id="dob-help">Player must be 16-45 years old</div>
                         </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="nationality" class="form-label">Nationality</label>
-                                <input type="text" class="form-control" id="nationality" name="nationality" value="{{ form.nationality.value|default:'Kenyan' }}">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="photo" class="form-label">Player Photo (Optional)</label>
-                                <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
-                                <small class="text-muted">Max 5MB. Recommended: Passport size</small>
-                            </div>
+                        <div class="col-md-6">
+                            <label for="id_number" class="form-label">ID/Passport Number *</label>
+                            <input type="text" class="form-control" id="id_number" name="id_number" value="{{ form.id_number.value|default_if_none:'' }}" required aria-describedby="idn-help">
+                            <div class="form-text" id="idn-help">National ID or Passport</div>
                         </div>
-
-                        <h5 class="text-primary mt-4 mb-3"><i class="fas fa-file-certificate"></i> FKF License Details</h5>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="fkf_license_number" class="form-label">FKF License Number</label>
-                                <input type="text" class="form-control" id="fkf_license_number" name="fkf_license_number" value="{{ form.fkf_license_number.value|default_if_none:'' }}">
-                                <small class="text-muted">(Optional) Player's FKF license number</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="license_expiry_date" class="form-label">License Expiry Date</label>
-                                <input type="date" class="form-control" id="license_expiry_date" name="license_expiry_date" value="{{ form.license_expiry_date.value|default_if_none:'' }}">
-                                <small class="text-muted">(Optional) When license expires</small>
-                            </div>
+                        <div class="col-md-6">
+                            <label for="nationality" class="form-label">Nationality</label>
+                            <input type="text" class="form-control" id="nationality" name="nationality" value="{{ form.nationality.value|default:'Kenyan' }}">
                         </div>
+                        <div class="col-md-6">
+                            <label for="photo" class="form-label">Player Photo (Optional)</label>
+                            <input type="file" class="form-control" id="photo" name="photo" accept="image/*" aria-describedby="photo-help">
+                            <div class="form-text" id="photo-help">Max 5MB. Recommended: Passport size</div>
+                        </div>
+                    </div>
+                </fieldset>
 
-                        <h5 class="text-primary mt-4 mb-3"><i class="fas fa-futbol"></i> Team Details</h5>
+                <fieldset class="form-section">
+                    <legend class="form-section__title">FKF License Details</legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="fkf_license_number" class="form-label">FKF License Number</label>
+                            <input type="text" class="form-control" id="fkf_license_number" name="fkf_license_number" value="{{ form.fkf_license_number.value|default_if_none:'' }}">
+                            <div class="form-text">(Optional) Player's FKF license number</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="license_expiry_date" class="form-label">License Expiry Date</label>
+                            <input type="date" class="form-control" id="license_expiry_date" name="license_expiry_date" value="{{ form.license_expiry_date.value|default_if_none:'' }}">
+                            <div class="form-text">(Optional) When license expires</div>
+                        </div>
+                    </div>
+                </fieldset>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="position" class="form-label">Position *</label>
-                                <select class="form-select" id="position" name="position" required>
-                                    <option value="">Select Position</option>
-                                    {% for code, label in position_choices %}{% if code %}
-                                    <option value="{{ code }}" {% if form.position.value == code %}selected{% endif %}>{{ label }}</option>
-                                    {% endif %}{% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="jersey_number" class="form-label">Jersey Number *</label>
-                                <input type="number" class="form-control" id="jersey_number" name="jersey_number" value="{{ form.jersey_number.value|default_if_none:'' }}" min="1" max="99" required>
-                                <small class="text-muted">Between 1-99, unique per team</small>
+                <fieldset class="form-section">
+                    <legend class="form-section__title">Team Details</legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="position" class="form-label">Position *</label>
+                            <select class="form-select" id="position" name="position" required>
+                                <option value="">Select Position</option>
+                                {% for code, label in position_choices %}{% if code %}
+                                <option value="{{ code }}" {% if form.position.value == code %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="jersey_number" class="form-label">Jersey Number *</label>
+                            <input type="number" class="form-control" id="jersey_number" name="jersey_number" value="{{ form.jersey_number.value|default_if_none:'' }}" min="1" max="99" required>
+                            <div class="form-text">Between 1-99, unique per team</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="is_captain" name="is_captain" aria-describedby="captain-help">
+                                <label class="form-check-label" for="is_captain">This player is the team captain</label>
+                                <div class="form-text" id="captain-help">Note: If you select this, it will replace the current captain</div>
                             </div>
                         </div>
-
-                        <div class="form-check mb-4">
-                            <input type="checkbox" class="form-check-input" id="is_captain" name="is_captain">
-                            <label class="form-check-label" for="is_captain">
-                                This player is the team captain
-                            </label>
-                            <small class="text-muted d-block">Note: If you select this, it will replace the current captain</small>
-                        </div>
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                            <!-- BUTTON 1: Add Player -->
-                            <button type="submit" class="btn btn-primary me-2">
-                                <i class="fas fa-plus"></i> Add Player & Continue
-                            </button>
-
-                            <!-- BUTTON 2: Finish (in separate form) -->
-                            <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-success">
-                                <i class="fas fa-check"></i> Finish & Return to Dashboard
-                            </a>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                </fieldset>
             </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-header" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;">
-                    <h5 class="mb-0"><i class="fas fa-users"></i> Team Summary</h5>
-                </div>
-                <div class="card-body">
-                    <h6>{{ team.team_name }}</h6>
-                    <p class="mb-1"><strong>Team Code:</strong> {{ team.team_code }}</p>
-                    <p class="mb-1"><strong>Location:</strong> {{ team.location }}</p>
-                    <p class="mb-1"><strong>Status:</strong>
-                        <span class="badge bg-success">Approved</span>
-                    </p>
-                    <p class="mb-1"><strong>Zone:</strong> {{ team.zone.name|default:"Not assigned" }}</p>
-                    <p class="mb-0"><strong>Players Added:</strong> {{ player_count }}</p>
-                    <p class="mb-0"><strong>Kit Setup:</strong>
-                        <span class="badge bg-success">Complete</span>
-                    </p>
-                </div>
+            <div class="panel-footer d-flex flex-wrap justify-content-end gap-2">
+                <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-outline-secondary">Finish &amp; Return to Dashboard</a>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i>Add Player &amp; Continue</button>
             </div>
+        </form>
+    </div>
 
-            <div class="card">
-                <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-                    <h5 class="mb-0"><i class="fas fa-list"></i> Current Players ({{ player_count }})</h5>
-                </div>
-                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                    {% if players %}
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Name</th>
-                                        <th>Position</th>
-                                        <th>Age</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for player in players %}
-                                    <tr {% if player.is_suspended %}class="table-danger"{% endif %}>
-                                        <td>
-                                            {{ player.jersey_number }}
-                                            {% if player.is_captain %}
-                                            <span class="badge bg-warning">C</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ player.full_name }}</td>
-                                        <td>{{ player.get_position_display }}</td>
-                                        <td>{{ player.age }}</td>
-                                        <td>
-                                            {% if player.is_suspended %}
-                                                <span class="badge bg-danger" title="{{ player.suspension_reason }}">
-                                                    <i class="fas fa-ban"></i> Suspended ({{ player.suspension_matches }} matches)
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-success"><i class="fas fa-check"></i> Active</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+    <div class="col-xl-4">
+        <section class="panel mb-4" aria-labelledby="summary-title">
+            <div class="panel-header"><h2 class="panel-title" id="summary-title"><i class="fas fa-shield-halved" aria-hidden="true"></i>Team Summary</h2></div>
+            <dl class="detail-list">
+                <div><dt>Team</dt><dd>{{ team.team_name }}</dd></div>
+                <div><dt>Team code</dt><dd>{{ team.team_code }}</dd></div>
+                <div><dt>Location</dt><dd>{{ team.location }}</dd></div>
+                <div><dt>Status</dt><dd><span class="badge status-badge status-success">Approved</span></dd></div>
+                <div><dt>Zone</dt><dd>{{ team.zone.name|default:"Not assigned" }}</dd></div>
+                <div><dt>Players added</dt><dd class="fw-bold">{{ player_count }}</dd></div>
+                <div><dt>Kit setup</dt><dd><span class="badge status-badge status-success">Complete</span></dd></div>
+            </dl>
+        </section>
 
-                        <!-- Suspended Players Alert -->
-                        {% if suspended_players %}
-                        <div class="alert alert-danger mt-3">
-                            <h6><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Suspended Players:</h6>
-                            <ul class="mb-0">
-                                {% for player in suspended_players %}
-                                <li>
-                                    <strong>{{ player.full_name }}</strong> -
-                                    Suspended for {{ player.suspension_matches }} match(es)
-                                    <br><small>Reason: {{ player.suspension_reason }}</small>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
-                    {% else %}
-                        <p class="text-muted text-center">No players added yet.</p>
-                    {% endif %}
-                </div>
+        <section class="panel mb-4" aria-labelledby="current-title">
+            <div class="panel-header"><h2 class="panel-title" id="current-title"><i class="fas fa-list" aria-hidden="true"></i>Current Players ({{ player_count }})</h2></div>
+            {% if players %}
+            <div class="data-table-wrap data-table-wrap--scroll">
+                <table class="table data-table table-sm mb-0">
+                    <thead>
+                        <tr><th scope="col" class="num">#</th><th scope="col">Name</th><th scope="col" class="num">Age</th><th scope="col">Status</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for player in players %}
+                        <tr>
+                            <td class="num">{{ player.jersey_number }}{% if player.is_captain %} <abbr title="Captain" class="captain-mark">C</abbr>{% endif %}</td>
+                            <td>{{ player.full_name }}<span class="d-block small text-body-secondary">{{ player.get_position_display }}</span></td>
+                            <td class="num">{{ player.age }}</td>
+                            <td>
+                                {% if player.is_suspended %}
+                                <span class="badge status-badge status-danger" title="{{ player.suspension_reason }}">Suspended</span><span class="d-block small text-body-secondary">{{ player.suspension_matches }} matches</span>
+                                {% else %}
+                                <span class="badge status-badge status-success">Active</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-
-            <div class="card mt-4">
-                <div class="card-body">
-                    <h6><i class="fas fa-info-circle text-primary"></i> Notes for Approved Teams</h6>
-                    <ul class="small">
-                        <li><strong>Team is approved</strong> - You can now add players</li>
-                        <li><strong>Kit colors are set</strong> - Players will use selected kits</li>
-                        <li>Add at least 11 players (minimum squad)</li>
-                        <li>Maximum squad size: 30 players</li>
-                        <li>Each player needs valid ID number</li>
-                        <li>FKF license is optional but recommended</li>
-                        <li>Click "Finish" when done adding players</li>
-                        <li>You can return later to add more players</li>
+            {% if suspended_players %}
+            <div class="panel-body border-top">
+                <div class="alert alert-danger mb-0" role="status">
+                    <strong><i class="fas fa-triangle-exclamation me-1" aria-hidden="true"></i>Suspended Players:</strong>
+                    <ul class="mb-0 mt-1">
+                        {% for player in suspended_players %}
+                        <li><strong>{{ player.full_name }}</strong> - Suspended for {{ player.suspension_matches }} match(es)<br><small>Reason: {{ player.suspension_reason }}</small></li>
+                        {% endfor %}
                     </ul>
                 </div>
             </div>
-        </div>
+            {% endif %}
+            {% else %}
+            {% empty_state icon="users" title="No players added yet." %}
+            {% endif %}
+        </section>
+
+        <section class="panel" aria-labelledby="notes-title">
+            <div class="panel-header"><h2 class="panel-title" id="notes-title"><i class="fas fa-circle-info" aria-hidden="true"></i>Notes for Approved Teams</h2></div>
+            <div class="panel-body">
+                <ul class="rules-list mt-0 small">
+                    <li><strong>Team is approved</strong> - You can now add players</li>
+                    <li><strong>Kit colors are set</strong> - Players will use selected kits</li>
+                    <li>Add at least 11 players (minimum squad)</li>
+                    <li>Maximum squad size: 30 players</li>
+                    <li>Each player needs valid ID number</li>
+                    <li>FKF license is optional but recommended</li>
+                    <li>Click "Finish" when done adding players</li>
+                    <li>You can return later to add more players</li>
+                </ul>
+            </div>
+        </section>
     </div>
 </div>
-
-<style>
-.form-control:focus {
-    border-color: #00843d;
-    box-shadow: 0 0 0 0.2rem rgba(0,132,61, 0.25);
-}
-.is-invalid {
-    border-color: #c8102e !important;
-}
-.card-header-custom {
-    background-color: var(--primary-green, #00843d);
-    color: white;
-}
-</style>
 {% endblock %}
