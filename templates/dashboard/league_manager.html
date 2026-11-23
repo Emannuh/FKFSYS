@@ -1,4 +1,4 @@
-﻿{% extends "base_dashboard.html" %}
+{% extends "base_dashboard.html" %}
 {% block title %}League Manager Dashboard — FKF Meru League{% endblock %}
 {% block page_title %}<i class="fas fa-sitemap me-2" style="color:#198754;"></i> League Manager Dashboard{% endblock %}
 {% block nav_active_dashboard %}active{% endblock %}
@@ -113,7 +113,7 @@
         <div class="col-md-4">
             <div class="mgmt-card p-3">
                 <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4361ee,#3a0ca3);"><i class="fas fa-file-alt"></i></div>
-                <h6 class="fw-bold mb-1">Match Reports <span class="badge bg-info ms-1">{{ pending_reports.count }}</span></h6>
+                <h6 class="fw-bold mb-1">Match Reports <span class="badge bg-info ms-1">{{ pending_reports_count }}</span></h6>
                 <p class="text-muted small mb-3">Pending match reports to review</p>
                 <div class="d-flex gap-2">
                     <a href="{% url 'admin_dashboard:approve_reports' %}" class="btn btn-sm flex-fill" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:8px;">Review</a>
@@ -262,7 +262,7 @@
             data: {
                 labels: ['Pending Teams', 'Pending Reports'],
                 datasets: [{
-                    data: [{{ pending_teams.count|default:0 }}, {{ pending_reports.count|default:0 }}],
+                    data: [{{ pending_teams_count|default:0 }}, {{ pending_reports_count|default:0 }}],
                     backgroundColor: ['#f4a261', '#4361ee'],
                     borderWidth: 0, hoverOffset: 8
                 }]

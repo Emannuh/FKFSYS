@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Generate Fixtures - FKF Meru League{% endblock %}
@@ -110,7 +110,7 @@
                                         <a href="{% url 'matches:fixtures' %}?zone={{ zone.id }}" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-eye"></i> View Fixtures
                                         </a>
-                                        <form method="post" style="display: inline;" onsubmit="return confirm('âš ï¸ WARNING: This will DELETE all existing fixtures for {{ zone.name }} and generate new ones.\n\nThis action CANNOT be undone if matches have been played.\n\nAre you absolutely sure?');">
+                                        <form method="post" style="display: inline;" onsubmit="return confirm('⚠️ WARNING: This will DELETE all existing fixtures for {{ zone.name }} and generate new ones.\n\nThis action CANNOT be undone if matches have been played.\n\nAre you absolutely sure?');">
                                             {% csrf_token %}
                                             <input type="hidden" name="zone_id" value="{{ zone.id }}">
                                             <input type="hidden" name="regenerate" value="true">

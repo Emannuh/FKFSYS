@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Registration Pending — FKF Meru League{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="h3">Registration pending</h1>
+    <p>Your team <strong>{{ team.team_name }}</strong> is currently <strong>{{ team.get_status_display }}</strong>.</p>
+    <p>The league administration will review your registration. Your team dashboard becomes available once the team is approved.</p>
+    {% if not team.payment_status %}
+    <div class="alert alert-warning" role="alert">Your registration payment has not been verified yet.</div>
+    {% endif %}
+    <a href="{% url 'frontend:home' %}" class="btn btn-primary">Go to the home page</a>
+</div>
+{% endblock %}
