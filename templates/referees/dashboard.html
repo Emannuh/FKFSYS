@@ -169,8 +169,8 @@
                             </td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'referees:confirm_appointment' appointment.id %}" class="btn btn-outline-success"><i class="fas fa-check"></i> Confirm</a>
-                                    <a href="{% url 'referees:decline_appointment' appointment.id %}" class="btn btn-outline-danger"><i class="fas fa-times"></i> Decline</a>
+                                    <a href="{% url 'referees:confirm_appointment' appointment.match.id %}" class="btn btn-outline-success"><i class="fas fa-check"></i> Confirm</a>
+                                    <a href="{% url 'referees:decline_appointment' appointment.match.id %}" class="btn btn-outline-danger"><i class="fas fa-times"></i> Decline</a>
                                     <a href="{% url 'matches:match_details' appointment.match.id %}" class="btn btn-outline-primary"><i class="fas fa-eye"></i></a>
                                 </div>
                             </td>

@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 
 {% block title %}Manage Substitutions - {{ match }}{% endblock %}
@@ -348,6 +348,8 @@
     </div>
 </div>
 
+{{ home_squad_data|json_script:"home-squad-data" }}
+{{ away_squad_data|json_script:"away-squad-data" }}
 <script>
 // Dynamic loading of players based on team selection
 document.addEventListener('DOMContentLoaded', function() {
@@ -356,8 +358,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const concussionSubSelect = document.getElementById('concussion_sub');
 
     // Squad data passed from Django view
-    const homeSquad = {{ home_squad_json|safe }};
-    const awaySquad = {{ away_squad_json|safe }};
+    const homeSquad = JSON.parse(document.getElementById('home-squad-data').textContent);
+    const awaySquad = JSON.parse(document.getElementById('away-squad-data').textContent);
 
     teamSelect.addEventListener('change', function() {
         const teamId = parseInt(this.value);
@@ -366,14 +368,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Populate injured player (starting players only)
         injuredPlayerSelect.innerHTML = '<option value="">Select injured player</option>';
         squadData.starting.forEach(player => {
-            injuredPlayerSelect.innerHTML += `<option value="${player.id}">#${player.jersey} ${player.name}</option>`;
+            injuredPlayerSelect.add(new Option(`#${player.jersey} ${player.name}`, player.id));
         });
         injuredPlayerSelect.disabled = false;
 
         // Populate concussion substitute (substitute players only)
         concussionSubSelect.innerHTML = '<option value="">Select substitute</option>';
         squadData.subs.forEach(player => {
-            concussionSubSelect.innerHTML += `<option value="${player.id}">#${player.jersey} ${player.name}</option>`;
+            concussionSubSelect.add(new Option(`#${player.jersey} ${player.name}`, player.id));
         });
         concussionSubSelect.disabled = false;
     });

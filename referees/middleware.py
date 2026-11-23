@@ -1,109 +1,60 @@
-# referees/middleware.py
-from django.shortcuts import redirect
-from django.urls import resolve, reverse
+"""Keep referees whose application is not approved out of the referee-only pages."""
 from django.contrib import messages
-import re
+from django.shortcuts import redirect
+from django.urls import Resolver404, resolve
+
+from .models import Referee
+
+# Referee self-service pages that require an approved profile.
+GUARDED_URL_NAMES = frozenset({
+    'referees:referee_dashboard',
+    'referees:referee_profile',
+    'referees:referee_availability',
+    'referees:view_report',
+    'referees:submit_match_report',
+    'referees:submit_comprehensive_report',
+    'referees:confirm_appointment',
+    'referees:decline_appointment',
+    'referees:submit_prematch_form',
+})
+
 
 class RefereeApprovalCheck:
     """
-    Middleware to check if a logged-in referee user has been approved.
-    Redirects unapproved referees to login instructions page.
+    Redirect logged-in referees whose status is pending/rejected/suspended to the
+    login-instructions page when they open a referee self-service page.
+    Staff and users without a referee profile are never affected.
     """
-    
+
     def __init__(self, get_response):
         self.get_response = get_response
-        
-        # Public URLs that anyone can access
-        self.public_urls = [
-            'referees:referee_registration',
-            'referees:login_instructions',
-        ]
-        
-        # Admin URLs (only accessible by staff)
-        self.admin_urls = [
-            'referees:pending_referees',
-            'referees:approve_referee',
-            'referees:reject_referee',
-            'referees:all_referees',
-        ]
-        
-        # Authentication URLs
-        self.auth_urls = [
-            'login',
-            'logout',
-            'password_reset',
-            'password_reset_done',
-            'password_reset_confirm',
-            'password_reset_complete',
-        ]
 
     def __call__(self, request):
-        # Skip middleware for static/media files and admin login
-        if request.path.startswith('/static/') or request.path.startswith('/media/'):
-            return self.get_response(request)
-        
-        if request.path.startswith('/admin/login/'):
-            return self.get_response(request)
-        
-        # Try to get current URL name
+        response = self._check(request)
+        return response or self.get_response(request)
+
+    def _check(self, request):
+        user = getattr(request, 'user', None)
+        if user is None or not user.is_authenticated or user.is_staff:
+            return None
         try:
-            current_url = resolve(request.path_info).url_name
-            current_namespace = resolve(request.path_info).namespace
-            full_url_name = f"{current_namespace}:{current_url}" if current_namespace else current_url
-        except:
-            # If URL can't be resolved, continue
-            full_url_name = None
-        
-        # If user is not authenticated, let them through
-        if not request.user.is_authenticated:
-            return self.get_response(request)
-        
-        # Staff/admin users can access everything
-        if request.user.is_staff or request.user.is_superuser:
-            return self.get_response(request)
-        
-        # Check if accessing public URLs
-        if full_url_name in self.public_urls:
-            return self.get_response(request)
-        
-        # Check if accessing auth URLs
-        if full_url_name in self.auth_urls:
-            return self.get_response(request)
-        
-        # Check if user has a referee profile
-        if not hasattr(request.user, 'referee'):
-            # Not a referee, let them through
-            return self.get_response(request)
-        
-        # Now we have a referee user
-        referee = request.user.referee
-        
-        # Check if accessing admin URLs (they shouldn't have access anyway)
-        if full_url_name in self.admin_urls:
-            return self.get_response(request)
-        
-        # Check if accessing referee dashboard or profile pages
-        if full_url_name in ['referees:referee_dashboard', 'referees:referee_profile', 
-                            'referees:referee_matches', 'referees:view_report',
-                            'referees:submit_match_report', 'referees:submit_comprehensive_report']:
-            
-            # Check approval status
-            if referee.status == 'pending':
-                if full_url_name != 'referees:login_instructions':
-                    messages.info(request, 'Your account is pending approval. You will be notified once approved.')
-                    return redirect('referees:login_instructions')
-            
-            elif referee.status == 'rejected':
-                if full_url_name != 'referees:login_instructions':
-                    messages.error(
-                        request, 
-                        f'Your application has been rejected. Reason: {referee.rejection_reason or "No reason provided"}'
-                    )
-                    return redirect('referees:login_instructions')
-            
-            # If approved, allow access to referee pages
-            elif referee.status == 'approved':
-                return self.get_response(request)
-        
-        # For all other URLs, let them through
-        return self.get_response(request)
+            match = resolve(request.path_info)
+        except Resolver404:
+            return None
+        if match.view_name not in GUARDED_URL_NAMES:
+            return None
+
+        referee = Referee.objects.filter(user=user).only('status', 'rejection_reason').first()
+        if referee is None or referee.status == Referee.Status.APPROVED:
+            return None
+
+        if referee.status == Referee.Status.PENDING:
+            messages.info(request, 'Your account is pending approval. You will be notified once approved.')
+        elif referee.status == Referee.Status.REJECTED:
+            messages.error(
+                request,
+                f'Your application has been rejected. Reason: {referee.rejection_reason or "No reason provided"}',
+            )
+        else:
+            messages.error(request, 'Your referee account is suspended. Please contact the Referees Manager.')
+        return redirect('referees:login_instructions')

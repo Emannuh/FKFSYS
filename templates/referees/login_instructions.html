@@ -1,4 +1,4 @@
-﻿<!-- templates/referees/login_instructions.html -->
+<!-- templates/referees/login_instructions.html -->
 {% extends 'base.html' %}
 
 {% block content %}
@@ -36,11 +36,11 @@
                     </div>
 
                     <div class="alert alert-success">
-                        <h5><i class="fas fa-unlock-alt me-2"></i>Step 3: Login with Default Password</h5>
+                        <h5><i class="fas fa-unlock-alt me-2"></i>Step 3: Set Your Password</h5>
                         <ul>
-                            <li>Default username: your registered email.</li>
-                            <li>Default password: the one provided/issued after approval.</li>
-                            <li>Log in, then change your password immediately.</li>
+                            <li>Once approved you will receive an email with your login ID (<code>REF-YYYY-XXXX</code>)
+                                and a one-time link to set your password.</li>
+                            <li>If the link has expired, use "Forgot password" on the login page with your registered email.</li>
                         </ul>
                         <div class="mt-3">
                             <a href="{% url 'login' %}" class="btn btn-success">
@@ -48,26 +48,6 @@
                             </a>
                         </div>
                     </div>
-
-                    <div class="alert alert-info">
-                        <h5><i class="fas fa-key me-2"></i>Step 4: Change Password Right Away</h5>
-                        <ul>
-                            <li>After first login, open your profile and set a new strong password.</li>
-                            <li>Do not continue using the default password.</li>
-                        </ul>
-                    </div>
-
-                    <h5>Credentials Summary</h5>
-                    <table class="table table-bordered">
-                        <tr>
-                            <th width="40%">Username/ID:</th>
-                            <td><code>Your registered email</code></td>
-                        </tr>
-                        <tr>
-                            <th>Default Password:</th>
-                            <td><code>Issued after approval</code> â€” replace it immediately after first login.</td>
-                        </tr>
-                    </table>
                 </div>
             </div>
         </div>

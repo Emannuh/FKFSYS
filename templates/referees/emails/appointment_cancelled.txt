@@ -1,0 +1,17 @@
+{% autoescape off %}Dear {{ referee.full_name }},
+
+Your appointment for the following match has been CANCELLED by the Referees Manager:
+
+Match: {{ match.home_team }} vs {{ match.away_team }}
+Date: {{ match.match_date|date:"l, F d, Y" }}
+Time: {{ match.kickoff_time|default:"TBD" }}
+Venue: {{ match.venue|default:"TBA" }}
+Your Role: {{ role }}
+
+This appointment has been removed from your schedule. You are no longer required to attend this match.
+
+If you have any questions or concerns, please contact the Referees Manager.
+
+Best regards,
+FKF Meru County League - Referees Management
+{% endautoescape %}

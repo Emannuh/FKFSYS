@@ -1,0 +1,15 @@
+{% autoescape off %}Dear {{ referee.full_name }},
+
+Your FKF Meru County League referee registration has been approved.
+
+Your login ID: {{ username }}
+
+Before you can sign in, set your password using this one-time link:
+{{ setup_url }}
+
+The link expires after a limited time. If it has expired, use "Forgot password"
+on the login page ({{ login_url }}) with this email address to get a new one.
+
+Best regards,
+FKF Meru County League - Referees Management
+{% endautoescape %}
