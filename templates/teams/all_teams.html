@@ -1,100 +1,64 @@
-{% extends 'base.html' %}
-{% load static %}
-{% load group_filters %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags group_filters %}
 
 {% block title %}All Teams — FKF Meru County League{% endblock %}
+{% block page_title %}Teams{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/teams.css' %}">{% endblock %}
 
-{% block extra_css %}
-<style>
-  .team-card {
-    background: var(--bg-white); border-radius: var(--radius);
-    border: 1px solid var(--border-light); box-shadow: var(--shadow-xs);
-    transition: var(--transition); overflow: hidden; height: 100%;
-    text-decoration: none; color: inherit; display: block;
-  }
-  .team-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); color: inherit; }
-  .team-card-body { padding: 1.2rem; text-align: center; }
-  .team-avatar {
-    width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
-    border: 3px solid var(--border-mid); margin: 0 auto .75rem; display: block;
-  }
-  .team-avatar-placeholder {
-    width: 72px; height: 72px; border-radius: 50%; margin: 0 auto .75rem;
-    background: linear-gradient(135deg, var(--fkf-red), var(--fkf-red-dark));
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-weight: 800; font-size: 1.4rem;
-  }
-  .zone-section-header {
-    padding: .6rem 1.1rem; border-radius: var(--radius);
-    color: white; font-weight: 700; font-size: .9rem;
-    margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
-  }
-</style>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">League</span>
+        <h1 class="page-title">All Teams</h1>
+        <p class="page-subtitle">Registered clubs in FKF Meru County League, grouped by zone.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'teams:team_registration' %}" class="btn btn-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i>Register Your Team</a>
+    </div>
+</div>
 {% endblock %}
 
 {% block content %}
-
-<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
-  <div>
-    <h2 class="mb-1"><i class="fas fa-shield-alt me-2" style="color:var(--fkf-red);"></i>All Teams</h2>
-    <p class="text-muted mb-0" style="font-size:.875rem;">Registered clubs in FKF Meru County League</p>
-  </div>
-  <a href="{% url 'teams:team_registration' %}" class="btn btn-primary-custom">
-    <i class="fas fa-plus me-1"></i>Register Your Team
-  </a>
-</div>
-
 {% if zones %}
-  {% for zone in zones %}
-  <div class="mb-5" data-aos="fade-up">
-    <div class="zone-section-header
-      {% if forloop.counter == 1 %}zone-a{% elif forloop.counter == 2 %}zone-b{% elif forloop.counter == 3 %}zone-c{% else %}zone-d{% endif %}">
-      <i class="fas fa-map-marker-alt"></i>{{ zone.name }}
+{% for zone in zones %}
+<section class="panel mb-4" aria-labelledby="zone-{{ zone.id }}">
+    <div class="panel-header">
+        <h2 class="panel-title" id="zone-{{ zone.id }}"><i class="fas fa-location-dot" aria-hidden="true"></i>{{ zone.name }}</h2>
     </div>
-    <div class="row g-3">
-      {% for team in teams %}
-        {% if team.zone and team.zone.id == zone.id %}
-        <div class="col-6 col-md-4 col-lg-3">
-          <a href="{% url 'teams:team_detail' team.id %}" class="team-card">
-            <div class="team-card-body">
-              {% if team.logo %}
-              <img src="{{ team.logo.url }}" alt="{{ team.team_name }}" class="team-avatar">
-              {% else %}
-              <div class="team-avatar-placeholder">
-                {{ team.team_name|slice:":2"|upper }}
-              </div>
-              {% endif %}
-              <h6 class="fw-700 mb-1" style="font-size:.9rem;">{{ team.team_name }}</h6>
-              <p class="text-muted mb-2" style="font-size:.78rem;">
-                <i class="fas fa-map-marker-alt me-1" style="font-size:.7rem;"></i>{{ team.location }}
-              </p>
-              <div class="d-flex justify-content-center gap-2 flex-wrap">
-                <span class="btn btn-sm btn-outline-primary" style="font-size:.75rem;padding:2px 10px;">
-                  <i class="fas fa-eye me-1"></i>View
-                </span>
-                {% if request.user.is_staff or request.user.is_superuser or request.user|has_group:"League Admin,League Manager" %}
-                <a href="{% url 'teams:edit_team_info' team.id %}"
-                   class="btn btn-sm btn-outline-warning" style="font-size:.75rem;padding:2px 10px;"
-                   onclick="event.stopPropagation();">
-                  <i class="fas fa-edit me-1"></i>Edit
-                </a>
-                {% endif %}
-              </div>
-            </div>
-          </a>
-        </div>
-        {% endif %}
-      {% empty %}
-      {% endfor %}
+    <div class="data-table-wrap">
+        <table class="table data-table mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Team</th>
+                    <th scope="col" class="hide-sm">Location</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="col-min"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team in teams %}{% if team.zone and team.zone.id == zone.id %}
+                <tr>
+                    <td><a class="chip" href="{% url 'teams:team_detail' team.id %}">{% include "partials/_team_crest.html" with team=team size="sm" %}<span>{{ team.team_name }}</span></a></td>
+                    <td class="hide-sm text-body-secondary">{{ team.location }}</td>
+                    <td>{% team_badge team.status %}</td>
+                    <td class="col-min">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'teams:team_detail' team.id %}" class="btn btn-sm btn-outline-secondary">View<span class="visually-hidden"> {{ team.team_name }}</span></a>
+                            {% if request.user.is_staff or request.user.is_superuser or request.user|has_group:"League Admin,League Manager" %}
+                            <a href="{% url 'teams:edit_team_info' team.id %}" class="btn btn-sm btn-outline-secondary btn-icon" aria-label="Edit {{ team.team_name }}"><i class="fas fa-pen" aria-hidden="true"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}{% endfor %}
+            </tbody>
+        </table>
     </div>
-  </div>
-  {% endfor %}
+</section>
+{% endfor %}
 {% else %}
-  <div class="text-center py-5">
-    <i class="fas fa-shield-alt fa-4x text-muted mb-4 d-block opacity-25"></i>
-    <h4 class="text-muted">No zones defined yet</h4>
-    <p class="text-muted">Teams will appear here once zones are created and teams are approved.</p>
-  </div>
+<div class="panel">{% empty_state icon="shield-halved" title="No zones defined yet" message="Teams will appear here once zones are created and teams are approved." %}</div>
 {% endif %}
-
 {% endblock %}
