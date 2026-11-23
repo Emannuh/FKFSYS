@@ -1,214 +1,133 @@
 {% extends 'base.html' %}
+{% load static fkf_tags %}
 
 {% block title %}Fixtures — FKF Meru County League{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
 
-{% block extra_css %}{% include "matches/_fixture_styles.html" %}{% endblock %}
+{% block page_header %}
+<header class="page-header">
+    <div>
+        <span class="page-eyebrow">Match centre</span>
+        <h1 class="page-title">Fixtures &amp; results</h1>
+        <p class="page-subtitle">The complete match schedule and results for every zone.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'matches:league_tables' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-table me-1" aria-hidden="true"></i>Tables</a>
+        <a href="{% url 'matches:top_scorers' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-futbol me-1" aria-hidden="true"></i>Top scorers</a>
+    </div>
+</header>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header with Stats -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Match Fixtures</h1>
-                    <p class="text-muted mb-0">Complete match schedule and results</p>
-                </div>
-                <div class="btn-group" role="group">
-                    <a href="?status=upcoming" 
-                       class="btn btn-outline-success {% if selected_status == 'upcoming' %}active{% endif %}">
-                        <i class="fas fa-clock"></i> Upcoming <span class="badge bg-success">{{ upcoming_count }}</span>
-                    </a>
-                    <a href="?status=completed" 
-                       class="btn btn-outline-secondary {% if selected_status == 'completed' %}active{% endif %}">
-                        <i class="fas fa-check-circle"></i> Completed <span class="badge bg-secondary">{{ completed_count }}</span>
-                    </a>
-                    <a href="?status=all" 
-                       class="btn btn-outline-primary {% if not selected_status or selected_status == 'all' %}active{% endif %}">
-                        <i class="fas fa-list"></i> All <span class="badge bg-primary">{{ all_count }}</span>
-                    </a>
-                </div>
-            </div>
-            <hr>
-        </div>
-    </div>
-
-    <!-- Filter Section -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card shadow-sm">
-                <div class="card-header" style="background:linear-gradient(90deg,#f0f4f8,#e8ecf0);border-bottom:1px solid #e0e6ec;">
-                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Fixtures</h5>
-                </div>
-                <div class="card-body">
-                    <form method="get" class="row g-3">
-                        <input type="hidden" name="status" value="{{ selected_status }}">
-                        <div class="col-md-3">
-                            <label for="zone" class="form-label">Zone</label>
-                            <select name="zone" id="zone" class="form-select">
-                                <option value="all">All Zones</option>
-                                {% for zone in zones %}
-                                <option value="{{ zone.id }}" 
-                                    {% if selected_zone == zone.id|stringformat:"i" %}selected{% endif %}>
-                                    {{ zone.name }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-3">
-                            <label for="round" class="form-label">Round</label>
-                            <select name="round" id="round" class="form-select">
-                                <option value="all">All Rounds</option>
-                                {% for round in rounds %}
-                                <option value="{{ round }}" 
-                                    {% if selected_round == round|stringformat:"i" %}selected{% endif %}>
-                                    Round {{ round }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-3">
-                            <label for="date" class="form-label">Date</label>
-                            <input type="date" name="date" id="date" class="form-control" 
-                                   value="{{ selected_date }}">
-                        </div>
-                        
-                        <div class="col-md-3 d-flex align-items-end">
-                            <div class="d-grid gap-2 w-100">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-search me-1"></i> Apply Filters
-                                </button>
-                                <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-times me-1"></i> Clear Filters
-                                </a>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Date Navigation -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="btn-group" role="group">
-                <a href="?date={{ today|date:'Y-m-d' }}&status=today" class="btn btn-outline-info">
-                    <i class="fas fa-calendar-day"></i> Today
-                </a>
-                <a href="?status=weekend" class="btn btn-outline-warning">
-                    <i class="fas fa-calendar-week"></i> This Weekend
-                </a>
-                <a href="?date={{ today|date:'Y-m-d' }}" class="btn btn-outline-success">
-                    <i class="fas fa-calendar-alt"></i> {{ today|date:"l, F j, Y" }}
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fixtures Display -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-futbol me-2"></i>
-                        {% if selected_status == 'upcoming' %}Upcoming Fixtures
-                        {% elif selected_status == 'completed' %}Completed Matches
-                        {% else %}All Fixtures{% endif %}
-                    </h5>
-                    <span class="badge bg-light text-dark">
-                        {{ upcoming_matches.count }} matches
-                    </span>
-                </div>
-                <div class="card-body p-0">
-                    {% if upcoming_matches %}
-                    {% include "matches/_fixture_table.html" with matches=upcoming_matches %}
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-calendar-times fa-4x text-muted mb-4"></i>
-                        <h4 class="text-muted">No Fixtures Available</h4>
-                        <p class="text-muted mb-4">
-                            {% if selected_status == 'upcoming' %}
-                            No upcoming fixtures found. Fixtures will be generated automatically when teams are approved and assigned to zones.
-                            {% elif selected_status == 'completed' %}
-                            No completed matches yet.
-                            {% else %}
-                            No fixtures found with the current filters.
-                            {% endif %}
-                        </p>
-                        {% if user.is_staff %}
-                        <a href="/admin/teams/zone/" class="btn btn-primary">
-                            <i class="fas fa-cog me-2"></i>Generate Fixtures in Admin
-                        </a>
-                        {% endif %}
-                        <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary ms-2">
-                            <i class="fas fa-eye me-2"></i>View All Fixtures
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Completed Matches (if viewing all) -->
-    {% if selected_status == 'all' or selected_status == 'completed' %}
-    {% if completed_matches %}
-    <div class="row mt-5">
-        <div class="col-md-12">
-            <div class="card shadow-sm">
-                <div class="card-header" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Results</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for match in completed_matches|slice:":6" %}
-                        <div class="col-md-4 mb-3">
-                            <div class="card match-result-card">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <small class="text-muted">{{ match.match_date|date:"M d, Y" }}</small>
-                                        <span class="badge bg-dark">R{{ match.round_number }}</span>
-                                    </div>
-                                    
-                                    <div class="teams-row mb-2">
-                                        <div class="team">
-                                            <small>{{ match.home_team.team_name|truncatechars:20 }}</small>
-                                        </div>
-                                        <div class="score">
-                                            <strong>{{ match.home_score }}</strong>
-                                        </div>
-                                        <div class="vs">-</div>
-                                        <div class="score">
-                                            <strong>{{ match.away_score }}</strong>
-                                        </div>
-                                        <div class="team text-end">
-                                            <small>{{ match.away_team.team_name|truncatechars:20 }}</small>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">{{ match.zone.name }}</small>
-                                        <a href="{% url 'matches:match_details' match.id %}" 
-                                           class="btn btn-sm btn-outline-primary">
-                                            Details
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    {% endif %}
+<div class="pub-toolbar">
+    <nav class="nav nav-segmented" aria-label="Show">
+        <a href="?status=upcoming" class="nav-link{% if selected_status == 'upcoming' %} active{% endif %}"{% if selected_status == 'upcoming' %} aria-current="page"{% endif %}>Upcoming<span class="count">{{ upcoming_count }}</span></a>
+        <a href="?date={{ today|date:'Y-m-d' }}&amp;status=today" class="nav-link{% if selected_status == 'today' %} active{% endif %}"{% if selected_status == 'today' %} aria-current="page"{% endif %}>Today</a>
+        <a href="?status=weekend" class="nav-link{% if selected_status == 'weekend' %} active{% endif %}"{% if selected_status == 'weekend' %} aria-current="page"{% endif %}>This weekend</a>
+        <a href="?status=completed" class="nav-link{% if selected_status == 'completed' %} active{% endif %}"{% if selected_status == 'completed' %} aria-current="page"{% endif %}>Results<span class="count">{{ completed_count }}</span></a>
+        <a href="?status=all" class="nav-link{% if not selected_status or selected_status == 'all' %} active{% endif %}"{% if not selected_status or selected_status == 'all' %} aria-current="page"{% endif %}>All<span class="count">{{ all_count }}</span></a>
+    </nav>
+    <span class="small text-muted">{{ today|date:"l j F Y" }}</span>
 </div>
 
+<div class="row g-4">
+    <aside class="col-lg-4 order-lg-last d-grid gap-4 align-content-start" aria-label="Filters and links">
+        <section class="panel filter-panel" aria-labelledby="filter-title">
+            <div class="panel-header"><h2 class="panel-title" id="filter-title"><i class="fas fa-filter" aria-hidden="true"></i>Filter fixtures</h2></div>
+            <form method="get" class="panel-body">
+                <input type="hidden" name="status" value="{{ selected_status }}">
+                <div>
+                    <label for="zone" class="form-label">Zone</label>
+                    <select name="zone" id="zone" class="form-select">
+                        <option value="all">All zones</option>
+                        {% for zone in zones %}
+                        <option value="{{ zone.id }}"{% if selected_zone == zone.id|stringformat:"i" %} selected{% endif %}>{{ zone.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6 col-lg-12 col-xl-6">
+                        <label for="round" class="form-label">Round</label>
+                        <select name="round" id="round" class="form-select">
+                            <option value="all">All rounds</option>
+                            {% for round in rounds %}
+                            <option value="{{ round }}"{% if selected_round == round|stringformat:"i" %} selected{% endif %}>Round {{ round }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-lg-12 col-xl-6">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" name="date" id="date" class="form-control" value="{{ selected_date }}">
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1" aria-hidden="true"></i>Apply filters</button>
+                    <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </section>
 
+        {% if zones %}
+        <section class="panel d-none d-lg-block" aria-labelledby="zones-title">
+            <div class="panel-header"><h2 class="panel-title" id="zones-title"><i class="fas fa-map-location-dot" aria-hidden="true"></i>Fixtures by zone</h2></div>
+            <ul class="link-list">
+                {% for zone in zones %}
+                <li><a href="{% url 'matches:zone_fixtures' zone.id %}"><i class="fas fa-location-dot" aria-hidden="true"></i>{{ zone.name }}<i class="fas fa-arrow-right" aria-hidden="true"></i></a></li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+    </aside>
+
+    <div class="col-lg-8 d-grid gap-5 align-content-start">
+        {% if selected_status != 'completed' %}
+        <section aria-labelledby="fixtures-title">
+            <div class="section-title">
+                <h2 id="fixtures-title">{% if selected_status == 'upcoming' %}Upcoming fixtures{% elif selected_status == 'today' %}Today's fixtures{% elif selected_status == 'weekend' %}This weekend{% else %}All fixtures{% endif %}</h2>
+                <span class="small text-muted">{{ upcoming_matches.count }} match{{ upcoming_matches.count|pluralize:"es" }}</span>
+            </div>
+            {% if upcoming_matches %}
+            {% include "matches/_fixture_days.html" with matches=upcoming_matches %}
+            {% else %}
+            <div class="panel">
+                <div class="empty-state">
+                    <div class="empty-state__icon"><i class="fas fa-calendar-xmark" aria-hidden="true"></i></div>
+                    <p class="empty-state__title">No fixtures available</p>
+                    <p class="empty-state__text">
+                        {% if selected_status == 'upcoming' %}No upcoming fixtures found. Fixtures will be generated automatically when teams are approved and assigned to zones.{% else %}No fixtures found with the current filters.{% endif %}
+                    </p>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        {% if user.is_staff %}
+                        <a href="/admin/teams/zone/" class="btn btn-primary"><i class="fas fa-cog me-1" aria-hidden="true"></i>Generate fixtures in admin</a>
+                        {% endif %}
+                        <a href="{% url 'matches:fixtures' %}?status=all" class="btn btn-outline-secondary">View all fixtures</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if selected_status == 'all' or selected_status == 'completed' %}
+        <section aria-labelledby="results-title">
+            <div class="section-title">
+                <h2 id="results-title">{% if selected_status == 'completed' %}Results{% else %}Recent results{% endif %}</h2>
+                {% if selected_status == 'all' and completed_matches %}<a href="?status=completed">All results <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i></a>{% endif %}
+            </div>
+            {% if completed_matches %}
+                {% if selected_status == 'completed' %}
+                {% include "matches/_fixture_days.html" with matches=completed_matches|dictsortreversed:"match_date" %}
+                {% else %}
+                <div class="fixture-list">
+                    {% for match in completed_matches|dictsortreversed:"match_date"|slice:":6" %}{% include "partials/_fixture_card.html" %}{% endfor %}
+                </div>
+                {% endif %}
+            {% else %}
+            <div class="panel">{% empty_state icon="futbol" title="No completed matches yet" message="Results are posted as soon as match reports are approved." %}</div>
+            {% endif %}
+        </section>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

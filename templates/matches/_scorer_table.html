@@ -1,0 +1,31 @@
+{% comment %}Scorer ranking table. Context: scorers (Players with team), caption.{% endcomment %}
+<div class="data-table-wrap">
+    <table class="table data-table league-table">
+        <caption class="visually-hidden">Top scorers: {{ caption }}</caption>
+        <thead>
+            <tr>
+                <th scope="col" class="pos">#</th>
+                <th scope="col">Player</th>
+                <th scope="col" class="hide-sm">Team</th>
+                <th scope="col" class="num">Goals</th>
+                <th scope="col" class="num hide-sm"><abbr title="Matches played">MP</abbr></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player in scorers %}
+            <tr{% if forloop.first %} class="is-leader"{% endif %}>
+                <td class="pos">{{ forloop.counter }}</td>
+                <td>
+                    <span class="player-cell">
+                        {% include "matches/_player_avatar.html" with player=player %}
+                        <span><strong>{{ player.full_name }}</strong><span class="sub">{{ player.get_position_display|default:player.position }}<span class="d-sm-none"> &middot; {{ player.team.team_name }}</span></span></span>
+                    </span>
+                </td>
+                <td class="hide-sm"><span class="chip">{% include "partials/_team_crest.html" with team=player.team size="sm" %}<span>{{ player.team.team_name }}</span></span></td>
+                <td class="num pts">{{ player.goals_scored }}</td>
+                <td class="num hide-sm text-muted">{{ player.matches_played|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

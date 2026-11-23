@@ -1,41 +1,33 @@
 {% extends 'base.html' %}
+{% load static fkf_tags %}
 
 {% block title %}{{ team.team_name }} Fixtures — FKF Meru County League{% endblock %}
-{% block extra_css %}{% include "matches/_fixture_styles.html" %}{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
+
+{% block page_header %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'matches:fixtures' %}">Fixtures</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ team.team_name }}</li>
+    </ol>
+</nav>
+<header class="page-header">
+    <div class="d-flex align-items-center gap-3">
+        {% include "partials/_team_crest.html" with team=team size="lg" %}
+        <div>
+            <span class="page-eyebrow">Team fixtures</span>
+            <h1 class="page-title">{{ team.team_name }}</h1>
+            {% if team.zone_id %}<p class="page-subtitle">{{ team.zone.name }}</p>{% endif %}
+        </div>
+    </div>
+    <div class="page-actions">
+        {% if team.zone_id %}<a href="{% url 'matches:zone_fixtures' team.zone_id %}" class="btn btn-outline-secondary btn-sm">All {{ team.zone.name }} fixtures</a>{% endif %}
+        <a href="{% url 'matches:league_tables' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-table me-1" aria-hidden="true"></i>League table</a>
+    </div>
+</header>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'matches:fixtures' %}">Fixtures</a></li>
-      <li class="breadcrumb-item active" aria-current="page">{{ team.team_name }}</li>
-    </ol>
-  </nav>
-  <h1 class="mb-4">{{ team.team_name }} — Fixtures</h1>
-  {% if team.zone_id %}
-  <p><a href="{% url 'matches:zone_fixtures' team.zone_id %}">All {{ team.zone.name }} fixtures</a></p>
-  {% endif %}
-
-  <section class="card mb-4" aria-labelledby="upcomingHeading">
-    <div class="card-header"><h2 class="h5 mb-0" id="upcomingHeading">Upcoming</h2></div>
-    <div class="card-body p-0">
-      {% if upcoming_matches %}
-        {% include "matches/_fixture_table.html" with matches=upcoming_matches %}
-      {% else %}
-        <p class="text-muted p-3 mb-0">No upcoming fixtures.</p>
-      {% endif %}
-    </div>
-  </section>
-
-  <section class="card" aria-labelledby="resultsHeading">
-    <div class="card-header"><h2 class="h5 mb-0" id="resultsHeading">Results</h2></div>
-    <div class="card-body p-0">
-      {% if completed_matches %}
-        {% include "matches/_fixture_table.html" with matches=completed_matches %}
-      {% else %}
-        <p class="text-muted p-3 mb-0">No results yet.</p>
-      {% endif %}
-    </div>
-  </section>
-</div>
+{% include "matches/_fixtures_split.html" %}
 {% endblock %}

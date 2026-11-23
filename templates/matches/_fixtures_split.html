@@ -1,0 +1,30 @@
+{% load fkf_tags %}{% comment %}
+Upcoming + results columns for team_fixtures / zone_fixtures.
+Context: upcoming_matches, completed_matches.
+{% endcomment %}
+<div class="row g-4">
+    <section class="col-lg-7" aria-labelledby="upcomingHeading">
+        <div class="section-title">
+            <h2 id="upcomingHeading">Upcoming</h2>
+            <span class="small text-muted">{{ upcoming_matches|length }} match{{ upcoming_matches|length|pluralize:"es" }}</span>
+        </div>
+        {% if upcoming_matches %}
+        {% include "matches/_fixture_days.html" with matches=upcoming_matches|dictsort:"match_date" %}
+        {% else %}
+        <div class="panel">{% empty_state icon="calendar-xmark" title="No upcoming fixtures." message="New fixtures appear here once the league office publishes them." %}</div>
+        {% endif %}
+    </section>
+    <section class="col-lg-5" aria-labelledby="resultsHeading">
+        <div class="section-title">
+            <h2 id="resultsHeading">Results</h2>
+            <span class="small text-muted">{{ completed_matches|length }} played</span>
+        </div>
+        {% if completed_matches %}
+        <div class="fixture-list">
+            {% for match in completed_matches %}{% include "partials/_fixture_card.html" %}{% endfor %}
+        </div>
+        {% else %}
+        <div class="panel">{% empty_state icon="futbol" title="No results yet." %}</div>
+        {% endif %}
+    </section>
+</div>

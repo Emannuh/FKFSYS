@@ -1,29 +1,51 @@
 {% extends 'base.html' %}
+{% load static fkf_tags %}
+
 {% block title %}Match Results — FKF Meru County League{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
+
+{% block page_header %}
+<header class="page-header">
+    <div>
+        <span class="page-eyebrow">Match centre</span>
+        <h1 class="page-title">Match results</h1>
+        <p class="page-subtitle">Every completed league match, newest first.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>Fixtures</a>
+    </div>
+</header>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h1>Match Results</h1>
-    <table class="table table-striped">
+{% if matches %}
+<div class="data-table-wrap">
+    <table class="table data-table">
+        <caption class="visually-hidden">Completed match results</caption>
         <thead>
             <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Home Team</th>
-                <th scope="col">Score</th>
-                <th scope="col">Away Team</th>
+                <th scope="col" class="col-min">Date</th>
+                <th scope="col" class="text-end">Home</th>
+                <th scope="col" class="text-center col-min">Score</th>
+                <th scope="col">Away</th>
+                <th scope="col" class="hide-sm">Zone</th>
             </tr>
         </thead>
         <tbody>
             {% for match in matches %}
             <tr>
-                <td>{{ match.match_date|date:'Y-m-d' }}</td>
-                <td>{{ match.home_team.team_name }}</td>
-                <td><a href="{% url 'matches:match_details' match.id %}">{{ match.score_display }}</a></td>
-                <td>{{ match.away_team.team_name }}</td>
+                <td class="col-min text-muted">{{ match.match_date|date:'j M Y' }}</td>
+                <td class="text-end fw-semibold">{{ match.home_team.team_name }}</td>
+                <td class="text-center col-min"><a class="score-capsule text-decoration-none" href="{% url 'matches:match_details' match.id %}" aria-label="{{ match.home_team.team_name }} {{ match.home_score }}, {{ match.away_team.team_name }} {{ match.away_score }}: match details">{{ match.score_display }}</a></td>
+                <td class="fw-semibold">{{ match.away_team.team_name }}</td>
+                <td class="hide-sm text-muted">{{ match.zone.name }}</td>
             </tr>
-            {% empty %}
-            <tr><td colspan="4">No results available.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% else %}
+<div class="panel">{% empty_state icon="futbol" title="No results available." message="Results are posted as soon as match reports are approved." %}</div>
+{% endif %}
 {% endblock %}
