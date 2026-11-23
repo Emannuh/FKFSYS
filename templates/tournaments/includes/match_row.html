@@ -1,0 +1,29 @@
+{% load fkf_tags %}{# One tournament match as a table row. Usage: include with m=match show_stage=True can_manage=can_manage #}
+<tr>
+    <td class="col-min text-muted">{{ m.match_date|date:"D j M" }}<span class="d-block small">{{ m.match_date|date:"H:i" }}</span></td>
+    <td class="text-end fw-semibold">{% if m.home_team %}{{ m.home_team.display_name }}{% else %}<span class="text-muted">TBD</span>{% endif %}</td>
+    <td class="text-center col-min">
+        {% if m.status == 'completed' %}
+        <span class="score-capsule">{{ m.home_score }}&ndash;{{ m.away_score }}</span>
+        {% if m.home_penalties is not None %}<span class="d-block small text-muted mt-1">{{ m.home_penalties }}&ndash;{{ m.away_penalties }} pens</span>{% endif %}
+        {% elif m.status == 'live' %}
+        <span class="score-capsule score-capsule--live">{{ m.home_score }}&ndash;{{ m.away_score }}</span>
+        {% else %}
+        <span class="score-capsule score-capsule--vs">VS</span>
+        {% endif %}
+    </td>
+    <td class="fw-semibold">{% if m.away_team %}{{ m.away_team.display_name }}{% else %}<span class="text-muted">TBD</span>{% endif %}</td>
+    {% if show_stage %}<td class="hide-sm"><span class="status-badge status-neutral">{{ m.get_stage_display }}</span></td>{% endif %}
+    <td class="hide-sm text-muted">{{ m.venue|default:tournament.venue|default:"TBD" }}</td>
+    <td class="hide-sm">{% match_badge m.status %}</td>
+    {% if can_manage %}
+    <td class="col-min">
+        {% if m.status != 'completed' %}
+        <div class="d-flex gap-1">
+            <a href="{% url 'tournaments:record_result' m.pk %}" class="btn btn-sm btn-outline-success btn-icon" title="Record result" aria-label="Record result"><i class="fas fa-futbol" aria-hidden="true"></i></a>
+            <a href="{% url 'tournaments:edit_tournament_match' m.pk %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Edit match" aria-label="Edit match"><i class="fas fa-cog" aria-hidden="true"></i></a>
+        </div>
+        {% endif %}
+    </td>
+    {% endif %}
+</tr>

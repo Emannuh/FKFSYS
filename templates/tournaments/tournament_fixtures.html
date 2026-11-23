@@ -1,99 +1,53 @@
 {% extends 'base.html' %}
+{% load static fkf_tags %}
+
 {% block title %}Fixtures – {{ tournament.name }}{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
+
+{% block page_header %}
+{% include "tournaments/includes/tournament_header.html" with active="fixtures" %}
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-calendar-alt text-primary me-2"></i>{{ tournament.name }} – Fixtures</h2>
-        </div>
-        <div class="btn-group">
-            <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
-                <i class="fas fa-arrow-left me-1"></i>Overview
-            </a>
-            {% if can_manage %}
-            <a href="{% url 'tournaments:create_match' tournament.slug %}" class="btn btn-success btn-sm">
-                <i class="fas fa-plus me-1"></i>Add Match
-            </a>
-            <a href="{% url 'tournaments:generate_fixtures' tournament.slug %}" class="btn btn-primary btn-sm">
-                <i class="fas fa-magic me-1"></i>Generate Fixtures
-            </a>
-            <a href="{% url 'tournaments:matches_needing_officials' tournament.slug %}" class="btn btn-warning btn-sm">
-                <i class="fas fa-user-tie me-1"></i>Appoint Officials
-            </a>
-            {% endif %}
-        </div>
-    </div>
+{% if can_manage %}
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{% url 'tournaments:create_match' tournament.slug %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-plus me-1" aria-hidden="true"></i>Add match</a>
+    <a href="{% url 'tournaments:generate_fixtures' tournament.slug %}" class="btn btn-primary btn-sm"><i class="fas fa-magic me-1" aria-hidden="true"></i>Generate fixtures</a>
+    <a href="{% url 'tournaments:matches_needing_officials' tournament.slug %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-user-tie me-1" aria-hidden="true"></i>Appoint officials</a>
+</div>
+{% endif %}
 
-    {% regroup matches by get_stage_display as stages %}
+{% regroup matches by get_stage_display as stages %}
+<div class="d-grid gap-4">
     {% for stage in stages %}
-    <div class="card shadow-sm mb-4">
-        <div class="card-header" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);color:white;">
-            <h6 class="mb-0">{{ stage.grouper }}</h6>
+    <section class="panel" aria-labelledby="stage-{{ forloop.counter }}">
+        <div class="panel-header">
+            <h2 class="panel-title" id="stage-{{ forloop.counter }}"><i class="fas fa-layer-group" aria-hidden="true"></i>{{ stage.grouper }}</h2>
+            <span class="small text-muted">{{ stage.list|length }} match{{ stage.list|length|pluralize:"es" }}</span>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+        <div class="data-table-wrap">
+            <table class="table data-table">
+                <caption class="visually-hidden">{{ stage.grouper }} fixtures</caption>
+                <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Home</th>
-                        <th class="text-center">Score</th>
-                        <th>Away</th>
-                        <th>Venue</th>
-                        <th>Status</th>
-                        {% if can_manage %}
-                        <th>Action</th>
-                        {% endif %}
+                        <th scope="col" class="col-min">Date</th>
+                        <th scope="col" class="text-end">Home</th>
+                        <th scope="col" class="text-center col-min">Score</th>
+                        <th scope="col">Away</th>
+                        <th scope="col" class="hide-sm">Venue</th>
+                        <th scope="col" class="hide-sm">Status</th>
+                        {% if can_manage %}<th scope="col" class="col-min">Action</th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
-                    {% for m in stage.list %}
-                    <tr>
-                        <td>{{ m.match_date|date:"d M, H:i" }}</td>
-                        <td class="fw-bold">{% if m.home_team %}{{ m.home_team.display_name }}{% else %}TBD{% endif %}</td>
-                        <td class="text-center fw-bold">
-                            {% if m.status == 'completed' %}
-                            {{ m.home_score }} – {{ m.away_score }}
-                            {% if m.home_penalties is not None %}
-                            <br><small class="text-muted">({{ m.home_penalties }}-{{ m.away_penalties }} pens)</small>
-                            {% endif %}
-                            {% elif m.status == 'live' %}
-                            <span class="badge bg-danger">LIVE {{ m.home_score }} – {{ m.away_score }}</span>
-                            {% else %}
-                            vs
-                            {% endif %}
-                        </td>
-                        <td class="fw-bold">{% if m.away_team %}{{ m.away_team.display_name }}{% else %}TBD{% endif %}</td>
-                        <td>{{ m.venue|default:tournament.venue }}</td>
-                        <td>
-                            <span class="badge bg-{% if m.status == 'completed' %}success{% elif m.status == 'live' %}danger{% elif m.status == 'scheduled' %}primary{% else %}warning{% endif %}">
-                                {{ m.get_status_display }}
-                            </span>
-                        </td>
-                        {% if can_manage %}
-                        <td>
-                            {% if m.status != 'completed' %}
-                            <a href="{% url 'tournaments:record_result' m.pk %}" class="btn btn-sm btn-outline-success" title="Record Result">
-                                <i class="fas fa-futbol"></i>
-                            </a>
-                            <a href="{% url 'tournaments:edit_tournament_match' m.pk %}" class="btn btn-sm btn-outline-primary" title="Edit Match">
-                                <i class="fas fa-cog"></i>
-                            </a>
-                            {% endif %}
-                        </td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
+                    {% for m in stage.list %}{% include "tournaments/includes/match_row.html" with m=m show_stage=False %}{% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
     {% empty %}
-    <div class="text-center py-5 text-muted">
-        <i class="fas fa-calendar-times fa-3x mb-3"></i>
-        <h5>No fixtures scheduled yet.</h5>
-    </div>
+    <div class="panel">{% empty_state icon="calendar-xmark" title="No fixtures scheduled yet." message="Fixtures appear here once the organisers publish them." %}</div>
     {% endfor %}
 </div>
 {% endblock %}
-

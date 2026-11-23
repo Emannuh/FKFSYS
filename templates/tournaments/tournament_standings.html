@@ -1,71 +1,69 @@
 {% extends 'base.html' %}
+{% load static fkf_tags %}
+
 {% block title %}Standings – {{ tournament.name }}{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-trophy text-warning me-2"></i>{{ tournament.name }} – Standings</h2>
-        </div>
-        <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i>Overview
-        </a>
-    </div>
-
-    {% if groups %}
-    {% for group in groups %}
-    <div class="card shadow-sm mb-4">
-        <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-            <h6 class="mb-0"><i class="fas fa-users me-1"></i>{{ group.name }}</h6>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-striped mb-0 align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th style="width:40px">#</th>
-                        <th>Team</th>
-                        <th class="text-center">P</th>
-                        <th class="text-center">W</th>
-                        <th class="text-center">D</th>
-                        <th class="text-center">L</th>
-                        <th class="text-center">GF</th>
-                        <th class="text-center">GA</th>
-                        <th class="text-center">GD</th>
-                        <th class="text-center fw-bold">Pts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for s in group.standings.all %}
-                    <tr {% if forloop.counter <= 2 %}class="table-success"{% endif %}>
-                        <td class="fw-bold">{{ forloop.counter }}</td>
-                        <td>
-                            {{ s.team_registration.display_name }}
-                            {% if s.team_registration.seed %}<span class="badge bg-secondary ms-1">Seed {{ s.team_registration.seed }}</span>{% endif %}
-                        </td>
-                        <td class="text-center">{{ s.played }}</td>
-                        <td class="text-center">{{ s.won }}</td>
-                        <td class="text-center">{{ s.drawn }}</td>
-                        <td class="text-center">{{ s.lost }}</td>
-                        <td class="text-center">{{ s.goals_for }}</td>
-                        <td class="text-center">{{ s.goals_against }}</td>
-                        <td class="text-center">{{ s.goal_difference }}</td>
-                        <td class="text-center fw-bold fs-5">{{ s.points }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="10" class="text-center text-muted py-3">No standings recorded yet.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endfor %}
-    {% else %}
-    <div class="text-center py-5 text-muted">
-        <i class="fas fa-chart-bar fa-3x mb-3"></i>
-        <h5>No group standings available.</h5>
-        <p>Standings will appear once groups are created and matches are played.</p>
-    </div>
-    {% endif %}
-</div>
+{% block page_header %}
+{% include "tournaments/includes/tournament_header.html" with active="standings" %}
 {% endblock %}
 
+{% block content %}
+{% if groups %}
+<div class="row g-4">
+    {% for group in groups %}
+    <div class="col-xl-6">
+        <section class="panel" aria-labelledby="group-{{ group.pk }}">
+            <div class="panel-header"><h2 class="panel-title" id="group-{{ group.pk }}"><i class="fas fa-users" aria-hidden="true"></i>{{ group.name }}</h2></div>
+            <div class="data-table-wrap">
+                <table class="table data-table league-table">
+                    <caption class="visually-hidden">{{ group.name }} standings</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="pos">#</th>
+                            <th scope="col">Team</th>
+                            <th scope="col" class="num"><abbr title="Played">P</abbr></th>
+                            <th scope="col" class="num hide-sm"><abbr title="Won">W</abbr></th>
+                            <th scope="col" class="num hide-sm"><abbr title="Drawn">D</abbr></th>
+                            <th scope="col" class="num hide-sm"><abbr title="Lost">L</abbr></th>
+                            <th scope="col" class="num hide-sm"><abbr title="Goals for">GF</abbr></th>
+                            <th scope="col" class="num hide-sm"><abbr title="Goals against">GA</abbr></th>
+                            <th scope="col" class="num"><abbr title="Goal difference">GD</abbr></th>
+                            <th scope="col" class="num"><abbr title="Points">Pts</abbr></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in group.standings.all %}
+                        <tr{% if forloop.counter == 1 %} class="is-leader"{% elif forloop.counter == 2 %} class="is-promo"{% endif %}>
+                            <td class="pos">{{ forloop.counter }}</td>
+                            <td class="team-cell">
+                                <span class="chip"><span class="team-crest team-crest--sm" aria-hidden="true">{{ s.team_registration.display_name|slice:":2" }}</span><span>{{ s.team_registration.display_name }}{% if s.team_registration.seed %} <span class="chip__meta">Seed {{ s.team_registration.seed }}</span>{% endif %}</span></span>
+                            </td>
+                            <td class="num">{{ s.played }}</td>
+                            <td class="num hide-sm">{{ s.won }}</td>
+                            <td class="num hide-sm">{{ s.drawn }}</td>
+                            <td class="num hide-sm">{{ s.lost }}</td>
+                            <td class="num hide-sm">{{ s.goals_for }}</td>
+                            <td class="num hide-sm">{{ s.goals_against }}</td>
+                            <td class="num">{% if s.goal_difference > 0 %}<span class="gd-pos">+{{ s.goal_difference }}</span>{% elif s.goal_difference < 0 %}<span class="gd-neg">{{ s.goal_difference }}</span>{% else %}0{% endif %}</td>
+                            <td class="num pts">{{ s.points }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="10" class="text-center text-muted py-4">No standings recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-legend border-0 border-top" aria-hidden="true">
+                <span><span class="legend-key legend-key--leader"></span>Group winner</span>
+                <span><span class="legend-key legend-key--promo"></span>Qualifies</span>
+            </div>
+        </section>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="panel">{% empty_state icon="chart-bar" title="No group standings available." message="Standings will appear once groups are created and matches are played." %}</div>
+{% endif %}
+{% endblock %}
