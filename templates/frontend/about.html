@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}About - FKF Meru League{% endblock %}
 
@@ -78,19 +78,18 @@
             </div>
         </div>
         
+        {% if league_settings %}
         <div class="card mt-4">
             <div class="card-header" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;">
                 <h5 class="mb-0">Important Dates</h5>
             </div>
             <div class="card-body">
-                <div class="list-group">
-                    <div class="list-group-item">
-                        <h6 class="mb-1">Registration Deadline</h6>
-                        <small class="text-muted">december 28, 2025</small>
-                    </div>
-                    <div class="list-group-item">
-                        <h6 class="mb-1">League Start Date</h6>
-                        <small class="text-muted">jan 17 2026</small>
-                    </div>
-                    <div class="list-group-item">
-                        <h6 class="mb-1">Mid-Se
+                {% include "partials/_deadline_row.html" with label="Team Registration" icon="fas fa-users text-primary" is_open=league_settings.team_registration_open deadline=league_settings.team_registration_deadline closed_date=league_settings.team_registration_closed_date %}
+                {% include "partials/_deadline_row.html" with label="Player Registration" icon="fas fa-user-plus text-success" is_open=league_settings.player_registration_open deadline=league_settings.player_registration_deadline closed_date=league_settings.player_registration_closed_date %}
+                {% include "partials/_deadline_row.html" with label="Transfer Window" icon="fas fa-exchange-alt text-info" is_open=league_settings.transfer_window_open deadline=league_settings.transfer_window_deadline closed_date=league_settings.transfer_window_closed_date last=True %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
