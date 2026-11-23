@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Activity Logs - FKF Meru League{% endblock %}
@@ -142,7 +142,7 @@
                             </thead>
                             <tbody>
                                 {% for log in page_obj %}
-                                <tr{% if log.is_undone %} class="table-secondary"{% endif %}>
+                                <tr>
                                     <td>
                                         <small>
                                             <i class="fas fa-calendar"></i> {{ log.timestamp|date:"M d, Y" }}<br>
@@ -160,19 +160,11 @@
                                         <span class="badge bg-{{ log.action_class }} rounded-pill">
                                             <i class="fas fa-{{ log.action_icon }}"></i> {{ log.get_action_display }}
                                         </span>
-                                        {% if log.is_undone %}
-                                        <br><span class="badge bg-secondary mt-1"><i class="fas fa-undo"></i> Undone</span>
-                                        {% endif %}
                                     </td>
                                     <td>
                                         {{ log.description|truncatechars:100 }}
                                         {% if log.object_repr %}
                                         <br><small class="text-muted"><i class="fas fa-link"></i> {{ log.object_repr }}</small>
-                                        {% endif %}
-                                        {% if log.is_undone %}
-                                        <br><small class="text-muted">
-                                            <i class="fas fa-info-circle"></i> Undone by {{ log.undone_by.username }} on {{ log.undone_at|date:"M d, Y" }}
-                                        </small>
                                         {% endif %}
                                     </td>
                                     <td><small>{{ log.ip_address|default:"-" }}</small></td>
@@ -180,11 +172,6 @@
                                         <a href="{% url 'admin_dashboard:activity_log_detail' log.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        {% if request.user.is_superuser and log.can_be_undone %}
-                                        <a href="{% url 'admin_dashboard:undo_action' log.id %}" class="btn btn-sm btn-warning ms-1" title="Undo Action">
-                                            <i class="fas fa-undo"></i>
-                                        </a>
-                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
