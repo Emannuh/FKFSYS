@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ zone.name }} Fixtures — FKF Meru County League{% endblock %}
+{% block extra_css %}{% include "matches/_fixture_styles.html" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'matches:fixtures' %}">Fixtures</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ zone.name }}</li>
+    </ol>
+  </nav>
+  <h1 class="mb-4">{{ zone.name }} — Fixtures</h1>
+  <p><a href="{% url 'matches:league_tables' %}">League table</a></p>
+
+  <section class="card mb-4" aria-labelledby="upcomingHeading">
+    <div class="card-header"><h2 class="h5 mb-0" id="upcomingHeading">Upcoming</h2></div>
+    <div class="card-body p-0">
+      {% if upcoming_matches %}
+        {% include "matches/_fixture_table.html" with matches=upcoming_matches %}
+      {% else %}
+        <p class="text-muted p-3 mb-0">No upcoming fixtures.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="resultsHeading">
+    <div class="card-header"><h2 class="h5 mb-0" id="resultsHeading">Results</h2></div>
+    <div class="card-body p-0">
+      {% if completed_matches %}
+        {% include "matches/_fixture_table.html" with matches=completed_matches %}
+      {% else %}
+        <p class="text-muted p-3 mb-0">No results yet.</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

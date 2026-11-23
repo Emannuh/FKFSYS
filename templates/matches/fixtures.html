@@ -1,6 +1,8 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}Fixtures — FKF Meru County League{% endblock %}
+
+{% block extra_css %}{% include "matches/_fixture_styles.html" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -123,111 +125,7 @@
                 </div>
                 <div class="card-body p-0">
                     {% if upcoming_matches %}
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th width="15%">Date & Time</th>
-                                    <th width="25%">Home Team</th>
-                                    <th width="10%" class="text-center">Result</th>
-                                    <th width="25%">Away Team</th>
-                                    <th width="10%">Venue</th>
-                                    <th width="10%">Zone</th>
-                                    <th width="5%">Round</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for match in upcoming_matches %}
-                                <tr class="{% if match.status == 'ongoing' %}table-warning{% endif %}">
-                                    <td>
-                                        <div class="d-flex flex-column">
-                                            <strong class="text-primary">{{ match.match_date|date:"D, M d" }}</strong>
-                                            <small class="text-muted">{{ match.match_date|time:"g:i A" }}</small>
-                                            {% if match.match_date.date == today %}
-                                            <span class="badge bg-danger mt-1">TODAY</span>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                    
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="team-logo me-3">
-                                                {% if match.home_team.logo %}
-                                                <img src="{{ match.home_team.logo.url }}" 
-                                                     alt="{{ match.home_team.team_name }}" 
-                                                     class="team-logo-small">
-                                                {% else %}
-                                                <div class="team-logo-placeholder bg-secondary">
-                                                    {{ match.home_team.team_name|slice:":2"|upper }}
-                                                </div>
-                                                {% endif %}
-                                            </div>
-                                            <div>
-                                                <strong>{{ match.home_team.team_name }}</strong><br>
-                                                <small class="text-muted">{{ match.home_team.location }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    
-                                    <td class="text-center align-middle">
-                                        {% if match.status == 'completed' %}
-                                        <div class="score-display">
-                                            <span class="home-score">{{ match.home_score }}</span>
-                                            <span class="mx-1">-</span>
-                                            <span class="away-score">{{ match.away_score }}</span>
-                                        </div>
-                                        <small class="text-muted d-block">FT</small>
-                                        {% elif match.status == 'ongoing' %}
-                                        <div class="score-display text-warning">
-                                            <span class="home-score">{{ match.home_score|default:"0" }}</span>
-                                            <span class="mx-1">-</span>
-                                            <span class="away-score">{{ match.away_score|default:"0" }}</span>
-                                        </div>
-                                        <small class="text-warning d-block">LIVE</small>
-                                        {% else %}
-                                        <span class="text-muted">VS</span>
-                                        {% endif %}
-                                    </td>
-                                    
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="team-logo me-3">
-                                                {% if match.away_team.logo %}
-                                                <img src="{{ match.away_team.logo.url }}" 
-                                                     alt="{{ match.away_team.team_name }}" 
-                                                     class="team-logo-small">
-                                                {% else %}
-                                                <div class="team-logo-placeholder bg-secondary">
-                                                    {{ match.away_team.team_name|slice:":2"|upper }}
-                                                </div>
-                                                {% endif %}
-                                            </div>
-                                            <div>
-                                                <strong>{{ match.away_team.team_name }}</strong><br>
-                                                <small class="text-muted">{{ match.away_team.location }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    
-                                    <td class="align-middle">
-                                        <small>{{ match.venue|truncatechars:20 }}</small>
-                                    </td>
-                                    
-                                    <td class="align-middle">
-                                        <span class="badge zone-badge" 
-                                              style="background-color: {{ match.zone.id|stringformat:'d'|add:'100'|stringformat:'#%06x'|slice:'0:7' }}">
-                                            {{ match.zone.name }}
-                                        </span>
-                                    </td>
-                                    
-                                    <td class="align-middle">
-                                        <span class="badge bg-dark">R{{ match.round_number }}</span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                    {% include "matches/_fixture_table.html" with matches=upcoming_matches %}
                     {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-calendar-times fa-4x text-muted mb-4"></i>
@@ -312,104 +210,5 @@
     {% endif %}
 </div>
 
-<style>
-    .team-logo-small {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 50%;
-        border: 2px solid #dc3545;
-    }
-    
-    .team-logo-placeholder {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        font-size: 14px;
-    }
-    
-    .zone-badge {
-        padding: 5px 10px;
-        border-radius: 15px;
-        color: white;
-        font-size: 12px;
-    }
-    
-    .score-display {
-        font-size: 18px;
-        font-weight: bold;
-    }
-    
-    .home-score { color: #dc3545; }
-    .away-score { color: #0d6efd; }
-    
-    .match-result-card {
-        border-left: 4px solid #198754;
-        transition: transform 0.2s;
-    }
-    
-    .match-result-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    .teams-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .teams-row .team {
-        flex: 2;
-    }
-    
-    .teams-row .score {
-        flex: 1;
-        text-align: center;
-        font-size: 18px;
-    }
-    
-    .teams-row .vs {
-        flex: 0.5;
-        text-align: center;
-        color: #6c757d;
-    }
-</style>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Auto-set date filter to today if empty
-        const dateInput = document.getElementById('date');
-        if (!dateInput.value) {
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.value = today;
-        }
-        
-        // Quick filter buttons
-        document.querySelectorAll('.btn-group .btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                if (!this.href) e.preventDefault();
-                document.querySelectorAll('.btn-group .btn').forEach(b => {
-                    b.classList.remove('active');
-                });
-                this.classList.add('active');
-            });
-        });
-        
-        // Auto-submit on filter change (optional)
-        const zoneSelect = document.getElementById('zone');
-        const roundSelect = document.getElementById('round');
-        
-        [zoneSelect, roundSelect].forEach(select => {
-            select.addEventListener('change', function() {
-                this.form.submit();
-            });
-        });
-    });
-</script>
 {% endblock %}

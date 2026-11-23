@@ -1,145 +1,92 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 import json
-from .models import Payment
-from teams.models import Team
-from .forms import PaymentForm
-from .daraja import MpesaDarajaAPI
+import logging
 
+from django.conf import settings
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.crypto import constant_time_compare
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_POST
+
+from fkf_league.permissions import is_league_admin
+from teams.models import Team
+
+from . import services
+from .daraja import callback_token
+from .forms import PaymentForm
+from .models import Payment
+
+logger = logging.getLogger(__name__)
+
+MAX_CALLBACK_BYTES = 16 * 1024
+
+
+def _can_access_team_payment(request, team: Team) -> bool:
+    """The registering browser session, the team's manager, or a league admin."""
+    if request.session.get("team_id_for_payment") == team.pk:
+        return True
+    user = request.user
+    return user.is_authenticated and (team.manager_id == user.pk or is_league_admin(user))
+
+
+@require_http_methods(["GET", "POST"])
 def payment_page(request, team_id):
-    team = get_object_or_404(Team, id=team_id)
-    
-    # Check if team already paid
-    if hasattr(team, 'payment_status') and team.payment_status:
-        messages.info(request, 'This team has already completed payment.')
-        return redirect('teams:registration_success')
-    
-    if request.method == 'POST':
+    team = get_object_or_404(Team, pk=team_id)
+    if not _can_access_team_payment(request, team):
+        raise PermissionDenied
+    if services.team_has_paid(team):
+        messages.info(request, "This team has already completed payment.")
+        return redirect("teams:registration_success")
+
+    if request.method == "POST":
         form = PaymentForm(request.POST)
         if form.is_valid():
-            # Initialize Daraja API
-            daraja = MpesaDarajaAPI()
-            
-            phone_number = form.cleaned_data['phone_number']
-            amount = 16000  # Registration fee in KSh
-            
-            # Initiate payment
-            response = daraja.lipa_na_mpesa_online(
-                phone_number=phone_number,
-                amount=amount,
-                account_reference=team.team_code,
-                transaction_desc=f"FKF Meru League Registration - {team.team_name}"
-            )
-            
-            if response and response.get('ResponseCode') == '0':
-                # Save payment record
-                payment = Payment.objects.create(
-                    team=team,
-                    amount=amount,
-                    phone_number=phone_number,
-                    checkout_request_id=response.get('CheckoutRequestID'),
-                    merchant_request_id=response.get('MerchantRequestID'),
-                    status='pending'
-                )
-                
-                messages.success(request, '✅ Payment request sent! Please check your phone and enter your M-PESA PIN to complete the payment.')
-                return redirect('payments:payment_status', payment_id=payment.id)
+            try:
+                payment = services.initiate_registration_payment(team, form.cleaned_data["phone_number"])
+            except services.PaymentError as exc:
+                messages.error(request, str(exc))
             else:
-                error_msg = response.get('errorMessage', 'Unknown error') if response else 'Network error'
-                messages.error(request, f'❌ Failed to initiate payment: {error_msg}. Please try again.')
-    
+                messages.success(request, "Payment request sent. Check your phone and enter your M-PESA PIN.")
+                return redirect("payments:payment_status", payment_id=payment.pk)
     else:
-        # Pre-fill phone number if available
-        initial_phone = team.phone_number if hasattr(team, 'phone_number') else ''
-        form = PaymentForm(initial={'phone_number': initial_phone})
-    
-    return render(request, 'payments/payment.html', {
-        'form': form,
-        'team': team,
-        'amount': 16000
+        form = PaymentForm(initial={"phone_number": team.phone_number})
+
+    return render(request, "payments/payment.html", {
+        "form": form,
+        "team": team,
+        "amount": services.REGISTRATION_FEE,
     })
 
+
+@require_http_methods(["GET"])
 def payment_status(request, payment_id):
-    payment = get_object_or_404(Payment, id=payment_id)
-    
-    # Check payment status
-    daraja = MpesaDarajaAPI()
-    status_response = daraja.check_transaction_status(payment.checkout_request_id)
-    
-    if status_response:
-        result_code = status_response.get('ResultCode')
-        if result_code == '0':
-            payment.status = 'completed'
-            payment.mpesa_receipt_number = status_response.get('MpesaReceiptNumber')
-            payment.result_code = result_code
-            payment.result_desc = status_response.get('ResultDesc')
-            payment.save()
-            
-            # Update team payment status
-            team = payment.team
-            team.payment_status = True
-            team.payment_date = payment.transaction_date
-            team.save()
-            
-            messages.success(request, 'Payment completed successfully!')
-        else:
-            payment.status = 'failed'
-            payment.result_code = result_code
-            payment.result_desc = status_response.get('ResultDesc')
-            payment.save()
-            
-            messages.error(request, f'Payment failed: {status_response.get("ResultDesc")}')
-    
-    return render(request, 'payments/payment_status.html', {
-        'payment': payment,
-        'team': payment.team
-    })
+    payment = get_object_or_404(Payment.objects.select_related("team"), pk=payment_id)
+    if not _can_access_team_payment(request, payment.team):
+        raise PermissionDenied
+    # Read-only towards the user: only asks Daraja for the authoritative result.
+    services.refresh_payment_status(payment)
+    return render(request, "payments/payment_status.html", {"payment": payment, "team": payment.team})
 
-@csrf_exempt
-def payment_callback(request):
-    """Handle Daraja API callback"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            
-            # Extract callback metadata
-            callback_metadata = data.get('Body', {}).get('stkCallback', {}).get('CallbackMetadata', {})
-            
-            # Find payment by checkout request ID
-            checkout_request_id = data.get('Body', {}).get('stkCallback', {}).get('CheckoutRequestID')
-            
-            if checkout_request_id:
-                payment = Payment.objects.get(checkout_request_id=checkout_request_id)
-                
-                # Update payment with callback data
-                if callback_metadata.get('Item'):
-                    for item in callback_metadata['Item']:
-                        if item.get('Name') == 'MpesaReceiptNumber':
-                            payment.mpesa_receipt_number = item.get('Value')
-                        elif item.get('Name') == 'Amount':
-                            payment.amount = item.get('Value')
-                
-                result_code = data.get('Body', {}).get('stkCallback', {}).get('ResultCode')
-                if result_code == 0:
-                    payment.status = 'completed'
-                    
-                    # Update team
-                    team = payment.team
-                    team.payment_status = True
-                    team.save()
-                else:
-                    payment.status = 'failed'
-                
-                payment.save()
-            
-            return JsonResponse({'ResultCode': 0, 'ResultDesc': 'Success'})
-        
-        except Exception as e:
-            import logging as _log
-            _log.getLogger(__name__).error("M-Pesa callback error: %s", e)
-            return JsonResponse({'ResultCode': 1, 'ResultDesc': 'Failed'})
-    
-    return JsonResponse({'ResultCode': 1, 'ResultDesc': 'Invalid request method'})
+
+@csrf_exempt  # External server-to-server callback from Safaricom; verified below.
+@require_POST
+def payment_callback(request, token):
+    if not constant_time_compare(token, callback_token()):
+        logger.warning("M-Pesa callback with invalid token rejected")
+        raise Http404
+    allowed_ips = getattr(settings, "MPESA_CALLBACK_ALLOWED_IPS", None)
+    if allowed_ips and request.META.get("REMOTE_ADDR") not in allowed_ips:
+        logger.warning("M-Pesa callback from non-allow-listed address rejected")
+        raise PermissionDenied
+    if len(request.body) > MAX_CALLBACK_BYTES:
+        return HttpResponseBadRequest("payload too large")
+    try:
+        payload = json.loads(request.body)
+        outcome = services.process_stk_callback(payload)
+    except (ValueError, services.CallbackRejected) as exc:
+        logger.warning("M-Pesa callback rejected: %s", type(exc).__name__)
+        return JsonResponse({"ResultCode": 1, "ResultDesc": "Rejected"}, status=400)
+    logger.info("M-Pesa callback processed: %s", outcome)
+    return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})

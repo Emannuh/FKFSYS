@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}Complete Payment — FKF Meru League{% endblock %}
 
@@ -69,17 +69,6 @@
       </div>
       <div class="card-body">
 
-        {% if messages %}
-        <div class="mb-3">
-          {% for message in messages %}
-          <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-            {{ message|safe }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
         <!-- Team Summary -->
         <div class="alert alert-info mb-4">
           <div class="fw-700 mb-2"><i class="fas fa-shield-alt me-1"></i>{{ team.team_name }}</div>
@@ -106,7 +95,7 @@
           {% csrf_token %}
           <div class="mb-4">
             <label for="id_phone_number" class="form-label">
-              <i class="fas fa-phone me-1"></i>M-PESA Phone Number
+              <i class="fas fa-phone me-1" aria-hidden="true"></i>M-PESA Phone Number
             </label>
             <div class="input-group input-group-lg">
               <span class="input-group-text" style="background:var(--fkf-green);color:white;border-color:var(--fkf-green);">
@@ -114,9 +103,9 @@
               </span>
               {{ form.phone_number }}
             </div>
-            <div class="form-text">Enter number registered with M-PESA (e.g. +254712345678)</div>
+            <div class="form-text" id="phoneHelp">Enter the number registered with M-PESA (e.g. +254712345678 or 0712345678)</div>
             {% if form.phone_number.errors %}
-            <div class="text-danger small mt-1">{{ form.phone_number.errors }}</div>
+            <div class="text-danger small mt-1" role="alert">{{ form.phone_number.errors }}</div>
             {% endif %}
           </div>
 
@@ -150,7 +139,7 @@
     <div class="card mt-3">
       <div class="card-body py-2" style="font-size:.82rem;">
         <i class="fas fa-question-circle text-primary me-1"></i>
-        Issues? Call <strong>+254 XXX XXX XXX</strong> or email <strong>admin@fkfmeru.com</strong>
+        Issues? Email <strong>admin@fkfmeru.com</strong>
       </div>
     </div>
 

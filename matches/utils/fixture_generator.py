@@ -1,269 +1,172 @@
-# matches/utils/fixture_generator.py
-from datetime import datetime, timedelta
-from django.utils import timezone
-from django.db import transaction
-from teams.models import Team, Zone
-from matches.models import Match
-import random
+"""
+League fixture generation (single round robin) and rescheduling helpers.
 
-def generate_fixtures_for_zone(zone_id, start_date=None):
+Round robin uses the circle method: one slot is fixed and the others rotate.
+With an odd number of teams the fixed slot is a BYE, so every team sits out
+exactly once. Home/away orientation follows the Berger pattern, which
+guarantees for every team:
+- home/away counts differ by at most 1 (exactly equal for odd team counts);
+- never more than 2 consecutive home or away matches.
+"""
+from __future__ import annotations
+
+import random
+from datetime import date, datetime, time, timedelta
+
+from django.db import transaction
+from django.utils import timezone
+
+from matches.models import Match
+from teams.models import Team, Zone
+
+MINIMUM_TEAMS_FOR_AUTO_FIXTURES = 4
+KICKOFF_TIMES = ('13:00', '15:00', '17:00')
+
+# Fixtures that have started or finished; regeneration must never destroy these.
+PLAYED_STATUSES = (Match.Status.COMPLETED, Match.Status.LIVE, Match.Status.ONGOING)
+
+
+def round_robin_pairings(teams: list) -> list[list[tuple]]:
     """
-    Generate SINGLE round-robin fixtures with alternating home/away
-    Teams alternate home/away matches each round when possible
+    Return rounds of (home, away) pairs for a single round robin.
+    ``len(result) == n - 1`` for even n and ``n`` for odd n.
     """
-    try:
-        zone = Zone.objects.get(id=zone_id)
-    except Zone.DoesNotExist:
-        return False, "Zone not found"
-    
-    if zone.fixtures_generated:
-        return False, f"Fixtures already generated for {zone.name}"
-    
-    teams = Team.objects.filter(zone=zone, status='approved')
-    team_list = list(teams)
-    
-    if len(team_list) < 2:
-        return False, f"Need at least 2 approved teams in zone (has {len(team_list)})"
-    
-    # Determine start date (next SUNDAY)
-    if not start_date:
-        today = timezone.now().date()
-        days_to_sunday = (0 - today.weekday()) % 7
-        if days_to_sunday == 0:
-            days_to_sunday = 7
-        start_date = today + timedelta(days=days_to_sunday)
-    
-    match_day_of_week = getattr(zone, 'match_day_of_week', 0)
-    days_to_match_day = (match_day_of_week - start_date.weekday()) % 7
-    start_date = start_date + timedelta(days=days_to_match_day)
-    
-    # Shuffle teams for random fixture order
-    random.shuffle(team_list)
-    n = len(team_list)
-    
-    # Track home/away balance for each team
-    home_away_balance = {team.id: {'home': 0, 'away': 0} for team in team_list}
-    
-    # If odd number of teams, add a BYE
-    if n % 2 == 1:
-        team_list.append(None)
-        n = len(team_list)
-    
-    total_rounds = n - 1 if team_list[-1] is None else n - 1
-    match_dates = []
-    current_date = start_date
-    
-    # Generate match dates
-    for round_num in range(total_rounds):
-        match_date = current_date
-        while match_date.weekday() != match_day_of_week:
-            match_date += timedelta(days=1)
-        match_dates.append(match_date)
-        current_date = match_date + timedelta(days=7)
-    
-    fixtures = []
-    
-    # Generate initial round-robin pairings
-    for round_num in range(total_rounds):
-        round_date = match_dates[round_num] if round_num < len(match_dates) else match_dates[-1]
-        
-        # Create pairs for this round
+    slots = list(teams)
+    if len(slots) % 2:
+        slots.insert(0, None)  # fixed BYE slot
+    n = len(slots)
+    rounds = []
+    for r in range(n - 1):
+        pairs = []
         for i in range(n // 2):
-            team1 = team_list[i]
-            team2 = team_list[n - 1 - i]
-            
-            if team1 is None or team2 is None:
-                continue  # Skip BYE
-            
-            # Decide home/away based on balance
-            team1_home = home_away_balance[team1.id]['home']
-            team1_away = home_away_balance[team1.id]['away']
-            team2_home = home_away_balance[team2.id]['home']
-            team2_away = home_away_balance[team2.id]['away']
-            
-            # Team with fewer home games gets to be home
-            if team1_home < team2_home or (team1_home == team2_home and team1_away > team2_away):
-                home_team = team1
-                away_team = team2
+            a, b = slots[i], slots[n - 1 - i]
+            if a is None or b is None:
+                continue
+            if i == 0:
+                home_first = r % 2 == 0
             else:
-                home_team = team2
-                away_team = team1
-            
-            # Update balance
-            home_away_balance[home_team.id]['home'] += 1
-            home_away_balance[away_team.id]['away'] += 1
-            
-            # RANDOM KICKOFF TIMES: 1 PM (13:00), 3 PM (15:00), or 5 PM (17:00)
-            kickoff_times = ['13:00', '15:00', '17:00']
-            random_time = random.choice(kickoff_times)
-            
-            # FIX: Use timezone-aware datetime
-            match_datetime = timezone.make_aware(
-                datetime.combine(round_date, datetime.strptime(random_time, '%H:%M').time())
-            )
-            
-            fixtures.append({
-                'zone': zone,
-                'home_team': home_team,
-                'away_team': away_team,
-                'round_number': round_num + 1,
-                'match_date': match_datetime,
-                'kickoff_time': random_time,
-                'venue': getattr(home_team, 'home_ground', None) or f"{home_team.team_name} Home Ground",
-                'status': 'scheduled'
-            })
-        
-        # Rotate teams for next round
-        team_list.insert(1, team_list.pop())
-    
-    # Check and fix home/away balance
-    fixtures = balance_home_away_sequence(fixtures)
-    
-    # Save fixtures
+                home_first = i % 2 == 1
+            pairs.append((a, b) if home_first else (b, a))
+        rounds.append(pairs)
+        slots = [slots[0], slots[-1], *slots[1:-1]]
+    return rounds
+
+
+def first_match_day(zone: Zone, today: date | None = None) -> date:
+    """
+    Next occurrence (strictly after today) of the zone's match day.
+
+    NOTE: ``Zone.match_day_of_week`` is interpreted as a Python weekday
+    (Mon=0 .. Sun=6), which is how fixtures have always been generated.
+    The labels on that field's choices in teams/models.py disagree (6 is
+    labelled 'Saturday'); see the modernisation report.
+    """
+    today = today or timezone.localdate()
+    weekday = zone.match_day_of_week if zone.match_day_of_week is not None else 6
+    days_ahead = (weekday - today.weekday()) % 7 or 7
+    return today + timedelta(days=days_ahead)
+
+
+def _aware(day: date, hhmm: str) -> datetime:
+    return timezone.make_aware(datetime.combine(day, time.fromisoformat(hhmm)))
+
+
+def generate_fixtures_for_zone(zone_id, start_date: date | None = None, rng: random.Random | None = None):
+    """
+    Generate the zone's fixtures once. Returns ``(success, message)``.
+    Idempotent: refuses if the zone already has generated fixtures.
+    """
+    rng = rng or random.Random()
     with transaction.atomic():
-        match_objects = []
-        for fixture_data in fixtures:
-            match = Match(**fixture_data)
-            match_objects.append(match)
-        
-        Match.objects.bulk_create(match_objects)
-        
+        zone = Zone.objects.select_for_update().filter(pk=zone_id).first()
+        if zone is None:
+            return False, "Zone not found"
+        if zone.fixtures_generated:
+            return False, f"Fixtures already generated for {zone.name}"
+
+        teams = list(Team.objects.filter(zone=zone, status='approved').order_by('pk'))
+        if len(teams) < 2:
+            return False, f"Need at least 2 approved teams in zone (has {len(teams)})"
+        rng.shuffle(teams)
+
+        start = start_date or first_match_day(zone)
+        matches = []
+        for round_index, pairs in enumerate(round_robin_pairings(teams)):
+            day = start + timedelta(weeks=round_index)
+            for home, away in pairs:
+                kickoff = rng.choice(KICKOFF_TIMES)
+                matches.append(Match(
+                    zone=zone,
+                    home_team=home,
+                    away_team=away,
+                    round_number=round_index + 1,
+                    match_date=_aware(day, kickoff),
+                    kickoff_time=kickoff,
+                    venue=home.home_ground or f"{home.team_name} Home Ground",
+                    status=Match.Status.SCHEDULED,
+                ))
+        Match.objects.bulk_create(matches)
+
         zone.fixtures_generated = True
         zone.fixture_generation_date = timezone.now()
-        zone.season_start_date = start_date
-        zone.save()
-    
-    # Create summary of home/away distribution
-    summary = create_home_away_summary(fixtures)
-    
-    return True, f"✅ Generated {len(fixtures)} fixtures for {zone.name}\n{summary}"
+        zone.season_start_date = start
+        zone.save(update_fields=['fixtures_generated', 'fixture_generation_date', 'season_start_date'])
 
-def balance_home_away_sequence(fixtures):
-    """
-    Ensure no team has too many home or away matches in sequence
-    """
-    # Group fixtures by team and check sequences
-    team_fixtures = {}
-    for fixture in fixtures:
-        for team_field in ['home_team', 'away_team']:
-            team = fixture[team_field]
-            if team.id not in team_fixtures:
-                team_fixtures[team.id] = []
-            team_fixtures[team.id].append({
-                'round': fixture['round_number'],
-                'is_home': (team_field == 'home_team'),
-                'fixture': fixture
-            })
-    
-    # Check for problematic sequences (3+ home/away in a row)
-    for team_id, matches in team_fixtures.items():
-        matches.sort(key=lambda x: x['round'])
-        
-        current_streak = 0
-        last_status = None
-        
-        for i, match in enumerate(matches):
-            if match['is_home'] == last_status:
-                current_streak += 1
-            else:
-                current_streak = 1
-                last_status = match['is_home']
-            
-            # If 3 in a row, try to swap home/away with another fixture
-            if current_streak >= 3 and i > 0:
-                # Try to swap with a previous match
-                for swap_match in matches[:i]:
-                    if (swap_match['fixture'] != match['fixture'] and 
-                        swap_match['fixture']['home_team'].id != match['fixture']['away_team'].id and
-                        swap_match['fixture']['away_team'].id != match['fixture']['home_team'].id):
-                        
-                        # Swap home/away for this match
-                        temp = match['fixture']['home_team']
-                        match['fixture']['home_team'] = match['fixture']['away_team']
-                        match['fixture']['away_team'] = temp
-                        match['fixture']['venue'] = f"{match['fixture']['home_team'].team_name} Home Ground"
-                        
-                        # Update streak
-                        match['is_home'] = not match['is_home']
-                        break
-    
-    return fixtures
+    return True, f"Generated {len(matches)} fixtures for {zone.name} ({len(teams)} teams)"
 
-def create_home_away_summary(fixtures):
-    """Create a summary of home/away distribution"""
-    team_stats = {}
-    
-    for fixture in fixtures:
-        home_id = fixture['home_team'].id
-        away_id = fixture['away_team'].id
-        
-        if home_id not in team_stats:
-            team_stats[home_id] = {'name': fixture['home_team'].team_name, 'home': 0, 'away': 0}
-        if away_id not in team_stats:
-            team_stats[away_id] = {'name': fixture['away_team'].team_name, 'home': 0, 'away': 0}
-        
-        team_stats[home_id]['home'] += 1
-        team_stats[away_id]['away'] += 1
-    
-    summary_lines = ["Home/Away Distribution:"]
-    for team_id, stats in team_stats.items():
-        total = stats['home'] + stats['away']
-        summary_lines.append(f"  {stats['name']}: {stats['home']}H/{stats['away']}A (total: {total})")
-    
-    return "\n".join(summary_lines)
 
 def regenerate_fixtures_for_zone(zone_id):
     """
-    Delete existing fixtures and regenerate them
-    Super Admin can use this to reset fixtures
+    Delete a zone's fixtures and generate them again, atomically.
+    Refuses if any fixture has already been played/started, because deleting
+    those would cascade-delete goals, cards and match reports.
     """
-    try:
-        zone = Zone.objects.get(id=zone_id)
-    except Zone.DoesNotExist:
-        return False, "Zone not found"
-    
-    # Delete existing fixtures
-    Match.objects.filter(zone=zone).delete()
-    
-    # Reset zone status
-    zone.fixtures_generated = False
-    zone.fixture_generation_date = None
-    zone.season_start_date = None
-    zone.save()
-    
-    # Generate new fixtures
-    return generate_fixtures_for_zone(zone_id)
+    with transaction.atomic():
+        zone = Zone.objects.select_for_update().filter(pk=zone_id).first()
+        if zone is None:
+            return False, "Zone not found"
+        played = Match.objects.filter(zone=zone, status__in=PLAYED_STATUSES).count()
+        if played:
+            return False, (
+                f"{zone.name} has {played} played/started match(es); "
+                "regeneration would delete their results. Reschedule individual matches instead."
+            )
+        Match.objects.filter(zone=zone).delete()
+        zone.fixtures_generated = False
+        zone.fixture_generation_date = None
+        zone.season_start_date = None
+        zone.save(update_fields=['fixtures_generated', 'fixture_generation_date', 'season_start_date'])
+        return generate_fixtures_for_zone(zone.pk)
+
 
 def update_match_date(match_id, new_date, new_time=None, new_kickoff_time=None):
     """
-    Update a single match date/time
-    Super Admin can reschedule individual matches
+    Reschedule one match. ``new_date`` is a date or 'YYYY-MM-DD'; ``new_time``
+    a time or 'HH:MM'. Without a time, the current local kickoff time is kept.
+    Returns ``(success, message)``.
     """
-    try:
-        match = Match.objects.get(id=match_id)
-    except Match.DoesNotExist:
+    match = Match.objects.filter(pk=match_id).first()
+    if match is None:
         return False, "Match not found"
-    
-    # Update date
-    if isinstance(new_date, str):
-        new_date = datetime.strptime(new_date, '%Y-%m-%d').date()
-    
-    # Update time if provided
+    try:
+        if isinstance(new_date, str):
+            new_date = date.fromisoformat(new_date)
+        if isinstance(new_time, str) and new_time:
+            new_time = time.fromisoformat(new_time)
+    except (TypeError, ValueError):
+        return False, "Invalid date or time"
+    if not isinstance(new_date, date):
+        return False, "A new date is required"
+
     if new_time:
-        if isinstance(new_time, str):
-            new_time = datetime.strptime(new_time, '%H:%M').time()
-        match.match_date = timezone.make_aware(
-            datetime.combine(new_date, new_time)
-        )
+        match.match_date = timezone.make_aware(datetime.combine(new_date, new_time))
         match.kickoff_time = new_time.strftime('%H:%M')
     else:
-        # Keep original time, just change date
-        old_time = match.match_date.time()
-        match.match_date = timezone.make_aware(
-            datetime.combine(new_date, old_time)
-        )
-    # Update kickoff_time if provided
+        local_time = timezone.localtime(match.match_date).time()
+        match.match_date = timezone.make_aware(datetime.combine(new_date, local_time))
     if new_kickoff_time:
-        match.kickoff_time = new_kickoff_time
-    match.save()
-    return True, f"✅ Match rescheduled to {match.match_date} (Kickoff: {match.kickoff_time})"
+        match.kickoff_time = str(new_kickoff_time)[:5]
+    match.save(update_fields=['match_date', 'kickoff_time', 'updated_at'])
+    local = timezone.localtime(match.match_date)
+    kickoff = match.kickoff_time or local.strftime('%H:%M')
+    return True, f"Match rescheduled to {local:%a %d %b %Y} (kickoff {kickoff})"

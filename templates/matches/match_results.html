@@ -1,24 +1,24 @@
 {% extends 'base.html' %}
-{% block title %}Match Results{% endblock %}
+{% block title %}Match Results — FKF Meru County League{% endblock %}
 {% block content %}
 <div class="container mt-4">
     <h1>Match Results</h1>
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Home Team</th>
-                <th>Score</th>
-                <th>Away Team</th>
+                <th scope="col">Date</th>
+                <th scope="col">Home Team</th>
+                <th scope="col">Score</th>
+                <th scope="col">Away Team</th>
             </tr>
         </thead>
         <tbody>
             {% for match in matches %}
             <tr>
                 <td>{{ match.match_date|date:'Y-m-d' }}</td>
-                <td>{{ match.home_team }}</td>
-                <td>{{ match.home_score }} - {{ match.away_score }}</td>
-                <td>{{ match.away_team }}</td>
+                <td>{{ match.home_team.team_name }}</td>
+                <td><a href="{% url 'matches:match_details' match.id %}">{{ match.score_display }}</a></td>
+                <td>{{ match.away_team.team_name }}</td>
             </tr>
             {% empty %}
             <tr><td colspan="4">No results available.</td></tr>

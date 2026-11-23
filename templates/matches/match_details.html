@@ -1,5 +1,5 @@
-﻿{% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% extends 'base.html' %}
+{% load fkf_tags %}
 
 {% block title %}{{ match.home_team.team_name }} vs {{ match.away_team.team_name }} — FKF Meru League{% endblock %}
 
@@ -49,7 +49,7 @@
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'frontend:home' %}">Home</a></li>
     <li class="breadcrumb-item"><a href="{% url 'matches:fixtures' %}">Fixtures</a></li>
-    <li class="breadcrumb-item active">Match Details</li>
+    <li class="breadcrumb-item active" aria-current="page">Match Details</li>
   </ol>
 </nav>
 
@@ -76,7 +76,7 @@
         <span style="color:#4cc9f0;">{{ match.away_score }}</span>
       </div>
       <small class="mt-1" style="color:rgba(255,255,255,.5);font-size:.72rem;letter-spacing:1px;">FULL TIME</small>
-      {% elif match.status == 'ongoing' %}
+      {% elif match.status == 'ongoing' or match.status == 'live' %}
       <div class="big-score">
         <span style="color:var(--fkf-red);">{{ match.home_score|default:0 }}</span>
         <span style="color:rgba(255,255,255,.4);font-size:2rem;margin:0 8px;">—</span>
@@ -93,7 +93,6 @@
         <div><i class="fas fa-map-marker-alt me-1"></i>{{ match.venue|default:"TBD" }}</div>
       </div>
       <div class="mt-2">
-        {% load fkf_tags %}
         <span class="badge ms-1">{% match_badge match.status %}</span>
         {% if match.zone %}<span class="badge bg-light text-dark ms-1">{{ match.zone.name }}</span>{% endif %}
         {% if match.round_number %}<span class="badge bg-secondary ms-1">Round {{ match.round_number }}</span>{% endif %}
@@ -115,69 +114,48 @@
 
 <!-- Details Row -->
 <div class="row g-4">
-  <!-- Stats / Timeline -->
-  <div class="col-md-6" data-aos="fade-right">
+  <section class="col-md-6" aria-labelledby="goalsHeading">
     <div class="card">
       <div class="card-header" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);">
-        <h6 class="mb-0 text-white"><i class="fas fa-chart-bar me-2"></i>Match Statistics</h6>
+        <h2 class="h6 mb-0 text-white" id="goalsHeading"><i class="fas fa-futbol me-2" aria-hidden="true"></i>Goals</h2>
       </div>
       <div class="card-body">
-        {% if match.statistics %}
-        <ul class="list-group list-group-flush">
-          {% for stat in match.statistics %}
-          <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-            <span class="text-muted">{{ stat.name }}</span>
-            <span class="badge bg-primary">{{ stat.value }}</span>
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <div class="text-center py-4 text-muted">
-          <i class="fas fa-chart-bar fa-2x mb-2 d-block opacity-25"></i>
-          No statistics available for this match.
-        </div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-6" data-aos="fade-left">
-    <div class="card">
-      <div class="card-header" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);">
-        <h6 class="mb-0 text-white"><i class="fas fa-stream me-2"></i>Match Events</h6>
-      </div>
-      <div class="card-body">
-        {% if match.events.all %}
-        {% for event in match.events.all %}
+        {% for goal in goals %}
         <div class="event-item">
-          <span class="event-min">{{ event.minute }}'</span>
+          <span class="event-min">{{ goal.minute }}'</span>
           <div>
-            <span class="badge
-              {% if event.event_type == 'goal' %}bg-success
-              {% elif event.event_type == 'yellow_card' %}bg-warning text-dark
-              {% elif event.event_type == 'red_card' %}bg-danger
-              {% else %}bg-secondary{% endif %}
-              me-1">
-              {% if event.event_type == 'goal' %}<i class="fas fa-futbol"></i>
-              {% elif event.event_type == 'yellow_card' %}<i class="fas fa-square" style="color:#ffc107;"></i>
-              {% elif event.event_type == 'red_card' %}<i class="fas fa-square" style="color:red;"></i>
-              {% else %}<i class="fas fa-exchange-alt"></i>{% endif %}
-            </span>
-            <strong>{{ event.get_event_type_display }}</strong>
-            {% if event.player %} — {{ event.player.name }}{% endif %}
-            {% if event.description %}<br><small class="text-muted">{{ event.description }}</small>{% endif %}
+            <strong>{{ goal.scorer.full_name }}</strong> <small class="text-muted">({{ goal.team.team_name }})</small>
+            {% if goal.is_penalty %}<span class="badge bg-secondary ms-1">Pen</span>{% endif %}
+            {% if goal.is_own_goal %}<span class="badge bg-warning text-dark ms-1">OG</span>{% endif %}
           </div>
         </div>
+        {% empty %}
+        <p class="text-center py-4 text-muted mb-0">No goals recorded for this match.</p>
         {% endfor %}
-        {% else %}
-        <div class="text-center py-4 text-muted">
-          <i class="fas fa-stream fa-2x mb-2 d-block opacity-25"></i>
-          No events recorded for this match.
-        </div>
-        {% endif %}
       </div>
     </div>
-  </div>
+  </section>
+
+  <section class="col-md-6" aria-labelledby="cardsHeading">
+    <div class="card">
+      <div class="card-header" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);">
+        <h2 class="h6 mb-0 text-white" id="cardsHeading"><i class="fas fa-square me-2" aria-hidden="true"></i>Cards</h2>
+      </div>
+      <div class="card-body">
+        {% for card in cards %}
+        <div class="event-item">
+          <span class="event-min">{{ card.minute }}'</span>
+          <div>
+            <span class="badge {% if card.card_type == 'red' %}bg-danger{% else %}bg-warning text-dark{% endif %} me-1">{{ card.get_card_type_display }}</span>
+            <strong>{{ card.player.full_name }}</strong> <small class="text-muted">({{ card.team.team_name }})</small>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-center py-4 text-muted mb-0">No cards recorded for this match.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
 </div>
 
 <!-- Action Buttons -->
@@ -185,15 +163,20 @@
   <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary">
     <i class="fas fa-arrow-left me-1"></i>Back to Fixtures
   </a>
-  {% if user.is_staff or user.is_superuser %}
+  {% if can_edit_match %}
   <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-outline-primary">
-    <i class="fas fa-edit me-1"></i>Edit Match
-  </a>
-  {% if match.status != 'completed' %}
-  <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-outline-warning">
-    <i class="fas fa-pen me-1"></i>Update Score
+    <i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>Reschedule
   </a>
   {% endif %}
+  {% if can_edit_result %}
+  <a href="{% url 'matches:admin_edit_match_result' match.id %}" class="btn btn-outline-warning">
+    <i class="fas fa-pen me-1" aria-hidden="true"></i>{% if match.status == 'completed' %}Correct Score{% else %}Enter Result{% endif %}
+  </a>
+  {% endif %}
+  {% if can_view_officials %}
+  <a href="{% url 'matches:view_match_officials' match.id %}" class="btn btn-outline-secondary">
+    <i class="fas fa-user-tie me-1" aria-hidden="true"></i>Officials
+  </a>
   {% endif %}
 </div>
 

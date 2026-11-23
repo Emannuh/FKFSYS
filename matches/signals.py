@@ -1,76 +1,80 @@
-# matches/signals.py
-from django.db.models.signals import post_save
-from django.db.models import Q
+import logging
+
+from django.db import transaction
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
-from matches.models import Match, LeagueTable
 from teams.models import Team
-from matches.utils.fixture_generator import generate_fixtures_for_zone
+
+from . import services
+from .models import LeagueTable, Match
+from .utils.fixture_generator import MINIMUM_TEAMS_FOR_AUTO_FIXTURES, generate_fixtures_for_zone
+
+logger = logging.getLogger(__name__)
 
 
-# ── League table form (last 5 results) ──────────────────────────────────────
+# ── League table: derived from completed matches ────────────────────────────
+
+@receiver(pre_save, sender=Match)
+def remember_previous_match_state(sender, instance, raw=False, **kwargs):
+    """Remember the stored zone/teams/status so a change can refresh the old rows too."""
+    instance._standings_before = None
+    if raw or not instance.pk:
+        return
+    instance._standings_before = (
+        Match.objects.filter(pk=instance.pk)
+        .values_list('zone_id', 'home_team_id', 'away_team_id', 'status')
+        .first()
+    )
+
 
 @receiver(post_save, sender=Match)
-def update_league_table_form(sender, instance, **kwargs):
-    """Keep each team's form string (last 5 results: W/D/L) up to date."""
-    if instance.status != 'completed':
+def update_standings_on_match_save(sender, instance, raw=False, **kwargs):
+    if raw:
         return
-
-    for team in (instance.home_team, instance.away_team):
-        recent = (
-            Match.objects.filter(
-                Q(home_team=team) | Q(away_team=team),
-                status='completed',
-            )
-            .order_by('-match_date')[:5]
-        )
-        # Use result_for() — defined on Match model — instead of duplicating logic here
-        form = ''.join(
-            r for m in recent
-            if (r := m.result_for(team)) is not None
-        )
-        try:
-            lt = LeagueTable.objects.get(team=team, zone=instance.zone)
-            lt.form = form
-            lt.save(update_fields=['form', 'last_updated'])
-        except LeagueTable.DoesNotExist:
-            pass
+    before = getattr(instance, '_standings_before', None)
+    was_completed = bool(before and before[3] == Match.Status.COMPLETED)
+    if not (was_completed or instance.status == Match.Status.COMPLETED):
+        return
+    services.recalculate_for_match(instance)
+    if before and tuple(before[:3]) != (instance.zone_id, instance.home_team_id, instance.away_team_id):
+        zone_id, home_id, away_id = before[:3]
+        for team_id in (home_id, away_id):
+            services.recalculate_standing(team_id, zone_id)
 
 
-# ── Auto-generate fixtures when a zone reaches minimum team count ────────────
+@receiver(post_delete, sender=Match)
+def update_standings_on_match_delete(sender, instance, **kwargs):
+    if instance.status == Match.Status.COMPLETED:
+        services.recalculate_for_match(instance)
+
+
+# ── Teams: league-table row + automatic fixtures ────────────────────────────
 
 @receiver(post_save, sender=Team)
-def auto_generate_fixtures_on_team_approval(sender, instance, created, **kwargs):
+def ensure_league_table_for_team(sender, instance, raw=False, **kwargs):
     """
-    Automatically generate fixtures when:
-    1. A team is approved AND assigned to a zone
-    2. The zone reaches the minimum required team count
-    3. Fixtures haven't been generated yet
+    Create a LeagueTable row when a team is approved and placed in a zone.
+    Rows are never deleted here (that would destroy history).
     """
-    if instance.status != 'approved' or not instance.zone:
-        return
+    if not raw and instance.status == 'approved' and instance.zone_id:
+        LeagueTable.objects.get_or_create(team=instance, zone_id=instance.zone_id)
 
+
+@receiver(post_save, sender=Team)
+def auto_generate_fixtures_on_team_approval(sender, instance, raw=False, **kwargs):
+    """Generate a zone's fixtures once it first reaches the minimum number of approved teams."""
+    if raw or instance.status != 'approved' or not instance.zone_id:
+        return
     zone = instance.zone
     if zone.fixtures_generated:
         return
+    if Team.objects.filter(zone=zone, status='approved').count() < MINIMUM_TEAMS_FOR_AUTO_FIXTURES:
+        return
 
-    MINIMUM_TEAMS_REQUIRED = 4
-    count = Team.objects.filter(zone=zone, status='approved').count()
+    def _generate():
+        success, _message = generate_fixtures_for_zone(zone.pk)
+        logger.info("Auto fixture generation for zone %s: success=%s", zone.pk, success)
 
-    if count >= MINIMUM_TEAMS_REQUIRED:
-        success, message = generate_fixtures_for_zone(zone.id)
-        import logging as _log
-        _log.getLogger(__name__).info("Auto-generated fixtures for zone %s: %s", zone.name, message)
-
-
-# ── Ensure LeagueTable entry exists for approved teams ───────────────────────
-
-@receiver(post_save, sender=Team)
-def ensure_league_table_for_team(sender, instance, created, **kwargs):
-    """
-    Create a LeagueTable row when a team is approved and placed in a zone.
-    NOTE: We deliberately do NOT delete rows when a team's zone is removed —
-          that would destroy historical data. Archiving should be handled explicitly.
-    """
-    if instance.status == 'approved' and instance.zone:
-        LeagueTable.objects.get_or_create(team=instance, zone=instance.zone)
+    # After commit, so a bulk approval in one transaction generates once with all teams.
+    transaction.on_commit(_generate)
