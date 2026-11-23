@@ -82,3 +82,24 @@ class RefereeTemplateRenderTests(TestCase):
         for marker in ('id="flashReportForm"', 'id="id_matchgoal_set-TOTAL_FORMS"', 'id="id_caution_set-TOTAL_FORMS"',
                        'data-prefix="matchgoal_set"', '<template id="flashPlayers">', 'name="submit_flash_report"'):
             self.assertContains(resp, marker)
+
+    # --- pre-match ------------------------------------------------------------
+    def test_prematch_form_renders_every_field(self):
+        from referees.forms import PreMatchMeetingFormForm
+        soon = f.match(when=timezone.now() + timedelta(hours=20))
+        f.officials(soon, main_referee=self.ref)
+        resp = self.get(self.ref.user, 'submit_prematch_form', match_id=soon.id)
+        for name in PreMatchMeetingFormForm().fields:
+            self.assertContains(resp, f'name="{name}"', msg_prefix=name)
+        self.assertContains(resp, 'name="save_draft"')
+        self.assertContains(resp, 'name="submit"')
+
+    def test_prematch_view(self):
+        pm = PreMatchMeetingForm.objects.create(
+            match=self.match, referee=self.ref, match_date=self.match.match_date.date(),
+            home_team='H', away_team='A', venue='V', status=PreMatchMeetingForm.Status.SUBMITTED,
+        )
+        resp = self.get(self.ref.user, 'view_prematch_form', form_id=pm.id)
+        self.assertContains(resp, 'Centre referee')
+        resp = self.get(self.manager, 'view_prematch_form', form_id=pm.id)
+        self.assertEqual(resp.status_code, 200)

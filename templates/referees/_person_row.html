@@ -1,0 +1,9 @@
+{% comment %}Name / licence / mobile triple for one person on the pre-match form.{% endcomment %}
+<fieldset class="ref-person">
+    <legend class="ref-subhead">{{ title }}</legend>
+    <div class="row g-3">
+        <div class="col-md-5">{% include "referees/_field.html" with field=name label="Name" %}</div>
+        <div class="col-6 col-md-3">{% include "referees/_field.html" with field=licence label="Licence no." %}</div>
+        <div class="col-6 col-md-4">{% include "referees/_field.html" with field=mobile label="Mobile" %}</div>
+    </div>
+</fieldset>

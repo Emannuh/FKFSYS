@@ -1,0 +1,4 @@
+{% comment %}One form field: label, widget, errors. {% include "referees/_field.html" with field=form.x label="Name" %}{% endcomment %}
+<label class="form-label" for="{{ field.id_for_label }}">{{ label|default:field.label }}</label>
+{{ field }}
+{% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:" " }}</div>{% endif %}

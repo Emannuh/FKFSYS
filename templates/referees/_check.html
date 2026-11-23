@@ -1,0 +1,6 @@
+{% comment %}One checkbox field. {% include "referees/_check.html" with field=form.x label="Doctor" %}{% endcomment %}
+<div class="form-check">
+    {{ field }}
+    <label class="form-check-label" for="{{ field.id_for_label }}">{{ label|default:field.label }}</label>
+    {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors|join:" " }}</div>{% endif %}
+</div>
