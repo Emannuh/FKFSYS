@@ -141,7 +141,7 @@ from django.contrib import messages
 from django.forms import inlineformset_factory
 from django.utils import timezone
 from django import forms
-from django.db import models
+from django.db import models, transaction
 from django.contrib.auth.models import User, Group
 from django.contrib.auth import login, authenticate
 from django.utils.safestring import mark_safe  
@@ -1680,22 +1680,13 @@ def submit_comprehensive_report(request, match_id):
                 _report_log.debug("%s errors: %s", label, obj.errors)
 
         if all_valid:
-            result_form.save()
-            instances = goal_formset.save()
-            card_formset.save()
-            starting_formset.save()
-            reserve_formset.save()
-
-            # Update top scorers (PlayerStatistic goals) based on saved goals
-            from fkf_league.statistics.models import PlayerStatistic
-            season = str(timezone.now().year)
-            for g in instances:
-                ps, _ = PlayerStatistic.objects.get_or_create(player=g.player, season=season)
-                ps.goals += 1
-                ps.save()
-                # Also update simple player tally
-                g.player.goals_scored = (g.player.goals_scored or 0) + 1
-                g.player.save(update_fields=['goals_scored'])
+            # Player goal/card tallies are maintained by referees.goal_signals.
+            with transaction.atomic():
+                result_form.save()
+                goal_formset.save()
+                card_formset.save()
+                starting_formset.save()
+                reserve_formset.save()
 
             # If saving as draft, keep status and redirect back to form
             if 'save_draft' in request.POST:
