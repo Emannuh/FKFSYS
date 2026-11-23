@@ -126,3 +126,18 @@
 .lineup-list__who { display: flex; flex-direction: column; min-width: 0; }
 .lineup-list__who strong { font-size: var(--fkf-text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lineup-list__who span { font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+.form-page { max-width: 64rem; }
+.data-table-wrap--tall { --data-table-max-height: 70vh; }
+.data-table tr.is-flagged > * { box-shadow: none; }
+.data-table tr.is-flagged > td:first-child { box-shadow: inset 3px 0 0 var(--fkf-red); }
+
+/* Player summary card (admin edit player) */
+.player-card { display: flex; align-items: center; gap: var(--fkf-space-3); }
+.player-card__photo { --crest-size: 64px; font-size: 1.4rem; }
+.player-card__name { font-weight: 800; font-size: var(--fkf-text-lg); margin: 0; }
+.player-card__meta { margin: 0; font-size: var(--fkf-text-sm); color: var(--fkf-text-muted); }
+.stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--fkf-border); }
+.stat-strip > div { padding: var(--fkf-space-3) var(--fkf-space-2); text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.stat-strip > div + div { border-left: 1px solid var(--fkf-border); }
+.stat-strip span { font-size: var(--fkf-text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fkf-text-muted); }
+.stat-strip strong { font-size: var(--fkf-text-xl); font-weight: 800; font-variant-numeric: tabular-nums; }
