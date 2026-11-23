@@ -56,3 +56,6 @@ coverage.xml
 # Backups
 .backups/
 *.bak
+
+# Screenshot helper scratch pages
+static/_snap/
