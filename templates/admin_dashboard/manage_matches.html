@@ -1,236 +1,105 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
 
-{% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2><i class="fas fa-futbol"></i> Manage Matches</h2>
-            <p class="text-muted">Create, edit, and manage all league matches</p>
-        </div>
+{% block title %}Manage Matches — FKF Meru League{% endblock %}
+{% block page_title %}Manage matches{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Matches</span>
+        <h1 class="page-title h2">Manage Matches</h1>
+        <p class="page-subtitle">Create, edit, and manage all league matches.</p>
     </div>
-
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-list"></i> Total Matches</h5>
-                    <h2>{{ total_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-calendar-alt"></i> Scheduled</h5>
-                    <h2>{{ scheduled_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-check-circle"></i> Completed</h5>
-                    <h2>{{ completed_count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-clock"></i> Postponed</h5>
-                    <h2>{{ postponed_count }}</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Actions & Filters -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <a href="{% url 'matches:create_match' %}" class="btn btn-success btn-lg w-100">
-                                <i class="fas fa-plus-circle"></i> Create New Match
-                            </a>
-                        </div>
-                        <div class="col-md-9">
-                            <form method="get" class="form-inline" id="filterForm">
-                                <input type="text" name="search" class="form-control mr-2" placeholder="Search teams or venue..." value="{{ search_query }}" style="width: 250px;">
-                                
-                                <select name="zone" class="form-control mr-2" onchange="document.getElementById('filterForm').submit();">
-                                    <option value="">All Zones</option>
-                                    {% for zone in zones %}
-                                    <option value="{{ zone.id }}" {% if selected_zone == zone.id|stringformat:"s" %}selected{% endif %}>
-                                        {{ zone.name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                
-                                <select name="status" class="form-control mr-2" onchange="document.getElementById('filterForm').submit();">
-                                    <option value="">All Statuses</option>
-                                    {% for status_code, status_name in status_choices %}
-                                    <option value="{{ status_code }}" {% if selected_status == status_code %}selected{% endif %}>
-                                        {{ status_name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                
-                                <select name="round" class="form-control mr-2" onchange="document.getElementById('filterForm').submit();">
-                                    <option value="">All Rounds</option>
-                                    {% for round in rounds %}
-                                    <option value="{{ round }}" {% if selected_round == round|stringformat:"s" %}selected{% endif %}>
-                                        Round {{ round }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                
-                                <button type="submit" class="btn btn-primary mr-2">
-                                    <i class="fas fa-search"></i> Search
-                                </button>
-                                
-                                <a href="{% url 'matches:manage_matches' %}" class="btn btn-secondary">
-                                    <i class="fas fa-times"></i> Clear
-                                </a>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Matches Table -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-list"></i> Matches List ({{ matches.count }} matches)</h5>
-                </div>
-                <div class="card-body">
-                    {% if matches %}
-                    <div class="table-responsive">
-                        <table class="table table-hover table-striped">
-                            <thead class="thead-dark">
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>Home Team</th>
-                                    <th>Score</th>
-                                    <th>Away Team</th>
-                                    <th>Venue</th>
-                                    <th>Zone</th>
-                                    <th>Round</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for match in matches %}
-                                <tr>
-                                    <td>{{ match.id }}</td>
-                                    <td>{{ match.match_date|date:"M d, Y" }}</td>
-                                    <td>
-                                        {% if match.kickoff_time %}
-                                            <span class="badge badge-info">{{ match.kickoff_time }}</span>
-                                        {% else %}
-                                            <span class="text-muted">TBD</span>
-                                        {% endif %}
-                                    </td>
-                                    <td><strong>{{ match.home_team.team_name }}</strong></td>
-                                    <td class="text-center">
-                                        {% if match.status == 'completed' %}
-                                            <strong>{{ match.home_score }} - {{ match.away_score }}</strong>
-                                        {% else %}
-                                            <span class="text-muted">vs</span>
-                                        {% endif %}
-                                    </td>
-                                    <td><strong>{{ match.away_team.team_name }}</strong></td>
-                                    <td>{{ match.venue }}</td>
-                                    <td><span class="badge badge-secondary">{{ match.zone.name }}</span></td>
-                                    <td class="text-center">{{ match.round_number }}</td>
-                                    <td>
-                                        {% if match.status == 'scheduled' %}
-                                            <span class="badge badge-info">Scheduled</span>
-                                        {% elif match.status == 'completed' %}
-                                            <span class="badge badge-success">Completed</span>
-                                        {% elif match.status == 'postponed' %}
-                                            <span class="badge badge-warning">Postponed</span>
-                                        {% elif match.status == 'cancelled' %}
-                                            <span class="badge badge-danger">Cancelled</span>
-                                        {% else %}
-                                            <span class="badge badge-secondary">{{ match.get_status_display }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group" role="group">
-                                            <a href="{% url 'matches:match_details' match.id %}" class="btn btn-sm btn-info" title="View Details">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{% url 'matches:edit_match' match.id %}" class="btn btn-sm btn-primary" title="Edit Match">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                               <a href="{% url 'matches:move_match_round' match.id %}" class="btn btn-sm btn-secondary" title="Move Match to Another Round">
-                                                   <i class="fas fa-random"></i>
-                                               </a>
-                                            <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-sm btn-warning" title="Reschedule">
-                                                <i class="fas fa-calendar-alt"></i>
-                                            </a>
-                                            <a href="{% url 'matches:delete_match' match.id %}" class="btn btn-sm btn-danger" title="Delete Match" onclick="return confirm('Are you sure you want to delete this match?')">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="alert alert-info text-center">
-                        <i class="fas fa-info-circle"></i> No matches found. 
-                        <a href="{% url 'matches:create_match' %}" class="alert-link">Create your first match</a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    <div class="page-actions">
+        <a href="{% url 'matches:create_match' %}" class="btn btn-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i>Create New Match</a>
     </div>
 </div>
-
-<style>
-    .card {
-        margin-bottom: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .table-hover tbody tr:hover {
-        background-color: #f8f9fa;
-        cursor: pointer;
-    }
-    
-    .btn-group .btn {
-        margin: 0 2px;
-    }
-    
-    .form-inline .form-control {
-        margin-bottom: 10px;
-    }
-    
-    @media (max-width: 768px) {
-        .form-inline {
-            display: block;
-        }
-        
-        .form-inline .form-control,
-        .form-inline .btn {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-    }
-</style>
 {% endblock %}
+
+{% block content %}
+<div class="row g-3 stat-row">
+    <div class="col-6 col-xl-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-list" aria-hidden="true"></i>Total Matches</span><span class="stat-tile__value">{{ total_count }}</span></div></div>
+    <div class="col-6 col-xl-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-calendar" aria-hidden="true"></i>Scheduled</span><span class="stat-tile__value">{{ scheduled_count }}</span></div></div>
+    <div class="col-6 col-xl-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-circle-check" aria-hidden="true"></i>Completed</span><span class="stat-tile__value">{{ completed_count }}</span></div></div>
+    <div class="col-6 col-xl-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-clock" aria-hidden="true"></i>Postponed</span><span class="stat-tile__value">{{ postponed_count }}</span></div></div>
+</div>
+
+<section class="panel" aria-labelledby="list-title">
+    <div class="panel-header flex-wrap">
+        <h2 class="panel-title" id="list-title"><i class="fas fa-list" aria-hidden="true"></i>Matches List ({{ matches.count }} matches)</h2>
+    </div>
+    <div class="panel-body border-bottom">
+        <form method="get" id="filterForm" class="filter-bar" role="search">
+            <div>
+                <label class="form-label small" for="f-search">Search</label>
+                <input type="text" name="search" id="f-search" class="form-control" placeholder="Search teams or venue..." value="{{ search_query }}">
+            </div>
+            <div>
+                <label class="form-label small" for="f-zone">Zone</label>
+                <select name="zone" id="f-zone" class="form-select" data-autosubmit>
+                    <option value="">All Zones</option>
+                    {% for zone in zones %}<option value="{{ zone.id }}" {% if selected_zone == zone.id|stringformat:"s" %}selected{% endif %}>{{ zone.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label small" for="f-status">Status</label>
+                <select name="status" id="f-status" class="form-select" data-autosubmit>
+                    <option value="">All Statuses</option>
+                    {% for status_code, status_name in status_choices %}<option value="{{ status_code }}" {% if selected_status == status_code %}selected{% endif %}>{{ status_name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label small" for="f-round">Round</label>
+                <select name="round" id="f-round" class="form-select" data-autosubmit>
+                    <option value="">All Rounds</option>
+                    {% for round in rounds %}<option value="{{ round }}" {% if selected_round == round|stringformat:"s" %}selected{% endif %}>Round {{ round }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="filter-bar__actions">
+                <button type="submit" class="btn btn-outline-primary"><i class="fas fa-magnifying-glass me-1" aria-hidden="true"></i>Search</button>
+                <a href="{% url 'matches:manage_matches' %}" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+    {% if matches %}
+    <div class="data-table-wrap data-table-wrap--tall">
+        <table class="table data-table mb-0">
+            <thead><tr><th scope="col" class="num hide-sm">ID</th><th scope="col">Date</th><th scope="col">Home Team</th><th scope="col" class="text-center">Score</th><th scope="col">Away Team</th><th scope="col" class="hide-sm">Venue</th><th scope="col" class="hide-sm">Zone</th><th scope="col" class="num">Round</th><th scope="col">Status</th><th scope="col" class="text-end">Actions</th></tr></thead>
+            <tbody>
+                {% for match in matches %}
+                <tr>
+                    <td class="num hide-sm text-body-secondary">{{ match.id }}</td>
+                    <td class="col-min">{{ match.match_date|date:"M d, Y" }}<span class="cell-sub">{{ match.kickoff_time|default:"TBD" }}</span></td>
+                    <td class="fw-semibold">{{ match.home_team.team_name }}</td>
+                    <td class="text-center col-min">{% if match.status == 'completed' %}<span class="score-capsule">{{ match.home_score }}&ndash;{{ match.away_score }}</span>{% else %}<span class="text-body-secondary">vs</span>{% endif %}</td>
+                    <td class="fw-semibold">{{ match.away_team.team_name }}</td>
+                    <td class="hide-sm">{{ match.venue }}</td>
+                    <td class="hide-sm">{{ match.zone.name }}</td>
+                    <td class="num">{{ match.round_number }}</td>
+                    <td>{% match_badge match.status %}</td>
+                    <td class="actions">
+                        <a href="{% url 'matches:match_details' match.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="View Details" aria-label="View details"><i class="fas fa-eye" aria-hidden="true"></i></a>
+                        <a href="{% url 'matches:edit_match' match.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Edit Match" aria-label="Edit match"><i class="fas fa-pen" aria-hidden="true"></i></a>
+                        <a href="{% url 'matches:move_match_round' match.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Move Match to Another Round" aria-label="Move match to another round"><i class="fas fa-shuffle" aria-hidden="true"></i></a>
+                        <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Reschedule" aria-label="Reschedule"><i class="fas fa-calendar-days" aria-hidden="true"></i></a>
+                        <a href="{% url 'matches:delete_match' match.id %}" class="btn btn-sm btn-outline-danger btn-icon" title="Delete Match" aria-label="Delete match" data-confirm="Are you sure you want to delete this match?"><i class="fas fa-trash" aria-hidden="true"></i></a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state__icon"><i class="fas fa-futbol" aria-hidden="true"></i></div>
+        <p class="empty-state__title">No matches found.</p>
+        <a href="{% url 'matches:create_match' %}" class="btn btn-primary">Create your first match</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/pages/admin.js' %}" defer></script>{% endblock %}

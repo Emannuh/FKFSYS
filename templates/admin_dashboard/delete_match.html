@@ -1,112 +1,42 @@
-﻿{% extends 'base.html' %}
+﻿{% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
 
-{% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-6 offset-md-3">
-            <div class="card border-danger">
-                <div class="card-header ch-red">
-                    <h5><i class="fas fa-exclamation-triangle"></i> Confirm Delete Match</h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-danger">
-                        <h5><i class="fas fa-trash-alt"></i> Are you sure you want to delete this match?</h5>
-                        <p class="mb-0">This action cannot be undone!</p>
-                    </div>
-                    
-                    <div class="match-details mb-4">
-                        <h5 class="text-center mb-3">
-                            <strong>{{ match.home_team.team_name }}</strong> 
-                            <span class="text-muted">vs</span> 
-                            <strong>{{ match.away_team.team_name }}</strong>
-                        </h5>
-                        
-                        <table class="table table-bordered">
-                            <tbody>
-                                <tr>
-                                    <th width="40%"><i class="fas fa-calendar"></i> Date</th>
-                                    <td>{{ match.match_date|date:"F d, Y" }}</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-clock"></i> Kickoff Time</th>
-                                    <td>{{ match.kickoff_time|default:"TBD" }}</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-map-marker-alt"></i> Venue</th>
-                                    <td>{{ match.venue }}</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-layer-group"></i> Zone</th>
-                                    <td>{{ match.zone.name }}</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-redo"></i> Round</th>
-                                    <td>{{ match.round_number }}</td>
-                                </tr>
-                                <tr>
-                                    <th><i class="fas fa-info-circle"></i> Status</th>
-                                    <td>
-                                        {% if match.status == 'scheduled' %}
-                                            <span class="badge badge-info">Scheduled</span>
-                                        {% elif match.status == 'completed' %}
-                                            <span class="badge badge-success">Completed</span>
-                                        {% elif match.status == 'postponed' %}
-                                            <span class="badge badge-warning">Postponed</span>
-                                        {% elif match.status == 'cancelled' %}
-                                            <span class="badge badge-danger">Cancelled</span>
-                                        {% else %}
-                                            <span class="badge badge-secondary">{{ match.get_status_display }}</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% if match.status == 'completed' %}
-                                <tr>
-                                    <th><i class="fas fa-futbol"></i> Score</th>
-                                    <td>
-                                        <strong>{{ match.home_score }} - {{ match.away_score }}</strong>
-                                    </td>
-                                </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <form method="post" class="text-center">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger btn-lg mr-2">
-                            <i class="fas fa-trash-alt"></i> Yes, Delete Match
-                        </button>
-                        <a href="{% url 'matches:manage_matches' %}" class="btn btn-secondary btn-lg">
-                            <i class="fas fa-times"></i> Cancel
-                        </a>
-                    </form>
-                </div>
-            </div>
-        </div>
+{% block title %}Delete Match — FKF Meru League{% endblock %}
+{% block page_title %}Delete match{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Matches</span>
+        <h1 class="page-title h2">Confirm Delete Match</h1>
+        <p class="page-subtitle">This action cannot be undone!</p>
     </div>
 </div>
-
-<style>
-    .card {
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .match-details {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-    }
-    
-    .table th {
-        background-color: #e9ecef;
-        font-weight: 600;
-    }
-    
-    .btn-lg {
-        padding: 12px 30px;
-        font-size: 16px;
-    }
-</style>
 {% endblock %}
 
+{% block content %}
+<div class="form-narrow">
+    <section class="panel danger-panel" aria-labelledby="delete-title">
+        <div class="panel-header"><h2 class="panel-title" id="delete-title"><i class="fas fa-trash-can" aria-hidden="true"></i>Are you sure you want to delete this match?</h2></div>
+        <div class="panel-body">
+            <p class="h5 mb-3">{{ match.home_team.team_name }} <span class="text-body-secondary fw-normal">vs</span> {{ match.away_team.team_name }}</p>
+            <dl class="kv-list">
+                <dt>Date</dt><dd>{{ match.match_date|date:"F d, Y" }}</dd>
+                <dt>Kickoff Time</dt><dd>{{ match.kickoff_time|default:"TBD" }}</dd>
+                <dt>Venue</dt><dd>{{ match.venue }}</dd>
+                <dt>Zone</dt><dd>{{ match.zone.name }}</dd>
+                <dt>Round</dt><dd>{{ match.round_number }}</dd>
+                <dt>Status</dt><dd>{% match_badge match.status %}</dd>
+                {% if match.status == 'completed' %}<dt>Score</dt><dd><span class="score-capsule">{{ match.home_score }}&ndash;{{ match.away_score }}</span></dd>{% endif %}
+            </dl>
+        </div>
+        <form method="post" class="panel-footer form-actions">
+            {% csrf_token %}
+            <a href="{% url 'matches:manage_matches' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-danger"><i class="fas fa-trash-can me-1" aria-hidden="true"></i>Yes, Delete Match</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

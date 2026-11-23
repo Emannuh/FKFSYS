@@ -262,7 +262,64 @@
     });
   }
 
+  // --- Small behaviours that replace inline handlers ------------------------
+  // <a|button data-confirm="Message">: ask before following / submitting.
+  // <select data-autosubmit>: submit the parent form on change.
+  function wireBehaviours() {
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest('[data-confirm]');
+      if (el && !el.matches('form') && !window.confirm(el.getAttribute('data-confirm'))) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    });
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (form.matches('form[data-confirm]') && !window.confirm(form.getAttribute('data-confirm'))) e.preventDefault();
+    });
+    document.addEventListener('change', function (e) {
+      var el = e.target;
+      if (el.matches('[data-autosubmit]') && el.form) el.form.submit();
+    });
+  }
+
+  // --- Match create/edit form (admin_dashboard/create_match.html, edit_match.html) ---
+  function initMatchForm() {
+    var form = document.querySelector('form[data-match-form]');
+    if (!form) return;
+    var zone = document.getElementById('zone');
+    var home = document.getElementById('home_team');
+    var away = document.getElementById('away_team');
+    var status = document.getElementById('status');
+    var scores = document.getElementById('scoresSection');
+
+    function filter(select, zoneId) {
+      if (!select) return;
+      for (var i = 1; i < select.options.length; i++) {
+        var opt = select.options[i];
+        var show = !zoneId || opt.getAttribute('data-zone') === zoneId;
+        opt.hidden = !show;
+      }
+      var cur = select.options[select.selectedIndex];
+      if (select.selectedIndex > 0 && cur.hidden) select.selectedIndex = 0;
+    }
+    if (zone) zone.addEventListener('change', function () { filter(home, zone.value); filter(away, zone.value); });
+    if (status && scores) {
+      status.addEventListener('change', function () { scores.classList.toggle('d-none', status.value !== 'completed'); });
+    }
+    if (form.hasAttribute('data-same-team-check')) {
+      form.addEventListener('submit', function (e) {
+        if (home && away && home.value && home.value === away.value) {
+          e.preventDefault();
+          window.alert('Home team and away team cannot be the same!');
+        }
+      });
+    }
+  }
+
   function init() {
+    wireBehaviours();
+    initMatchForm();
     renderAllCharts();
     watchTheme();
     startCountdowns();

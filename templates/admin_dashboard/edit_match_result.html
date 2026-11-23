@@ -1,19 +1,40 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 {% block title %}Edit Match Result{% endblock %}
+{% block page_title %}Edit match result{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Matches</span>
+        <h1 class="page-title h2">Edit Match Result</h1>
+        <p class="page-subtitle">{{ match.home_team }} vs {{ match.away_team }}</p>
+    </div>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h1>Edit Match Result</h1>
-    <form method="post">
+<div class="form-narrow">
+    <form method="post" class="panel">
         {% csrf_token %}
-        <div class="mb-3">
-            <label>Home Team: {{ match.home_team }}</label>
-            <input type="number" name="home_score" value="{{ match.home_score }}" class="form-control" required>
+        <div class="panel-header"><h2 class="panel-title"><i class="fas fa-futbol" aria-hidden="true"></i>Final score</h2></div>
+        <div class="panel-body">
+            <div class="row g-3">
+                <div class="col-6">
+                    <label class="form-label" for="home_score">Home Team: {{ match.home_team }}</label>
+                    <input type="number" name="home_score" id="home_score" value="{{ match.home_score }}" class="form-control" required>
+                </div>
+                <div class="col-6">
+                    <label class="form-label" for="away_score">Away Team: {{ match.away_team }}</label>
+                    <input type="number" name="away_score" id="away_score" value="{{ match.away_score }}" class="form-control" required>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            <label>Away Team: {{ match.away_team }}</label>
-            <input type="number" name="away_score" value="{{ match.away_score }}" class="form-control" required>
+        <div class="panel-footer form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk me-1" aria-hidden="true"></i>Save Result</button>
         </div>
-        <button type="submit" class="btn btn-success">Save Result</button>
     </form>
 </div>
 {% endblock %}
