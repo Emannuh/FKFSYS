@@ -44,3 +44,43 @@
   .kit-actions { position: static; }
   .kit-actions .btn { flex: 1 1 auto; }
 }
+
+/* --- Shared bits for teams pages (candidates for app.css) ----------------- */
+.team-hero { display: flex; align-items: center; gap: var(--fkf-space-4); min-width: 0; }
+.team-hero .team-crest--lg { --crest-size: 64px; }
+.stat-tile__value--text { font-size: var(--fkf-text-lg); line-height: 1.3; overflow-wrap: anywhere; }
+.stat-tile__value--dash:empty::before { content: "\2014"; color: var(--fkf-text-muted); }
+.person { display: inline-flex; align-items: center; gap: var(--fkf-space-2); min-width: 0; font-weight: 600; }
+.person .team-crest { --crest-size: 32px; font-size: var(--fkf-text-xs); }
+.eyebrow-label { font-size: var(--fkf-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fkf-text-muted); margin-bottom: var(--fkf-space-2); }
+.rules-list { margin: var(--fkf-space-2) 0 0; padding-left: 1.1rem; color: var(--fkf-text-muted); }
+.rules-list li + li { margin-top: 2px; }
+
+/* Definition list inside a panel: label / value rows */
+.detail-list { margin: 0; }
+.detail-list > div { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: var(--fkf-space-3); padding: var(--fkf-space-2) var(--fkf-space-4); border-bottom: 1px solid var(--fkf-border); font-size: var(--fkf-text-sm); }
+.detail-list > div:last-child { border-bottom: 0; }
+.detail-list dt { font-weight: 600; color: var(--fkf-text-muted); }
+.detail-list dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Item list: rows with a title, meta line, badge and actions */
+.item-list { list-style: none; margin: 0; padding: 0; }
+.item-list > li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fkf-space-2) var(--fkf-space-3); padding: var(--fkf-space-3) var(--fkf-space-4); border-bottom: 1px solid var(--fkf-border); }
+.item-list > li:last-child { border-bottom: 0; }
+.item-list--flush > li { padding-inline: 0; }
+.item-list__main { flex: 1 1 12rem; min-width: 0; display: flex; flex-direction: column; }
+.item-list__main strong { font-size: var(--fkf-text-sm); }
+.item-list__main span { font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+.item-list__actions { display: flex; flex-wrap: wrap; gap: var(--fkf-space-2); }
+
+/* Matchday squad rows (team dashboard) */
+.squad-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--fkf-space-2); }
+.squad-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--fkf-space-3); padding: var(--fkf-space-3) var(--fkf-space-4); border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius); background: var(--fkf-surface); }
+.squad-row.is-active { border-color: color-mix(in srgb, var(--fkf-green) 45%, transparent); box-shadow: inset 3px 0 0 var(--fkf-green); }
+.squad-row__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 16rem; }
+.squad-row__round { font-size: var(--fkf-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fkf-text-muted); }
+.squad-row__teams { font-weight: 700; }
+.squad-row__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fkf-space-1) var(--fkf-space-3); font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); font-variant-numeric: tabular-nums; }
+.squad-row__action { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fkf-space-2); }
+.captain-list { font-size: var(--fkf-text-base); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.captain-list > span + span::before { content: ", "; }
