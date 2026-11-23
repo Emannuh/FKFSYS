@@ -128,3 +128,10 @@ a.stat-tile:hover { border-color: var(--fkf-border-strong); transform: translate
 
 /* Black tile would vanish on the dark page: lift it to a raised surface */
 [data-bs-theme="dark"] .stat-tile--dark { background: var(--fkf-surface-3); border-color: var(--fkf-border-strong); border-top-color: #fff; }
+
+/* Form field wrapper (admin_dashboard/_field.html): unstyled widgets such as file inputs */
+.admin-field input[type="file"]:not(.form-control) {
+  display: block; width: 100%; padding: 0.375rem 0.5rem; font-size: var(--fkf-text-sm);
+  color: var(--fkf-text); background: var(--fkf-surface); border: 1px solid var(--fkf-border-strong); border-radius: var(--fkf-radius-sm);
+}
+.admin-field a { overflow-wrap: anywhere; }

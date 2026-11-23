@@ -1,156 +1,56 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 {% block title %}Edit {{ tournament.name }} – FKF Meru League{% endblock %}
+{% block page_title %}Edit tournament{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Tournaments</span>
+        <h1 class="page-title h2">Edit Tournament</h1>
+        <p class="page-subtitle">{{ tournament.name }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary"><i class="fas fa-eye me-1" aria-hidden="true"></i>View</a>
+        <a href="{% url 'tournaments:delete_tournament' tournament.slug %}" class="btn btn-outline-danger"><i class="fas fa-trash me-1" aria-hidden="true"></i>Delete</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:800px;">
-    <h2 class="mb-4"><i class="fas fa-edit text-primary me-2"></i>Edit Tournament</h2>
-
-    <!-- Quick status changer -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">Status: {{ tournament.get_status_display }}</h6>
-            <form method="post" action="{% url 'tournaments:change_status' tournament.slug %}" class="d-flex gap-1">
+<div class="form-narrow dash-stack">
+    <section class="panel" aria-labelledby="status-title">
+        <div class="panel-header flex-wrap">
+            <h2 class="panel-title" id="status-title"><i class="fas fa-flag" aria-hidden="true"></i>Status: {{ tournament.get_status_display }}</h2>
+        </div>
+        <div class="panel-body">
+            <form method="post" action="{% url 'tournaments:change_status' tournament.slug %}" class="d-flex flex-wrap gap-2">
                 {% csrf_token %}
+                <span class="form-text me-1 align-self-center">Move to:</span>
                 {% for val, label in tournament.STATUS_CHOICES %}
                 {% if val != tournament.status %}
-                <button name="status" value="{{ val }}" class="btn btn-sm btn-outline-light">{{ label }}</button>
+                <button type="submit" name="status" value="{{ val }}" class="btn btn-sm btn-outline-secondary">{{ label }}</button>
                 {% endif %}
                 {% endfor %}
             </form>
         </div>
-    </div>
+    </section>
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" class="dash-stack">
         {% csrf_token %}
-
         {% if form.non_field_errors %}
-        <div class="alert alert-danger">
+        <div class="alert alert-danger" role="alert">
             {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
         </div>
         {% endif %}
-
-        <div class="card shadow-sm mb-4">
-            <div class="card-header" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;"><h6 class="mb-0">Basic Information</h6></div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Tournament Name</label>
-                    {{ form.name }}
-                    {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Description</label>
-                    {{ form.description }}
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Banner Image</label>
-                        {{ form.banner }}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Logo</label>
-                        {{ form.logo }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card shadow-sm mb-4">
-            <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;"><h6 class="mb-0">Schedule</h6></div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Start Date</label>
-                        {{ form.start_date }}
-                        {% if form.start_date.errors %}<div class="text-danger small">{{ form.start_date.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">End Date</label>
-                        {{ form.end_date }}
-                        {% if form.end_date.errors %}<div class="text-danger small">{{ form.end_date.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Registration Deadline</label>
-                        {{ form.registration_deadline }}
-                        {% if form.registration_deadline.errors %}<div class="text-danger small">{{ form.registration_deadline.errors }}</div>{% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card shadow-sm mb-4">
-            <div class="card-header" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;"><h6 class="mb-0">Structure & Rules</h6></div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Format</label>
-                        {{ form.format }}
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Max Teams</label>
-                        {{ form.max_teams }}
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Groups</label>
-                        {{ form.group_count }}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Min Squad Size</label>
-                        {{ form.min_squad_size }}
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Max Squad Size</label>
-                        {{ form.max_squad_size }}
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Entry Fee (KSh)</label>
-                        {{ form.entry_fee }}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Zone</label>
-                        {{ form.zone }}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Venue</label>
-                        {{ form.venue }}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Tournament Rules</label>
-                    {{ form.rules }}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Prize Information</label>
-                    {{ form.prize_info }}
-                </div>
-            </div>
-        </div>
-
-        <div class="card shadow-sm mb-4">
-            <div class="card-header" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);color:white;"><h6 class="mb-0">Publication Status</h6></div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Status</label>
-                    {{ form.status }}
-                    <small class="text-muted">Draft tournaments are not visible to teams. Set to "Registration Open" to make it public.</small>
-                    {% if form.status.errors %}<div class="text-danger small">{{ form.status.errors }}</div>{% endif %}
-                </div>
-            </div>
-        </div>
-
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-lg flex-fill">
-                <i class="fas fa-save me-1"></i>Save Changes
-            </button>
-            <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-secondary btn-lg">Cancel</a>
-            <a href="{% url 'tournaments:delete_tournament' tournament.slug %}" class="btn btn-danger btn-lg">
-                <i class="fas fa-trash"></i>
-            </a>
+        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+        {% include "admin_dashboard/_tournament_form_fields.html" %}
+        <div class="form-actions">
+            <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk me-1" aria-hidden="true"></i>Save Changes</button>
         </div>
     </form>
 </div>
 {% endblock %}
-
