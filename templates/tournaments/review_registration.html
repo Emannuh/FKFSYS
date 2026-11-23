@@ -1,30 +1,49 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 {% block title %}Review Registration{% endblock %}
+{% block page_title %}Review registration{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">{{ reg.tournament.name }}</span>
+        <h1 class="page-title h2">Review Registration</h1>
+        <p class="page-subtitle">{{ reg.display_name }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'tournaments:manage_registrations' reg.tournament.slug %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Registrations</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:600px;">
-    <h2 class="mb-4"><i class="fas fa-user-check text-primary me-2"></i>Review Registration</h2>
-
-    <div class="card shadow-sm mb-3">
-        <div class="card-body">
-            <h5>{{ reg.display_name }}</h5>
-            <p class="mb-1"><strong>Tournament:</strong> {{ reg.tournament.name }}</p>
-            <p class="mb-1"><strong>Registered:</strong> {{ reg.registered_at|date:"d M Y, H:i" }}</p>
-            <p class="mb-0"><strong>By:</strong> {% if reg.registered_by %}{{ reg.registered_by.get_full_name|default:reg.registered_by.username }}{% else %}—{% endif %}</p>
-        </div>
-    </div>
-
-    <form method="post">
-        {% csrf_token %}
-        {% include 'tournaments/includes/form_errors.html' %}
-        <div class="card shadow-sm">
-            <div class="card-body">
+<div class="row g-4">
+    <div class="col-lg-7">
+        <form method="post" class="panel">
+            {% csrf_token %}
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-user-check" aria-hidden="true"></i>Decision</h2></div>
+            <div class="panel-body">
+                {% include 'tournaments/includes/form_errors.html' %}
                 {% for field in form %}{% include 'tournaments/includes/form_field.html' %}{% endfor %}
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-save me-1"></i>Update Registration
-                </button>
             </div>
-        </div>
-    </form>
+            <div class="panel-footer form-actions">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk me-1" aria-hidden="true"></i>Update Registration</button>
+            </div>
+        </form>
+    </div>
+    <div class="col-lg-5">
+        <section class="panel" aria-labelledby="reg-title">
+            <div class="panel-header"><h2 class="panel-title" id="reg-title"><i class="fas fa-shield-halved" aria-hidden="true"></i>{{ reg.display_name }}</h2></div>
+            <div class="panel-body">
+                <dl class="kv-list">
+                    <dt>Tournament</dt><dd>{{ reg.tournament.name }}</dd>
+                    <dt>Registered</dt><dd>{{ reg.registered_at|date:"d M Y, H:i" }}</dd>
+                    <dt>By</dt><dd>{% if reg.registered_by %}{{ reg.registered_by.get_full_name|default:reg.registered_by.username }}{% else %}—{% endif %}</dd>
+                </dl>
+            </div>
+        </section>
+    </div>
 </div>
 {% endblock %}

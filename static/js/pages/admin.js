@@ -317,8 +317,23 @@
     }
   }
 
+  // --- Select all / none toggle (tournaments/import_league_teams.html) -------
+  function initSelectAll() {
+    var btn = document.getElementById('select-all-btn');
+    if (!btn) return;
+    var label = btn.querySelector('.js-label');
+    btn.addEventListener('click', function () {
+      var boxes = Array.prototype.slice.call(document.querySelectorAll('input[name="' + (btn.getAttribute('data-target-name') || 'teams') + '"]'));
+      var allChecked = boxes.length && boxes.every(function (cb) { return cb.checked; });
+      boxes.forEach(function (cb) { cb.checked = !allChecked; });
+      if (label) label.textContent = allChecked ? 'Select All' : 'Deselect All';
+      btn.setAttribute('aria-pressed', allChecked ? 'false' : 'true');
+    });
+  }
+
   function init() {
     wireBehaviours();
+    initSelectAll();
     initMatchForm();
     renderAllCharts();
     watchTheme();
