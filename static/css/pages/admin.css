@@ -125,3 +125,6 @@ a.stat-tile:hover { border-color: var(--fkf-border-strong); transform: translate
   .page-actions { width: 100%; }
   .page-actions .btn { flex: 1 1 auto; }
 }
+
+/* Black tile would vanish on the dark page: lift it to a raised surface */
+[data-bs-theme="dark"] .stat-tile--dark { background: var(--fkf-surface-3); border-color: var(--fkf-border-strong); border-top-color: #fff; }

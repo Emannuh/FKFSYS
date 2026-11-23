@@ -51,12 +51,21 @@
     var openClosed = canvas.getAttribute('data-format') === 'open-closed';
 
     if (type === 'doughnut') {
+      var datasets = [{ data: values, backgroundColor: colours, borderWidth: 0, hoverOffset: 6 }];
+      var empty = values.reduce(function (a, b) { return a + (Number(b) || 0); }, 0) === 0;
+      if (empty) {
+        // All zero: draw a neutral track ring so the panel does not look broken.
+        datasets.push({ data: [1], backgroundColor: [colour('grey')], borderWidth: 0, hoverOffset: 0 });
+      }
       return {
         type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: values, backgroundColor: colours, borderWidth: 0, hoverOffset: 6 }] },
+        data: { labels: labels, datasets: datasets },
         options: {
           responsive: true, maintainAspectRatio: false, cutout: '68%',
-          plugins: { legend: { position: 'bottom', labels: { color: ink.text, boxWidth: 10, boxHeight: 10, padding: 14, font: { size: 11 } } } }
+          plugins: {
+            legend: { position: 'bottom', labels: { color: ink.text, boxWidth: 10, boxHeight: 10, padding: 14, font: { size: 11 } } },
+            tooltip: { filter: function (item) { return item.datasetIndex === 0; } }
+          }
         }
       };
     }
@@ -101,6 +110,8 @@
     var chart = charts[id];
     if (!chart) return;
     chart.data.datasets[0].data[index] = value;
+    var sum = chart.data.datasets[0].data.reduce(function (a, b) { return a + (Number(b) || 0); }, 0);
+    if (sum > 0 && chart.data.datasets.length > 1) chart.data.datasets.length = 1;  // drop the empty track
     chart.update();
   }
 
