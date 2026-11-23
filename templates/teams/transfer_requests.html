@@ -1,63 +1,64 @@
-{% extends "base.html" %}
+{% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
+
 {% block title %}My Transfer Requests{% endblock %}
+{% block page_title %}My transfers{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/teams.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Transfers &middot; {{ team.team_name }}</span>
+        <h1 class="page-title">Transfer Requests</h1>
+        <p class="page-subtitle">Manage incoming and outgoing player transfers for {{ team.team_name }}.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Dashboard</a>
+        <a href="{% url 'teams:search_players' %}" class="btn btn-primary"><i class="fas fa-magnifying-glass me-1" aria-hidden="true"></i>Search Players</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1><i class="fas fa-exchange-alt"></i> Transfer Requests</h1>
-    <p class="lead">Manage incoming and outgoing player transfers for {{ team.team_name }}</p>
+<ul class="nav nav-tabs mb-3" id="transferTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="outgoing-tab" data-bs-toggle="tab" data-bs-target="#outgoing" type="button" role="tab" aria-controls="outgoing" aria-selected="true">
+            <i class="fas fa-arrow-down me-1" aria-hidden="true"></i>Players I Want ({{ outgoing_requests.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="incoming-tab" data-bs-toggle="tab" data-bs-target="#incoming" type="button" role="tab" aria-controls="incoming" aria-selected="false">
+            <i class="fas fa-arrow-up me-1" aria-hidden="true"></i>Requests for My Players
+            {% if pending_incoming_count > 0 %}<span class="badge status-badge status-accent ms-1">{{ pending_incoming_count }}</span>{% endif %}
+        </button>
+    </li>
+</ul>
 
-    <!-- Navigation Tabs -->
-    <ul class="nav nav-tabs mb-3" id="transferTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="outgoing-tab" data-bs-toggle="tab"
-                    data-bs-target="#outgoing" type="button" role="tab">
-                <i class="fas fa-arrow-down"></i> Players I Want ({{ outgoing_requests.count }})
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="incoming-tab" data-bs-toggle="tab"
-                    data-bs-target="#incoming" type="button" role="tab">
-                <i class="fas fa-arrow-up"></i> Requests for My Players
-                {% if pending_incoming_count > 0 %}
-                <span class="badge bg-danger">{{ pending_incoming_count }}</span>
-                {% endif %}
-            </button>
-        </li>
-    </ul>
-
-    <div class="tab-content" id="transferTabsContent">
-        <!-- OUTGOING: Players I want to bring in -->
-        <div class="tab-pane fade show active" id="outgoing" role="tabpanel">
+<div class="tab-content" id="transferTabsContent">
+    <div class="tab-pane fade show active" id="outgoing" role="tabpanel" aria-labelledby="outgoing-tab" tabindex="0">
+        <div class="panel">
             {% if outgoing_requests %}
-            <div class="table-responsive">
-                <table class="table table-striped">
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
                     <thead>
                         <tr>
-                            <th>Player</th>
-                            <th>From Team</th>
-                            <th>Status</th>
-                            <th>Requested Date</th>
-                            <th>Actions</th>
+                            <th scope="col">Player</th>
+                            <th scope="col">From Team</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="hide-sm">Requested Date</th>
+                            <th scope="col" class="col-min"><span class="visually-hidden">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for tr in outgoing_requests %}
                         <tr>
-                            <td><strong>{{ tr.player.full_name }}</strong></td>
+                            <td class="fw-bold">{{ tr.player.full_name }}</td>
                             <td>{{ tr.from_team.team_name }}</td>
-                            <td>
-                                {% if tr.status == 'pending_parent' %}
-                                <span class="badge bg-warning">⏳ Pending</span>
-                                {% elif tr.status == 'approved' %}
-                                <span class="badge bg-success">✅ Approved</span>
-                                {% elif tr.status == 'rejected' %}
-                                <span class="badge bg-danger">❌ Rejected</span>
-                                {% elif tr.status == 'cancelled' %}
-                                <span class="badge bg-secondary">Cancelled</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ tr.request_date|date:"M d, Y" }}</td>
-                            <td>
+                            <td>{% transfer_badge tr.status %}</td>
+                            <td class="hide-sm text-nowrap">{{ tr.request_date|date:"M d, Y" }}</td>
+                            <td class="col-min">
                                 {% if tr.status == 'pending_parent' %}
                                 <form method="post" action="{% url 'teams:cancel_transfer' tr.id %}" class="d-inline"
                                       onsubmit="return confirm('Cancel this transfer request?');">
@@ -65,31 +66,26 @@
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
                                 </form>
                                 {% elif tr.status == 'rejected' %}
-                                <button class="btn btn-sm btn-outline-info"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#reasonModal{{ tr.id }}">
-                                    View Reason
-                                </button>
-
-                                <!-- Rejection Reason Modal -->
-                                <div class="modal fade" id="reasonModal{{ tr.id }}" tabindex="-1">
-                                    <div class="modal-dialog">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#reasonModal{{ tr.id }}">View Reason</button>
+                                <div class="modal fade" id="reasonModal{{ tr.id }}" tabindex="-1" aria-labelledby="reasonModal{{ tr.id }}Title" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Rejection Reason</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                <h2 class="modal-title h5" id="reasonModal{{ tr.id }}Title">Rejection Reason</h2>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body">
-                                                <p><strong>Player:</strong> {{ tr.player.full_name }}</p>
-                                                <p><strong>From:</strong> {{ tr.from_team.team_name }}</p>
-                                                <p><strong>Reason:</strong></p>
-                                                <p>{{ tr.parent_decision_reason }}</p>
+                                            <div class="modal-body text-wrap">
+                                                <dl class="detail-list detail-list--flush">
+                                                    <div><dt>Player</dt><dd>{{ tr.player.full_name }}</dd></div>
+                                                    <div><dt>From</dt><dd>{{ tr.from_team.team_name }}</dd></div>
+                                                    <div><dt>Reason</dt><dd>{{ tr.parent_decision_reason }}</dd></div>
+                                                </dl>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 {% elif tr.status == 'approved' %}
-                                <span class="text-success">✅ Player Transferred</span>
+                                <span class="text-success small fw-bold text-nowrap"><i class="fas fa-check me-1" aria-hidden="true"></i>Player Transferred</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -98,42 +94,44 @@
                 </table>
             </div>
             {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> You haven't requested any transfers yet.
-                <a href="{% url 'teams:search_players' %}" class="alert-link">Search for players</a>
+            <div class="empty-state">
+                <div class="empty-state__icon"><i class="fas fa-right-left" aria-hidden="true"></i></div>
+                <p class="empty-state__title">No transfer requests yet</p>
+                <p class="empty-state__text">You haven't requested any transfers yet.</p>
+                <a href="{% url 'teams:search_players' %}" class="btn btn-outline-primary">Search for players</a>
             </div>
             {% endif %}
         </div>
+    </div>
 
-        <!-- INCOMING: Requests for my players -->
-        <div class="tab-pane fade" id="incoming" role="tabpanel">
+    <div class="tab-pane fade" id="incoming" role="tabpanel" aria-labelledby="incoming-tab" tabindex="0">
+        <div class="panel">
             {% if incoming_requests %}
-            <div class="table-responsive">
-                <table class="table table-striped">
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
                     <thead>
                         <tr>
-                            <th>Player</th>
-                            <th>Requested By</th>
-                            <th>Date</th>
-                            <th>Actions</th>
+                            <th scope="col">Player</th>
+                            <th scope="col">Requested By</th>
+                            <th scope="col" class="hide-sm">Date</th>
+                            <th scope="col" class="col-min"><span class="visually-hidden">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for tr in incoming_requests %}
                         <tr>
-                            <td><strong>{{ tr.player.full_name }}</strong></td>
+                            <td class="fw-bold">{{ tr.player.full_name }}</td>
                             <td>{{ tr.to_team.team_name }}</td>
-                            <td>{{ tr.request_date|date:"M d, Y" }}</td>
-                            <td>
-                                <form method="post" action="{% url 'teams:approve_transfer' tr.id %}" class="d-inline"
-                                      onsubmit="return confirm('Approve transfer of {{ tr.player.full_name|escapejs }} to {{ tr.to_team.team_name|escapejs }}?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check" aria-hidden="true"></i> Approve</button>
-                                </form>
-                                <a href="{% url 'teams:reject_transfer' tr.id %}"
-                                   class="btn btn-sm btn-danger">
-                                    <i class="fas fa-times"></i> Reject
-                                </a>
+                            <td class="hide-sm text-nowrap">{{ tr.request_date|date:"M d, Y" }}</td>
+                            <td class="col-min">
+                                <div class="d-flex gap-2">
+                                    <form method="post" action="{% url 'teams:approve_transfer' tr.id %}" class="d-inline"
+                                          onsubmit="return confirm('Approve transfer of {{ tr.player.full_name|escapejs }} to {{ tr.to_team.team_name|escapejs }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check me-1" aria-hidden="true"></i>Approve</button>
+                                    </form>
+                                    <a href="{% url 'teams:reject_transfer' tr.id %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-xmark me-1" aria-hidden="true"></i>Reject</a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -141,20 +139,9 @@
                 </table>
             </div>
             {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> No pending transfer requests for your players.
-            </div>
+            {% empty_state icon="inbox" title="Nothing to decide" message="No pending transfer requests for your players." %}
             {% endif %}
         </div>
-    </div>
-
-    <div class="mt-3">
-        <a href="{% url 'teams:search_players' %}" class="btn btn-primary">
-            <i class="fas fa-search"></i> Search Players
-        </a>
-        <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
     </div>
 </div>
 {% endblock %}

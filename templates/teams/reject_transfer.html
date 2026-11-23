@@ -1,51 +1,43 @@
-﻿{% extends "base.html" %}
-{% block title %}Reject Transfer{% endblock %}
+﻿{% extends "base_dashboard.html" %}
+{% load static %}
 
-{% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;">
-                    <h4 class="mb-0"><i class="fas fa-times-circle"></i> Reject Transfer Request</h4>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-warning">
-                        <h5><i class="fas fa-exclamation-triangle"></i> Confirm Rejection</h5>
-                        <p class="mb-0">
-                            You are about to reject a transfer request for 
-                            <strong>{{ transfer.player.full_name }}</strong> 
-                            from <strong>{{ transfer.to_team.team_name }}</strong>.
-                        </p>
-                    </div>
-                    
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="reason" class="form-label">
-                                <strong>Reason for Rejection *</strong>
-                            </label>
-                            <textarea name="reason" id="reason" class="form-control" 
-                                      rows="5" required 
-                                      placeholder="Please provide a clear reason for rejecting this transfer request..."></textarea>
-                            <small class="form-text text-muted">
-                                This reason will be visible to the requesting team and league admin.
-                            </small>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'teams:my_transfer_requests' %}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Cancel
-                            </a>
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-times"></i> Confirm Rejection
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+{% block title %}Reject Transfer{% endblock %}
+{% block page_title %}Reject transfer{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/teams.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Transfers</span>
+        <h1 class="page-title">Reject Transfer Request</h1>
+        <p class="page-subtitle">Tell the requesting club why you are keeping this player.</p>
     </div>
 </div>
 {% endblock %}
 
+{% block content %}
+<div class="confirm-page">
+    <form method="post" class="panel confirm-card confirm-card--danger">
+        {% csrf_token %}
+        <div class="panel-body">
+            <div class="confirm-card__head">
+                <span class="confirm-card__icon" aria-hidden="true"><i class="fas fa-xmark"></i></span>
+                <div>
+                    <h2 class="confirm-card__title">Confirm Rejection</h2>
+                    <p class="confirm-card__text">You are about to reject a transfer request for <strong>{{ transfer.player.full_name }}</strong> from <strong>{{ transfer.to_team.team_name }}</strong>.</p>
+                </div>
+            </div>
+            <label for="reason" class="form-label">Reason for Rejection *</label>
+            <textarea name="reason" id="reason" class="form-control" rows="5" required aria-describedby="reason-help"
+                      placeholder="Please provide a clear reason for rejecting this transfer request..."></textarea>
+            <div class="form-text" id="reason-help">This reason will be visible to the requesting team and league admin.</div>
+        </div>
+        <div class="panel-footer confirm-card__actions">
+            <a href="{% url 'teams:my_transfer_requests' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-danger"><i class="fas fa-xmark me-1" aria-hidden="true"></i>Confirm Rejection</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

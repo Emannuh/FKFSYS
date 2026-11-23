@@ -94,3 +94,23 @@
 .captain-mark { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: var(--fkf-black); color: var(--fkf-white); font-size: 0.65rem; font-weight: 800; text-decoration: none; cursor: help; }
 [data-bs-theme="dark"] .captain-mark { background: var(--fkf-white); color: var(--fkf-black); }
 .form-section__title + * { clear: both; }
+
+/* --- Confirm page (reject transfer, admin suspend / unsuspend / delete) ----
+   One pattern: panel with a toned top rule, icon, title, summary, details,
+   optional form fields, then actions (cancel left, decision right). */
+.confirm-page { max-width: 44rem; }
+.confirm-card { border-top: 3px solid var(--fkf-border-strong); }
+.confirm-card--danger { border-top-color: var(--fkf-red); }
+.confirm-card--warning { border-top-color: var(--fkf-warning-solid); }
+.confirm-card--success { border-top-color: var(--fkf-green); }
+.confirm-card__head { display: flex; gap: var(--fkf-space-3); align-items: flex-start; margin-bottom: var(--fkf-space-4); }
+.confirm-card__icon { width: 44px; height: 44px; flex-shrink: 0; border-radius: var(--fkf-radius); display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; background: var(--fkf-surface-2); color: var(--fkf-text-muted); }
+.confirm-card--danger .confirm-card__icon { background: var(--fkf-danger-subtle); color: var(--fkf-danger); }
+.confirm-card--warning .confirm-card__icon { background: var(--fkf-warning-subtle); color: var(--fkf-warning); }
+.confirm-card--success .confirm-card__icon { background: var(--fkf-green-subtle); color: var(--fkf-green-text); }
+.confirm-card__title { font-size: var(--fkf-text-lg); font-weight: 800; margin: 0 0 var(--fkf-space-1); }
+.confirm-card__text { margin: 0; color: var(--fkf-text-muted); }
+.confirm-card__text strong { color: var(--fkf-text); }
+.confirm-card .detail-list { border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius-sm); margin-bottom: var(--fkf-space-4); }
+.confirm-card__actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--fkf-space-2); background: var(--fkf-surface); }
+.detail-list--flush > div { padding-inline: 0; }
