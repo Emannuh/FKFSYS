@@ -1,277 +1,143 @@
 {% extends "base_dashboard.html" %}
+{% load static fkf_tags tz %}
 {% block title %}{{ team.team_name }} — Team Manager Portal{% endblock %}
-{% block page_title %}<i class="fas fa-shield-alt me-2" style="color:#00843d;"></i> {{ team.team_name }}{% endblock %}
+{% block page_title %}{{ team.team_name }}{% endblock %}
 {% block nav_active_team_home %}active{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block extra_css %}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Team manager</span>
+        <h1 class="page-title h2">{{ team.team_name }}</h1>
+        <p class="page-subtitle">Welcome back, {{ team.contact_person }}.</p>
+        <div class="header-meta">
+            {% if team.zone %}<span class="chip"><i class="fas fa-location-dot" aria-hidden="true"></i><span>{{ team.zone.name }}</span></span>{% endif %}
+            {% if team.payment_status %}<span class="badge status-badge status-success"><i class="fas fa-circle-check" aria-hidden="true"></i>Paid</span>{% else %}<span class="badge status-badge status-danger"><i class="fas fa-circle-xmark" aria-hidden="true"></i>Unpaid</span>{% endif %}
+            <span class="chip"><i class="fas fa-users" aria-hidden="true"></i><span>{{ player_count }} Players</span></span>
+        </div>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'teams:team_officials' %}" class="btn btn-outline-secondary"><i class="fas fa-user-tie me-1" aria-hidden="true"></i>Officials</a>
+        <a href="{% url 'teams:select_kit_colors' %}" class="btn btn-outline-secondary"><i class="fas fa-shirt me-1" aria-hidden="true"></i>Edit Kits</a>
+        <a href="{% url 'teams:add_players_approved' %}" class="btn btn-primary"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Add Players</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
+{% if show_kit_prompt %}
+<div class="alert alert-warning d-flex align-items-center gap-3" role="status">
+    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+    <div><strong>Complete Kit Setup</strong>: select your team kit colors to unlock all features. <a href="{% url 'teams:select_kit_colors' %}" class="alert-link ms-1">Select Kit Colors Now</a></div>
+</div>
+{% endif %}
 
-    <!-- Messages -->
-    {% if messages %}
-    <div class="mb-3">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message|safe }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
+{% if incoming_transfers %}
+<section class="panel mb-4" aria-labelledby="incoming-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="incoming-title"><i class="fas fa-right-left" aria-hidden="true"></i>Incoming Transfer Requests <span class="count-pill count-pill--warning">{{ incoming_transfers|length }}</span></h2>
+        <a href="{% url 'teams:my_transfer_requests' %}" class="btn btn-sm btn-primary">View &amp; Respond</a>
     </div>
-    {% endif %}
-
-    <!-- Hero Banner -->
-    <div class="hero-banner" data-aos="fade-down">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3">
-            <div>
-                <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;" class="d-inline-block mb-2">
-                    <i class="fas fa-shield-alt me-1"></i> Team Manager
-                </span>
-                <h2 class="mb-1"><i class="fas fa-futbol me-2"></i>{{ team.team_name }}</h2>
-                <p style="opacity:0.82;margin:0;font-size:0.9rem;">Welcome back, <strong>{{ team.contact_person }}</strong>!</p>
-                <div class="d-flex flex-wrap gap-2 mt-2">
-                    {% if team.zone %}<span style="background:rgba(255,255,255,0.18);color:white;padding:3px 12px;border-radius:20px;font-size:0.8rem;"><i class="fas fa-map-marker-alt me-1"></i>{{ team.zone.name }}</span>{% endif %}
-                    <span style="background:{% if team.payment_status %}rgba(0,160,74,0.3){% else %}rgba(224,33,63,0.3){% endif %};color:white;padding:3px 12px;border-radius:20px;font-size:0.8rem;">
-                        <i class="fas fa-{% if team.payment_status %}check-circle{% else %}times-circle{% endif %} me-1"></i>
-                        {% if team.payment_status %}Paid{% else %}Unpaid{% endif %}
-                    </span>
-                    <span style="background:rgba(255,255,255,0.18);color:white;padding:3px 12px;border-radius:20px;font-size:0.8rem;"><i class="fas fa-users me-1"></i>{{ player_count }} Players</span>
-                </div>
-            </div>
-            <div class="d-flex flex-column gap-2">
-                <a href="{% url 'teams:select_kit_colors' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:10px;">
-                    <i class="fas fa-tshirt me-1"></i> Edit Kits
-                </a>
-                <a href="{% url 'teams:team_officials' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:10px;">
-                    <i class="fas fa-user-tie me-1"></i> Officials
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Kit Reminder -->
-    {% if show_kit_prompt %}
-    <div class="alert alert-warning" data-aos="fade-up">
-        <div class="d-flex align-items-center gap-3">
-            <i class="fas fa-exclamation-triangle fa-lg"></i>
-            <div>
-                <strong>Complete Kit Setup</strong> — Please select your team kit colors to unlock all features.
-                <a href="{% url 'teams:select_kit_colors' %}" class="alert-link ms-2">Select Kit Colors Now &rarr;</a>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Incoming Transfer Alerts -->
-    {% if incoming_transfers %}
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-        <h5><i class="fas fa-exchange-alt"></i> Incoming Transfer Requests</h5>
+    <ul class="action-list">
         {% for transfer in incoming_transfers %}
-        <div class="mb-2">
-            <strong>{{ transfer.to_team.team_name }}</strong> requested the transfer of
-            <strong>{{ transfer.player.full_name }}</strong> (#{{ transfer.player.jersey_number }}, {{ transfer.player.get_position_display }}).
-            <div class="mt-2">
-                <a href="{% url 'teams:my_transfer_requests' %}" class="btn btn-sm btn-primary">
-                    <i class="fas fa-eye"></i> View & Respond
-                </a>
-            </div>
-        </div>
-        {% if not forloop.last %}<hr>{% endif %}
+        <li><a href="{% url 'teams:my_transfer_requests' %}"><span class="action-icon action-icon--accent"><i class="fas fa-user" aria-hidden="true"></i></span><span class="action-label">{{ transfer.player.full_name }} <span class="text-body-secondary fw-normal">(#{{ transfer.player.jersey_number }}, {{ transfer.player.get_position_display }})</span><small>Requested by {{ transfer.to_team.team_name }}</small></span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
         {% endfor %}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endif %}
+    </ul>
+</section>
+{% endif %}
 
-    <!-- Charts Row -->
-    <div class="row g-3 mb-4" data-aos="fade-up">
-        <div class="col-md-5">
-            <div class="chart-card h-100">
-                <div class="chart-card-title"><i class="fas fa-users"></i> Squad Composition</div>
-                <canvas id="squadChart" height="220"></canvas>
-            </div>
-        </div>
-        <div class="col-md-7">
-            <div class="chart-card h-100">
-                <div class="chart-card-title"><i class="fas fa-calendar-alt"></i> Registration Windows</div>
-                <canvas id="windowChart" height="220"></canvas>
-            </div>
+<div class="row g-3 stat-row">
+    <div class="col-6 col-xl-3">
+        <div class="stat-tile">
+            <span class="stat-tile__label"><i class="fas fa-users" aria-hidden="true"></i>Players</span>
+            <span class="stat-tile__value">{{ player_count }}</span>
+            <span class="stat-tile__meta">Registered</span>
         </div>
     </div>
-
-    <!-- Deadline/Window Cards -->
-    {% load fkf_tags %}
-    <div class="row g-3 mb-4" data-aos="fade-up">
-        <div class="col-md-6">
-            {% reg_window_card "Player Registration" "fas fa-user-plus"
-                league_settings.player_registration_open
-                league_settings.player_registration_deadline
-                league_settings.player_registration_closed_date %}
-        </div>
-        <div class="col-md-6">
-            {% reg_window_card "Transfer Window" "fas fa-exchange-alt"
-                league_settings.transfer_window_open
-                league_settings.transfer_window_deadline
-                league_settings.transfer_window_closed_date %}
+    <div class="col-6 col-xl-3">
+        <div class="stat-tile">
+            <span class="stat-tile__label"><i class="fas fa-star" aria-hidden="true"></i>Captain</span>
+            <span class="stat-tile__value stat-tile__value--sm">{{ captain_name|default:"—" }}</span>
+            <span class="stat-tile__meta">Team leader</span>
         </div>
     </div>
-
-    <!-- Quick Stats -->
-    <div class="row g-3 mb-4" data-aos="fade-up">
-        <div class="col-6 col-md-3">
-            <div class="stat-card stat-gradient-blue">
-                <div class="stat-icon"><i class="fas fa-users"></i></div>
-                <h6>Players</h6>
-                <h2>{{ player_count }}</h2>
-                <small>Registered</small>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card stat-gradient-green">
-                <div class="stat-icon"><i class="fas fa-star"></i></div>
-                <h6>Captain</h6>
-                <h2 style="font-size:1rem;margin-top:4px;">{{ captain_name|default:"—" }}</h2>
-                <small>Team Leader</small>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card stat-gradient-orange">
-                <div class="stat-icon"><i class="fas fa-tshirt"></i></div>
-                <h6>Kit Status</h6>
-                <h2>{% if kit_complete %}<i class="fas fa-check"></i>{% else %}<i class="fas fa-times"></i>{% endif %}</h2>
-                <small>{% if kit_complete %}Complete{% else %}Incomplete{% endif %}</small>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card stat-gradient-red">
-                <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
-                <h6>Zone</h6>
-                <h2 style="font-size:1rem;margin-top:4px;">{{ team.zone.name|default:"Pending" }}</h2>
-                <small>League Zone</small>
-            </div>
+    <div class="col-6 col-xl-3">
+        <a class="stat-tile" href="{% url 'teams:select_kit_colors' %}">
+            <span class="stat-tile__label"><i class="fas fa-shirt" aria-hidden="true"></i>Kit status</span>
+            <span class="stat-tile__value stat-tile__value--sm">{% if kit_complete %}Complete{% else %}Incomplete{% endif %}</span>
+            <span class="stat-tile__meta">Home &amp; away kits</span>
+        </a>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="stat-tile stat-tile--dark">
+            <span class="stat-tile__label"><i class="fas fa-location-dot" aria-hidden="true"></i>Zone</span>
+            <span class="stat-tile__value stat-tile__value--sm">{{ team.zone.name|default:"Pending" }}</span>
+            <span class="stat-tile__meta">League zone</span>
         </div>
     </div>
+</div>
 
-    <!-- Management Cards -->
-    <div class="row g-3 mb-4" data-aos="fade-up">
-        <div class="col-6 col-md-3">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#0a0a0b);"><i class="fas fa-users"></i></div>
-                <h6 class="fw-bold mb-1">Players</h6>
-                <p class="text-muted small mb-3">Manage squad</p>
-                <a href="{% url 'teams:add_players_approved' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;border-radius:8px;">Add Players</a>
+<div class="row g-4">
+    <div class="col-lg-8 dash-stack">
+        <section class="panel" aria-labelledby="squad-sel-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="squad-sel-title"><i class="fas fa-clipboard-list" aria-hidden="true"></i>Matchday Squad Selection</h2>
+                {% if upcoming_matches and current_round %}<span class="chip"><span class="ps-1">Current Round: Round {{ current_round }}</span></span>{% endif %}
             </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#00a04a,#00843d);"><i class="fas fa-tshirt"></i></div>
-                <h6 class="fw-bold mb-1">Kit Colors</h6>
-                <p class="text-muted small mb-3">Home & Away kits</p>
-                <a href="{% url 'teams:select_kit_colors' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;border-radius:8px;">Edit Kits</a>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#0a0a0b);"><i class="fas fa-user-tie"></i></div>
-                <h6 class="fw-bold mb-1">Officials</h6>
-                <p class="text-muted small mb-3">Coaches & staff</p>
-                <a href="{% url 'teams:team_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;border-radius:8px;">Manage</a>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#6e6e73,#4a4a4f);"><i class="fas fa-exchange-alt"></i></div>
-                <h6 class="fw-bold mb-1">Transfers</h6>
-                <p class="text-muted small mb-3">Request transfers</p>
-                <a href="{% url 'teams:search_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;border-radius:8px;">Search</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Matchday Squad Selection -->
-    <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;padding:1rem 1.5rem;">
-            <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Matchday Squad Selection</h5>
-        </div>
-        <div class="card-body">
             {% if upcoming_matches %}
                 {% if current_round %}
-                <div class="alert alert-info mb-3">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Current Round:</strong> Round {{ current_round }}
-                    <br><small>You can only submit squads for the most recent match in the current round.</small>
-                </div>
+                <div class="panel-body pb-0"><p class="form-text mt-0 mb-3"><i class="fas fa-circle-info me-1" aria-hidden="true"></i>You can only submit squads for the most recent match in the current round.</p></div>
                 {% else %}
-                <div class="alert alert-warning mb-3">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Previous Round Incomplete:</strong> Please complete all matches from the previous round before submitting squads for upcoming matches.
+                <div class="panel-body pb-0">
+                    <div class="alert alert-warning mb-3" role="status"><strong>Previous Round Incomplete:</strong> complete all matches from the previous round before submitting squads for upcoming matches.</div>
                 </div>
                 {% endif %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr><th>Round</th><th>Match</th><th>Date & Time</th><th>Squad Status</th><th>Action</th></tr>
-                        </thead>
+                <div class="data-table-wrap">
+                    <table class="table data-table mb-0">
+                        <thead><tr><th scope="col">Round</th><th scope="col">Match</th><th scope="col">Date &amp; time</th><th scope="col">Squad status</th><th scope="col" class="text-end">Action</th></tr></thead>
                         <tbody>
                             {% for match_data in upcoming_matches %}
-                            <tr class="{% if match_data.is_active_match %}table-success{% endif %}">
-                                <td>
-                                    <span class="badge bg-secondary">R{{ match_data.match.round_number|default:"N/A" }}</span>
-                                    {% if match_data.is_active_match %}<span class="badge bg-success ms-1">Active</span>{% endif %}
+                            <tr{% if match_data.is_active_match %} class="is-active"{% endif %}>
+                                <td class="col-min">
+                                    <span class="fw-bold">R{{ match_data.match.round_number|default:"N/A" }}</span>
+                                    {% if match_data.is_active_match %}<span class="badge status-badge status-success ms-1">Active</span>{% endif %}
                                 </td>
-                                <td>
-                                    <strong>{{ match_data.match.home_team.team_name }}</strong>
-                                    <span class="text-muted">vs</span>
-                                    <strong>{{ match_data.match.away_team.team_name }}</strong>
-                                </td>
-                                <td>
-                                    <i class="fas fa-calendar me-1"></i>{{ match_data.match.match_date|date:"M d, Y" }}<br>
-                                    <strong class="text-primary"><i class="fas fa-clock me-1"></i>{{ match_data.match.kickoff_time|default:"TBD" }} EAT</strong>
-                                </td>
-                                <td>
-                                    {% load fkf_tags %}
-                                    {% if match_data.squad %}
-                                        {% squad_badge match_data.squad.status %}
-                                    {% else %}
-                                        {% squad_badge 'pending' %}
-                                    {% endif %}
-                                </td>
-                                <td>
+                                <td class="match-cell">{{ match_data.match.home_team.team_name }}<span class="vs">vs</span>{{ match_data.match.away_team.team_name }}</td>
+                                <td class="col-min">{{ match_data.match.match_date|date:"M d, Y" }}<span class="cell-sub">{{ match_data.match.kickoff_time|default:"TBD" }} EAT</span></td>
+                                <td>{% if match_data.squad %}{% squad_badge match_data.squad.status %}{% else %}{% squad_badge 'pending' %}{% endif %}</td>
+                                <td class="actions">
                                     {% if match_data.can_submit %}
                                         {% if match_data.squad and match_data.squad.status == 'locked' %}
-                                        <button class="btn btn-sm btn-secondary" disabled><i class="fas fa-lock me-1"></i>Locked</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled><i class="fas fa-lock me-1" aria-hidden="true"></i>Locked</button>
                                         {% elif match_data.squad and match_data.squad.status == 'approved' %}
-                                        <div class="btn-group-vertical" role="group">
-                                            {% load tz %}
                                             {% if match_data.match.kickoff_time and match_data.match.match_date %}
                                                 {% timezone "Africa/Nairobi" %}
                                                     {% if match_data.match.match_date|date:"Y-m-d" == "now"|date:"Y-m-d" and "now"|date:"H:i" >= match_data.match.kickoff_time %}
-                                                        <a href="{% url 'teams:view_approved_squad' match_data.match.id %}" class="btn btn-sm btn-success"><i class="fas fa-eye me-1"></i>View Approved Squad</a>
-                                                        <a href="{% url 'referees:team_request_substitution' match_data.match.id %}" class="btn btn-sm btn-warning"><i class="fas fa-exchange-alt me-1"></i>Request Substitution</a>
+                                                        <a href="{% url 'teams:view_approved_squad' match_data.match.id %}" class="btn btn-sm btn-success"><i class="fas fa-eye me-1" aria-hidden="true"></i>View Approved Squad</a>
+                                                        <a href="{% url 'referees:team_request_substitution' match_data.match.id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-right-left me-1" aria-hidden="true"></i>Request Substitution</a>
                                                     {% else %}
-                                                        <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info"><i class="fas fa-eye me-1"></i>View Squad</a>
+                                                        <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-eye me-1" aria-hidden="true"></i>View Squad</a>
                                                     {% endif %}
                                                 {% endtimezone %}
                                             {% else %}
-                                                <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info"><i class="fas fa-eye me-1"></i>View Squad</a>
+                                                <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-eye me-1" aria-hidden="true"></i>View Squad</a>
                                             {% endif %}
-                                        </div>
                                         {% else %}
-                                        <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-edit me-1"></i>{% if match_data.squad and match_data.squad.status != 'pending' %}Edit{% else %}Submit{% endif %} Squad
-                                        </a>
+                                        <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-primary"><i class="fas fa-pen me-1" aria-hidden="true"></i>{% if match_data.squad and match_data.squad.status != 'pending' %}Edit{% else %}Submit{% endif %} Squad</a>
                                         {% endif %}
                                     {% else %}
                                         {% if match_data.squad and match_data.squad.status == 'approved' %}
-                                        <div class="btn-group-vertical" role="group">
-                                            <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-info"><i class="fas fa-eye me-1"></i>View Squad</a>
+                                            <a href="{% url 'referees:submit_matchday_squad' match_data.match.id %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-eye me-1" aria-hidden="true"></i>View Squad</a>
                                             {% if match_data.match_started %}
-                                                <a href="{% url 'referees:team_request_substitution' match_data.match.id %}" class="btn btn-sm btn-warning"><i class="fas fa-exchange-alt me-1"></i>Request Substitution</a>
+                                            <a href="{% url 'referees:team_request_substitution' match_data.match.id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-right-left me-1" aria-hidden="true"></i>Request Substitution</a>
                                             {% endif %}
-                                        </div>
                                         {% elif not match_data.is_active_match %}
-                                        <button class="btn btn-sm btn-secondary" disabled><i class="fas fa-ban me-1"></i>Not Available</button>
-                                        <br><small class="text-muted">Complete active round first</small>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled><i class="fas fa-ban me-1" aria-hidden="true"></i>Not Available</button>
+                                        <span class="cell-sub">Complete active round first</span>
                                         {% else %}
-                                        <button class="btn btn-sm btn-secondary" disabled><i class="fas fa-clock me-1"></i>Opens 4h Before</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled><i class="fas fa-clock me-1" aria-hidden="true"></i>Opens 4h Before</button>
                                         {% endif %}
                                     {% endif %}
                                 </td>
@@ -280,51 +146,71 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="alert alert-light mt-3 mb-0">
-                    <h6><i class="fas fa-info-circle me-2"></i>Squad Submission Rules:</h6>
-                    <ul class="mb-0">
-                        <li><strong>Squad submission opens 4 hours before kick-off</strong></li>
-                        <li><strong>Squads cannot be edited after kick-off time</strong></li>
-                        <li>Submit exactly 11 starting players + 14 substitutes (25 total)</li>
-                        <li>Must include at least 1 goalkeeper in both starting XI and bench</li>
-                    </ul>
-                </div>
             {% else %}
-            <div class="text-center py-4">
-                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                <h5>No Upcoming Matches</h5>
-                <p class="text-muted">Your team has no scheduled matches at this time.</p>
-            </div>
+            {% empty_state icon="calendar-xmark" title="No Upcoming Matches" message="Your team has no scheduled matches at this time." %}
             {% endif %}
-        </div>
-    </div>
+        </section>
 
-    <!-- Recent Players -->
-    <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);color:white;padding:1rem 1.5rem;">
-            <div class="d-flex align-items-center gap-2"><i class="fas fa-users"></i><span class="fw-bold">Squad ({{ player_count }} players)</span></div>
-            <a href="{% url 'teams:add_players_approved' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border-radius:8px;">
-                <i class="fas fa-user-plus me-1"></i>Add Player
-            </a>
-        </div>
-        <div class="card-body">
+        {% if tournament_matches_data %}
+        <section class="panel" aria-labelledby="tm-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="tm-title"><i class="fas fa-calendar-days" aria-hidden="true"></i>Tournament Matches &amp; Squad Selection</h2>
+                <a href="{% url 'tournaments:tournament_team_matches' %}">View All Tournament Matches</a>
+            </div>
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
+                    <thead><tr><th scope="col">Tournament</th><th scope="col">Match</th><th scope="col">Date &amp; time</th><th scope="col" class="hide-sm">Venue</th><th scope="col">Squad status</th><th scope="col" class="text-end">Action</th></tr></thead>
+                    <tbody>
+                        {% for item in tournament_matches_data %}
+                        <tr>
+                            <td class="fw-semibold">{{ item.match.tournament.name }}</td>
+                            <td class="match-cell">{% if item.match.home_team %}{{ item.match.home_team.display_name }}{% else %}TBD{% endif %}<span class="vs">vs</span>{% if item.match.away_team %}{{ item.match.away_team.display_name }}{% else %}TBD{% endif %}</td>
+                            <td class="col-min">{{ item.match.match_date|date:"d M Y, H:i" }}</td>
+                            <td class="hide-sm">{{ item.match.venue|default:"TBD" }}</td>
+                            <td>
+                                {% if item.squad %}
+                                    {% if item.squad.status == 'approved' or item.squad.status == 'locked' %}
+                                    <span class="badge status-badge status-success">{{ item.squad.get_status_display }}</span>
+                                    {% elif item.squad.status == 'submitted' %}
+                                    <span class="badge status-badge status-warning">Submitted ({{ item.starting_count }} + {{ item.subs_count }} subs)</span>
+                                    {% else %}
+                                    <span class="badge status-badge status-neutral">{{ item.squad.get_status_display }}</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="badge status-badge status-danger">Not Submitted</span>
+                                {% endif %}
+                            </td>
+                            <td class="actions">
+                                <a href="{% url 'tournaments:tournament_submit_squad' item.match.pk %}" class="btn btn-sm btn-outline-primary">{% if item.squad %}<i class="fas fa-pen me-1" aria-hidden="true"></i>Edit Squad{% else %}<i class="fas fa-plus me-1" aria-hidden="true"></i>Submit Squad{% endif %}</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="panel" aria-labelledby="squad-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="squad-title"><i class="fas fa-users" aria-hidden="true"></i>Squad ({{ player_count }} players)</h2>
+                <a href="{% url 'teams:add_players_approved' %}"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Add Player</a>
+            </div>
             {% if recent_players %}
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr><th>Jersey</th><th>Name</th><th>Position</th><th>ID Number</th><th>Status</th></tr>
-                    </thead>
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
+                    <thead><tr><th scope="col" class="num">#</th><th scope="col">Name</th><th scope="col">Position</th><th scope="col" class="hide-sm">ID Number</th><th scope="col">Status</th></tr></thead>
                     <tbody>
                         {% for player in recent_players %}
                         <tr>
-                            <td><strong>#{{ player.jersey_number }}</strong></td>
-                            <td>{{ player.first_name }} {{ player.last_name }}</td>
+                            <td class="num col-min fw-bold">{{ player.jersey_number }}</td>
+                            <td class="fw-semibold">{{ player.first_name }} {{ player.last_name }}</td>
                             <td>{{ player.get_position_display }}</td>
-                            <td>{{ player.id_number|default:"-" }}</td>
+                            <td class="hide-sm text-body-secondary">{{ player.id_number|default:"-" }}</td>
                             <td>
-                                {% if player.is_captain %}<span class="badge bg-warning">Captain</span>
-                                {% elif player.is_suspended %}<span class="badge bg-danger">Suspended</span>
-                                {% else %}<span class="badge bg-success">Active</span>{% endif %}
+                                {% if player.is_captain %}<span class="badge status-badge status-dark">Captain</span>
+                                {% elif player.is_suspended %}<span class="badge status-badge status-danger">Suspended</span>
+                                {% else %}<span class="badge status-badge status-success">Active</span>{% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -332,230 +218,114 @@
                 </table>
             </div>
             {% else %}
-            <div class="text-center py-4">
-                <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                <h4>No Players Yet</h4>
-                <p class="text-muted">Start by adding your team players.</p>
-                <a href="{% url 'teams:add_players_approved' %}" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add First Player</a>
+            <div class="empty-state">
+                <div class="empty-state__icon"><i class="fas fa-users" aria-hidden="true"></i></div>
+                <p class="empty-state__title">No Players Yet</p>
+                <p class="empty-state__text">Start by adding your team players.</p>
+                <a href="{% url 'teams:add_players_approved' %}" class="btn btn-primary"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Add First Player</a>
             </div>
             {% endif %}
-        </div>
-    </div>
+        </section>
 
-    <!-- Tournaments Section -->
-    <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header" style="background:linear-gradient(90deg,#00843d,#006b31);color:white;padding:1rem 1.5rem;">
-            <div class="d-flex align-items-center gap-2"><i class="fas fa-trophy"></i><span class="fw-bold">Tournaments</span></div>
-        </div>
-        <div class="card-body">
+        <section class="panel" aria-labelledby="tourn-title">
+            <div class="panel-header"><h2 class="panel-title" id="tourn-title"><i class="fas fa-trophy" aria-hidden="true"></i>Tournaments</h2></div>
             {% if team_tournament_regs or external_tournament_regs %}
-            <h6 class="text-muted mb-3"><i class="fas fa-check-circle me-1"></i>Registered Tournaments</h6>
-            <div class="table-responsive mb-3">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr><th>Tournament</th><th>Type</th><th>Status</th><th>Dates</th><th class="text-end">Action</th></tr>
-                    </thead>
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
+                    <caption class="visually-hidden">Registered Tournaments</caption>
+                    <thead><tr><th scope="col">Tournament</th><th scope="col" class="hide-sm">Type</th><th scope="col">Status</th><th scope="col" class="hide-sm">Dates</th><th scope="col" class="text-end">Action</th></tr></thead>
                     <tbody>
                         {% for reg in team_tournament_regs %}
                         <tr>
-                            <td class="fw-bold">{{ reg.tournament.name }}</td>
-                            <td><span class="badge bg-primary">League Team</span></td>
-                            <td><span class="badge bg-{% if reg.status == 'approved' %}success{% elif reg.status == 'pending' %}warning{% else %}danger{% endif %}">{{ reg.get_status_display }}</span></td>
-                            <td>{{ reg.tournament.start_date|date:"d M" }} – {{ reg.tournament.end_date|date:"d M Y" }}</td>
-                            <td class="text-end">
-                                <a href="{% url 'tournaments:tournament_detail' reg.tournament.slug %}" class="btn btn-sm btn-outline-success"><i class="fas fa-eye me-1"></i>View</a>
-                                {% if reg.status == 'approved' %}<a href="{% url 'tournaments:register_players' reg.tournament.slug %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-users me-1"></i>Players</a>{% endif %}
+                            <td class="fw-semibold">{{ reg.tournament.name }}</td>
+                            <td class="hide-sm"><span class="badge status-badge status-neutral">League Team</span></td>
+                            <td>{% reg_badge reg.status %}</td>
+                            <td class="hide-sm col-min">{{ reg.tournament.start_date|date:"d M" }} – {{ reg.tournament.end_date|date:"d M Y" }}</td>
+                            <td class="actions">
+                                <a href="{% url 'tournaments:tournament_detail' reg.tournament.slug %}" class="btn btn-sm btn-outline-secondary">View</a>
+                                {% if reg.status == 'approved' %}<a href="{% url 'tournaments:register_players' reg.tournament.slug %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-users me-1" aria-hidden="true"></i>Players</a>{% endif %}
                             </td>
                         </tr>
                         {% endfor %}
                         {% for reg in external_tournament_regs %}
                         <tr>
-                            <td class="fw-bold">{{ reg.tournament.name }} <small class="text-muted">({{ reg.external_team.team_name }})</small></td>
-                            <td><span class="badge bg-info">External</span></td>
-                            <td><span class="badge bg-{% if reg.status == 'approved' %}success{% elif reg.status == 'pending' %}warning{% else %}danger{% endif %}">{{ reg.get_status_display }}</span></td>
-                            <td>{{ reg.tournament.start_date|date:"d M" }} – {{ reg.tournament.end_date|date:"d M Y" }}</td>
-                            <td class="text-end"><a href="{% url 'tournaments:tournament_detail' reg.tournament.slug %}" class="btn btn-sm btn-outline-success"><i class="fas fa-eye me-1"></i>View</a></td>
+                            <td class="fw-semibold">{{ reg.tournament.name }} <span class="cell-sub">{{ reg.external_team.team_name }}</span></td>
+                            <td class="hide-sm"><span class="badge status-badge status-neutral">External</span></td>
+                            <td>{% reg_badge reg.status %}</td>
+                            <td class="hide-sm col-min">{{ reg.tournament.start_date|date:"d M" }} – {{ reg.tournament.end_date|date:"d M Y" }}</td>
+                            <td class="actions"><a href="{% url 'tournaments:tournament_detail' reg.tournament.slug %}" class="btn btn-sm btn-outline-secondary">View</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             {% endif %}
-
             {% if open_tournaments %}
-            <h6 class="text-muted mb-3"><i class="fas fa-door-open me-1"></i>Open Tournaments – Register Now</h6>
-            <div class="row">
-                {% for t in open_tournaments %}
-                <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="card border-success h-100">
-                        <div class="card-body text-center">
-                            <i class="fas fa-trophy fa-2x text-success mb-2"></i>
-                            <h6 class="card-title">{{ t.name }}</h6>
-                            <p class="small text-muted mb-1">{{ t.get_format_display }} &bull; {{ t.start_date|date:"d M Y" }}</p>
-                            <p class="small text-muted mb-2"><i class="fas fa-clock me-1"></i>Deadline: {{ t.registration_deadline|date:"d M Y" }}</p>
-                            <a href="{% url 'tournaments:register_team' t.slug %}" class="btn btn-success btn-sm"><i class="fas fa-futbol me-1"></i>Register</a>
-                        </div>
+            <div class="panel-body">
+                <h3 class="h6 mb-3">Open Tournaments – Register Now</h3>
+                <div class="tile-grid">
+                    {% for t in open_tournaments %}
+                    <div class="mini-card">
+                        <p class="mini-card__title"><i class="fas fa-trophy text-success me-1" aria-hidden="true"></i>{{ t.name }}</p>
+                        <p class="mini-card__meta">{{ t.get_format_display }} &middot; {{ t.start_date|date:"d M Y" }}</p>
+                        <p class="mini-card__meta">Deadline: {{ t.registration_deadline|date:"d M Y" }}</p>
+                        <a href="{% url 'tournaments:register_team' t.slug %}" class="btn btn-success btn-sm">Register</a>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
             {% endif %}
-
             {% if not team_tournament_regs and not external_tournament_regs and not open_tournaments %}
-            <p class="text-muted text-center mb-0"><i class="fas fa-info-circle me-1"></i>No tournaments available at the moment.</p>
+            {% empty_state icon="trophy" title="No tournaments" message="No tournaments available at the moment." %}
             {% endif %}
-        </div>
+        </section>
     </div>
 
-    <!-- Tournament Matches & Squad Selection -->
-    {% if tournament_matches_data %}
-    <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header bg-dark text-white" style="padding:1rem 1.5rem;">
-            <h5 class="mb-0"><i class="fas fa-calendar-alt me-1"></i> Tournament Matches &amp; Squad Selection</h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr><th>Tournament</th><th>Match</th><th>Date &amp; Time</th><th>Venue</th><th>Squad Status</th><th class="text-end">Action</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for item in tournament_matches_data %}
-                        <tr>
-                            <td><span class="badge bg-success"><i class="fas fa-trophy me-1"></i>{{ item.match.tournament.name }}</span></td>
-                            <td class="fw-bold">
-                                {% if item.match.home_team %}{{ item.match.home_team.display_name }}{% else %}TBD{% endif %}
-                                <span class="text-muted mx-1">vs</span>
-                                {% if item.match.away_team %}{{ item.match.away_team.display_name }}{% else %}TBD{% endif %}
-                            </td>
-                            <td>{{ item.match.match_date|date:"d M Y, H:i" }}</td>
-                            <td>{{ item.match.venue|default:"TBD" }}</td>
-                            <td>
-                                {% if item.squad %}
-                                    {% if item.squad.status == 'approved' or item.squad.status == 'locked' %}
-                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>{{ item.squad.get_status_display }}</span>
-                                    {% elif item.squad.status == 'submitted' %}
-                                    <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Submitted ({{ item.starting_count }} + {{ item.subs_count }} subs)</span>
-                                    {% else %}
-                                    <span class="badge bg-info">{{ item.squad.get_status_display }}</span>
-                                    {% endif %}
-                                {% else %}
-                                <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Not Submitted</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <a href="{% url 'tournaments:tournament_submit_squad' item.match.pk %}" class="btn btn-sm btn-outline-primary">
-                                    {% if item.squad %}<i class="fas fa-edit me-1"></i>Edit Squad{% else %}<i class="fas fa-plus me-1"></i>Submit Squad{% endif %}
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="col-lg-4 dash-stack">
+        <section class="panel" aria-labelledby="comp-title">
+            <div class="panel-header"><h2 class="panel-title" id="comp-title"><i class="fas fa-chart-pie" aria-hidden="true"></i>Squad Composition</h2></div>
+            <div class="panel-body">
+                <div class="chart-box chart-box--sm">
+                    <canvas id="squadChart" data-chart="doughnut" role="img" aria-label="{{ player_count|default:0 }} of 25 squad places used"
+                            data-labels='["Players","Remaining (25 max)"]'
+                            data-values="[{{ player_count|default:0 }}]" data-total="25"
+                            data-colors="green,grey"></canvas>
+                </div>
             </div>
-        </div>
-        <div class="card-footer text-center">
-            <a href="{% url 'tournaments:tournament_team_matches' %}" class="btn btn-outline-success"><i class="fas fa-list me-1"></i>View All Tournament Matches</a>
-        </div>
-    </div>
-    {% endif %}
+        </section>
 
-    <!-- Quick Actions -->
-    <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header" style="background:linear-gradient(90deg,#c8102e,#0a0a0b);color:white;padding:1rem 1.5rem;">
-            <div class="d-flex align-items-center gap-2"><i class="fas fa-bolt"></i><span class="fw-bold">Quick Actions</span></div>
-        </div>
-        <div class="card-body">
-            <div class="d-flex flex-wrap gap-2">
-                <a href="{% url 'teams:add_players_approved' %}" class="btn btn-outline-primary"><i class="fas fa-user-plus"></i> Add Players</a>
-                <a href="{% url 'teams:select_kit_colors' %}" class="btn btn-outline-success"><i class="fas fa-tshirt"></i> Edit Kit Colors</a>
-                <a href="{% url 'teams:search_players' %}" class="btn btn-outline-warning"><i class="fas fa-search"></i> Search Players</a>
-                <a href="{% url 'teams:my_transfer_requests' %}" class="btn btn-outline-info"><i class="fas fa-exchange-alt"></i> My Transfers</a>
-                <a href="#" class="btn btn-outline-secondary"><i class="fas fa-question-circle"></i> Help & Support</a>
+        <section class="panel" aria-labelledby="windows-title">
+            <div class="panel-header"><h2 class="panel-title" id="windows-title"><i class="fas fa-calendar-check" aria-hidden="true"></i>Registration Windows</h2></div>
+            <div class="panel-body window-controls">
+                {% reg_window_card "Player Registration" "fas fa-user-plus" league_settings.player_registration_open league_settings.player_registration_deadline league_settings.player_registration_closed_date %}
+                {% reg_window_card "Transfer Window" "fas fa-right-left" league_settings.transfer_window_open league_settings.transfer_window_deadline league_settings.transfer_window_closed_date %}
             </div>
-        </div>
-    </div>
+        </section>
 
+        <section class="panel" aria-labelledby="qa-title">
+            <div class="panel-header"><h2 class="panel-title" id="qa-title"><i class="fas fa-bolt" aria-hidden="true"></i>Quick Actions</h2></div>
+            <ul class="action-list">
+                <li><a href="{% url 'teams:add_players_approved' %}"><span class="action-icon action-icon--accent"><i class="fas fa-user-plus" aria-hidden="true"></i></span><span class="action-label">Add Players</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'teams:select_kit_colors' %}"><span class="action-icon action-icon--green"><i class="fas fa-shirt" aria-hidden="true"></i></span><span class="action-label">Edit Kit Colors</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'teams:team_officials' %}"><span class="action-icon"><i class="fas fa-user-tie" aria-hidden="true"></i></span><span class="action-label">Officials<small>Coaches &amp; staff</small></span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'teams:search_players' %}"><span class="action-icon"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></span><span class="action-label">Search Players<small>Request transfers</small></span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'teams:my_transfer_requests' %}"><span class="action-icon"><i class="fas fa-right-left" aria-hidden="true"></i></span><span class="action-label">My Transfers</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="rules-title">
+            <div class="panel-header"><h2 class="panel-title" id="rules-title"><i class="fas fa-circle-info" aria-hidden="true"></i>Squad Submission Rules</h2></div>
+            <div class="panel-body">
+                <ul class="note-list">
+                    <li><strong>Squad submission opens 4 hours before kick-off</strong></li>
+                    <li><strong>Squads cannot be edited after kick-off time</strong></li>
+                    <li>Submit exactly 11 starting players + 14 substitutes (25 total)</li>
+                    <li>Must include at least 1 goalkeeper in both starting XI and bench</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+</div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-(function() {
-    // Squad Composition Doughnut
-    var ctx1 = document.getElementById('squadChart');
-    if (ctx1) {
-        new Chart(ctx1, {
-            type: 'doughnut',
-            data: {
-                labels: ['Players', 'Remaining (25 max)'],
-                datasets: [{
-                    data: [{{ player_count|default:0 }}, Math.max(0, 25 - {{ player_count|default:0 }})],
-                    backgroundColor: ['#00843d', '#e9ecef'],
-                    borderWidth: 0, hoverOffset: 8
-                }]
-            },
-            options: {
-                responsive: true, cutout: '62%',
-                plugins: {
-                    legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } }
-                }
-            }
-        });
-    }
-
-    // Registration Windows Bar
-    var ctx2 = document.getElementById('windowChart');
-    if (ctx2) {
-        new Chart(ctx2, {
-            type: 'bar',
-            data: {
-                labels: ['Player Registration', 'Transfer Window'],
-                datasets: [{
-                    label: 'Status',
-                    data: [
-                        {{ league_settings.player_registration_open|yesno:"1,0" }},
-                        {{ league_settings.transfer_window_open|yesno:"1,0" }}
-                    ],
-                    backgroundColor: ['rgba(0,160,74,0.85)', 'rgba(243,162,97,0.85)'],
-                    borderRadius: 10, borderSkipped: false
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(c) { return c.raw ? 'OPEN' : 'CLOSED'; }
-                        }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, max: 1, ticks: { callback: function(v) { return v ? 'Open' : 'Closed'; } } }
-                }
-            }
-        });
-    }
-
-    // Countdown timers
-    document.querySelectorAll('.countdown-timer').forEach(function(el) {
-        var deadline = el.getAttribute('data-deadline');
-        if (!deadline) return;
-        var target = Date.parse(deadline);
-        if (Number.isNaN(target)) return;
-        function update() {
-            var diff = target - new Date().getTime();
-            if (diff <= 0) { el.textContent = 'Deadline reached – Please refresh page'; return; }
-            var d = Math.floor(diff / 86400000);
-            var h = Math.floor((diff % 86400000) / 3600000);
-            var m = Math.floor((diff % 3600000) / 60000);
-            var s = Math.floor((diff % 60000) / 1000);
-            el.textContent = d + 'd ' + h + 'h ' + m + 'm ' + s + 's remaining';
-        }
-        update();
-        setInterval(update, 1000);
-    });
-})();
-</script>
-{% endblock %}
+{% block extra_js %}<script src="{% static 'js/pages/admin.js' %}" defer></script>{% endblock %}

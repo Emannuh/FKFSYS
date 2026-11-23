@@ -1,305 +1,177 @@
 {% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
 {% block title %}League Manager Dashboard — FKF Meru League{% endblock %}
-{% block page_title %}<i class="fas fa-sitemap me-2" style="color:#00843d;"></i> League Manager Dashboard{% endblock %}
+{% block page_title %}League Manager Dashboard{% endblock %}
 {% block nav_active_dashboard %}active{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block extra_css %}
-<style>
-    .hero-banner {
-        background: linear-gradient(135deg, #00843d 0%, #0a0a0b 100%);
-        border-radius: 16px; padding: 1.6rem 2rem; color: white;
-        position: relative; overflow: hidden; margin-bottom: 1.5rem;
-    }
-    .hero-banner::before {
-        content: ''; position: absolute; right: -60px; bottom: -60px;
-        width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.04);
-    }
-</style>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">League manager</span>
+        <h1 class="page-title h2">Welcome, {{ user.get_full_name|default:user.username }}</h1>
+        <p class="page-subtitle">Oversee league operations: fixtures, reports, registrations and transfers.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'admin_dashboard:statistics_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-chart-bar me-1" aria-hidden="true"></i>Stats</a>
+        <a href="{% url 'admin_dashboard:generate_fixtures_admin' %}" class="btn btn-primary"><i class="fas fa-calendar-plus me-1" aria-hidden="true"></i>Generate fixtures</a>
+    </div>
+</div>
 {% endblock %}
 
 {% block content %}
-
-    <!-- Hero Banner -->
-    <div class="hero-banner" data-aos="fade-down">
-        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-            <div>
-                <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:3px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;" class="mb-2 d-inline-block">
-                    <i class="fas fa-sitemap me-1"></i> League Manager
-                </span>
-                <h2 style="margin-bottom:4px;">Welcome, {{ user.get_full_name|default:user.username }}</h2>
-                <p style="opacity:0.8;margin:0;font-size:0.9rem;">Oversee league operations — fixtures, reports, registrations &amp; more.</p>
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-                <a href="{% url 'admin_dashboard:generate_fixtures_admin' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);">
-                    <i class="fas fa-calendar-alt me-1"></i> Fixtures
-                </a>
-                <a href="{% url 'admin_dashboard:statistics_dashboard' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);">
-                    <i class="fas fa-chart-bar me-1"></i> Stats
-                </a>
-            </div>
-        </div>
+<div class="row g-3 stat-row">
+    <div class="col-6 col-xl-3">
+        <a class="stat-tile" href="{% url 'teams:dashboard' %}">
+            <span class="stat-tile__label"><i class="fas fa-users" aria-hidden="true"></i>Pending teams</span>
+            <span class="stat-tile__value">{{ pending_teams_count|default:0 }}</span>
+            <span class="stat-tile__meta">Awaiting approval</span>
+        </a>
     </div>
-
-    <!-- Charts Row -->
-    <div class="row g-3 mb-4" data-aos="fade-up">
-        <div class="col-md-5">
-            <div class="chart-card h-100">
-                <div class="chart-card-title"><i class="fas fa-file-alt"></i> Reports &amp; Teams Overview</div>
-                <canvas id="overviewChart" height="220"></canvas>
-            </div>
-        </div>
-        <div class="col-md-7">
-            <div class="chart-card h-100">
-                <div class="chart-card-title"><i class="fas fa-exchange-alt"></i> Transfer Activity</div>
-                <canvas id="transferChart" height="220"></canvas>
-            </div>
-        </div>
+    <div class="col-6 col-xl-3">
+        <a class="stat-tile" href="{% url 'admin_dashboard:approve_reports' %}">
+            <span class="stat-tile__label"><i class="fas fa-file-lines" aria-hidden="true"></i>Match reports</span>
+            <span class="stat-tile__value">{{ pending_reports_count|default:0 }}</span>
+            <span class="stat-tile__meta">Pending review</span>
+        </a>
     </div>
-
-    <!-- Management Quick Links -->
-    <div class="row g-3 mb-4" data-aos="fade-up">
-        <div class="col-6 col-md-3">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#0a0a0b);"><i class="fas fa-users"></i></div>
-                <h6 class="fw-bold mb-1">Team Management</h6>
-                <p class="text-muted small mb-3">Approve teams and manage registrations</p>
-                <a href="{% url 'teams:dashboard' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;border-radius:8px;">Manage Teams</a>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#00a04a,#00843d);"><i class="fas fa-user-friends"></i></div>
-                <h6 class="fw-bold mb-1">Player Management</h6>
-                <p class="text-muted small mb-3">Oversee player registrations</p>
-                <a href="{% url 'teams:admin_manage_players' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;border-radius:8px;">Manage Players</a>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#4cc9f0,#1f1f23);"><i class="fas fa-user-tie"></i></div>
-                <h6 class="fw-bold mb-1">Officials Management</h6>
-                <p class="text-muted small mb-3">Manage team officials</p>
-                <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#4cc9f0,#1f1f23);color:white;border-radius:8px;">Manage Officials</a>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#6e6e73,#4a4a4f);"><i class="fas fa-futbol"></i></div>
-                <h6 class="fw-bold mb-1">Match Management</h6>
-                <p class="text-muted small mb-3">Manage fixtures &amp; matches</p>
-                <a href="{% url 'matches:manage_matches' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;border-radius:8px;">Manage Matches</a>
-            </div>
-        </div>
+    <div class="col-6 col-xl-3">
+        <a class="stat-tile" href="{% url 'admin_dashboard:manage_transfers' %}">
+            <span class="stat-tile__label"><i class="fas fa-right-left" aria-hidden="true"></i>Pending transfers</span>
+            <span class="stat-tile__value">{{ pending_transfers|default:0 }}</span>
+            <span class="stat-tile__meta">Awaiting parent club decision</span>
+        </a>
     </div>
-
-    <!-- Transfers + Reports -->
-    <div class="row g-3 mb-4" data-aos="fade-up">
-        <div class="col-md-4">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#6e6e73,#f72585);"><i class="fas fa-exchange-alt"></i></div>
-                <h6 class="fw-bold mb-1">Pending Transfers {% if pending_transfers > 0 %}<span class="badge bg-warning text-dark ms-1">{{ pending_transfers }}</span>{% endif %}</h6>
-                <p class="text-muted small mb-3">Awaiting parent club decision</p>
-                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#6e6e73,#f72585);color:white;border-radius:8px;">View Transfers</a>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#e0213f,#c8102e);"><i class="fas fa-times-circle"></i></div>
-                <h6 class="fw-bold mb-1">Rejected Transfers {% if rejected_transfers > 0 %}<span class="badge bg-danger ms-1">{{ rejected_transfers }}</span>{% endif %}</h6>
-                <p class="text-muted small mb-3">Transfers needing review/override</p>
-                <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-sm w-100" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;border-radius:8px;">Review Rejections</a>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#0a0a0b);"><i class="fas fa-file-alt"></i></div>
-                <h6 class="fw-bold mb-1">Match Reports <span class="badge bg-info ms-1">{{ pending_reports_count }}</span></h6>
-                <p class="text-muted small mb-3">Pending match reports to review</p>
-                <div class="d-flex gap-2">
-                    <a href="{% url 'admin_dashboard:approve_reports' %}" class="btn btn-sm flex-fill" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;border-radius:8px;">Review</a>
-                    <a href="{% url 'referees:all_referees' %}" class="btn btn-sm btn-outline-secondary flex-fill" style="border-radius:8px;">Referees</a>
-                </div>
-            </div>
-        </div>
+    <div class="col-6 col-xl-3">
+        <a class="stat-tile{% if rejected_transfers > 0 %} stat-tile--accent{% endif %}" href="{% url 'admin_dashboard:manage_transfers' %}">
+            <span class="stat-tile__label"><i class="fas fa-circle-xmark" aria-hidden="true"></i>Rejected transfers</span>
+            <span class="stat-tile__value">{{ rejected_transfers|default:0 }}</span>
+            <span class="stat-tile__meta">Need review or override</span>
+        </a>
     </div>
+</div>
 
-    <!-- Operations Row -->
-    <div class="row g-3 mb-4" data-aos="fade-up">
-        <div class="col-md-4">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#1f1f23,#4cc9f0);"><i class="fas fa-calendar-alt"></i></div>
-                <h6 class="fw-bold mb-1">Generate Fixtures</h6>
-                <p class="text-muted small mb-3">Create match fixtures for the league</p>
-                <a href="{% url 'admin_dashboard:generate_fixtures_admin' %}" class="btn btn-sm w-100 btn-outline-primary" style="border-radius:8px;">
-                    <i class="fas fa-plus-circle me-1"></i> Generate
-                </a>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#6e6e73,#f72585);"><i class="fas fa-clock"></i></div>
-                <h6 class="fw-bold mb-1">Reschedule Fixtures</h6>
-                <p class="text-muted small mb-3">Update match dates and times</p>
-                <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="btn btn-sm w-100 btn-outline-warning" style="border-radius:8px;">
-                    <i class="fas fa-edit me-1"></i> Reschedule
-                </a>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="mgmt-card p-3">
-                <div class="mgmt-card-icon" style="background:linear-gradient(135deg,#00a04a,#00843d);"><i class="fas fa-chart-bar"></i></div>
-                <h6 class="fw-bold mb-1">View Statistics</h6>
-                <p class="text-muted small mb-3">League statistics and analytics</p>
-                <a href="{% url 'admin_dashboard:statistics_dashboard' %}" class="btn btn-sm w-100 btn-outline-success" style="border-radius:8px;">
-                    <i class="fas fa-chart-line me-1"></i> View Stats
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Registration Window Controls -->
-    <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;padding:1rem 1.5rem;">
-            <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Registration Window Controls</h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="reg-toggle-card p-3">
-                        <h6 class="fw-bold">Team Registration</h6>
-                        <div class="mb-2">
-                            {% if league_settings.team_registration_open %}<span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
-                            {% else %}<span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>{% endif %}
+<div class="row g-4">
+    <div class="col-lg-8 dash-stack">
+        <section class="panel" aria-labelledby="overview-title">
+            <div class="panel-header"><h2 class="panel-title" id="overview-title"><i class="fas fa-chart-column" aria-hidden="true"></i>Review queues</h2></div>
+            <div class="panel-body">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-5">
+                        <div class="chart-box chart-box--sm">
+                            <canvas id="overviewChart" data-chart="doughnut" role="img" aria-label="Reports and teams overview"
+                                    data-labels='["Pending teams","Pending reports"]'
+                                    data-values="[{{ pending_teams_count|default:0 }}, {{ pending_reports_count|default:0 }}]"
+                                    data-colors="black,red"></canvas>
                         </div>
-                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">{% csrf_token %}
-                            <input type="hidden" name="window_type" value="team">
-                            <button type="submit" class="btn btn-sm {% if league_settings.team_registration_open %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
-                                {% if league_settings.team_registration_open %}<i class="fas fa-lock"></i> Close{% else %}<i class="fas fa-unlock"></i> Open{% endif %}
-                            </button>
-                        </form>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="reg-toggle-card p-3">
-                        <h6 class="fw-bold">Player Registration</h6>
-                        <div class="mb-2">
-                            {% if league_settings.player_registration_open %}<span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
-                            {% else %}<span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>{% endif %}
+                    <div class="col-md-7">
+                        <div class="chart-box chart-box--sm">
+                            <canvas id="transferChart" data-chart="bar" role="img" aria-label="Transfer activity"
+                                    data-labels='["Pending transfers","Rejected transfers"]'
+                                    data-values="[{{ pending_transfers|default:0 }}, {{ rejected_transfers|default:0 }}]"
+                                    data-colors="graphite,red"></canvas>
                         </div>
-                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">{% csrf_token %}
-                            <input type="hidden" name="window_type" value="player">
-                            <button type="submit" class="btn btn-sm {% if league_settings.player_registration_open %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
-                                {% if league_settings.player_registration_open %}<i class="fas fa-lock"></i> Close{% else %}<i class="fas fa-unlock"></i> Open{% endif %}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="reg-toggle-card p-3">
-                        <h6 class="fw-bold">Transfer Window</h6>
-                        <div class="mb-2">
-                            {% if league_settings.transfer_window_open %}<span class="badge bg-success fs-6 px-3 py-2">OPEN</span>
-                            {% else %}<span class="badge bg-danger fs-6 px-3 py-2">CLOSED</span>{% endif %}
-                        </div>
-                        <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">{% csrf_token %}
-                            <input type="hidden" name="window_type" value="transfer">
-                            <button type="submit" class="btn btn-sm {% if league_settings.transfer_window_open %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
-                                {% if league_settings.transfer_window_open %}<i class="fas fa-lock"></i> Close{% else %}<i class="fas fa-unlock"></i> Open{% endif %}
-                            </button>
-                        </form>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- Deadline Controls -->
-    <div class="card mb-4" data-aos="fade-up">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);color:white;padding:1rem 1.5rem;">
-            <h5 class="mb-0"><i class="fas fa-hourglass-half me-2"></i>Set / Update Deadlines</h5>
-        </div>
-        <div class="card-body">
+        <section class="panel" aria-labelledby="windows-title">
+            <div class="panel-header"><h2 class="panel-title" id="windows-title"><i class="fas fa-gear" aria-hidden="true"></i>Registration window controls</h2></div>
+            <div class="panel-body window-controls">
+                <div class="window-control">
+                    {% reg_window_card "Team Registration" "fas fa-shield-halved" league_settings.team_registration_open league_settings.team_registration_deadline league_settings.team_registration_closed_date %}
+                    <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">{% csrf_token %}
+                        <input type="hidden" name="window_type" value="team">
+                        <button type="submit" class="btn btn-sm {% if league_settings.team_registration_open %}btn-outline-danger{% else %}btn-success{% endif %}">
+                            {% if league_settings.team_registration_open %}<i class="fas fa-lock me-1" aria-hidden="true"></i>Close{% else %}<i class="fas fa-lock-open me-1" aria-hidden="true"></i>Open{% endif %}
+                        </button>
+                    </form>
+                </div>
+                <div class="window-control">
+                    {% reg_window_card "Player Registration" "fas fa-user-plus" league_settings.player_registration_open league_settings.player_registration_deadline league_settings.player_registration_closed_date %}
+                    <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">{% csrf_token %}
+                        <input type="hidden" name="window_type" value="player">
+                        <button type="submit" class="btn btn-sm {% if league_settings.player_registration_open %}btn-outline-danger{% else %}btn-success{% endif %}">
+                            {% if league_settings.player_registration_open %}<i class="fas fa-lock me-1" aria-hidden="true"></i>Close{% else %}<i class="fas fa-lock-open me-1" aria-hidden="true"></i>Open{% endif %}
+                        </button>
+                    </form>
+                </div>
+                <div class="window-control">
+                    {% reg_window_card "Transfer Window" "fas fa-right-left" league_settings.transfer_window_open league_settings.transfer_window_deadline league_settings.transfer_window_closed_date %}
+                    <form method="post" action="{% url 'admin_dashboard:toggle_registration' %}">{% csrf_token %}
+                        <input type="hidden" name="window_type" value="transfer">
+                        <button type="submit" class="btn btn-sm {% if league_settings.transfer_window_open %}btn-outline-danger{% else %}btn-success{% endif %}">
+                            {% if league_settings.transfer_window_open %}<i class="fas fa-lock me-1" aria-hidden="true"></i>Close{% else %}<i class="fas fa-lock-open me-1" aria-hidden="true"></i>Open{% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" aria-labelledby="deadlines-title">
+            <div class="panel-header"><h2 class="panel-title" id="deadlines-title"><i class="fas fa-hourglass-half" aria-hidden="true"></i>Set or update deadlines</h2></div>
             <form method="post" action="{% url 'admin_dashboard:update_deadlines' %}">
                 {% csrf_token %}
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Team Registration Deadline</label>
-                        <input type="datetime-local" name="team_deadline" class="form-control"
-                               value="{% if league_settings.team_registration_deadline %}{{ league_settings.team_registration_deadline|date:'Y-m-d\TH:i' }}{% endif %}">
-                        <small class="text-muted">Leave blank to clear.</small>
+                <div class="panel-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="team_deadline">Team registration deadline</label>
+                            <input type="datetime-local" name="team_deadline" id="team_deadline" class="form-control" aria-describedby="deadline-help"
+                                   value="{% if league_settings.team_registration_deadline %}{{ league_settings.team_registration_deadline|date:'Y-m-d\TH:i' }}{% endif %}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="player_deadline">Player registration deadline</label>
+                            <input type="datetime-local" name="player_deadline" id="player_deadline" class="form-control" aria-describedby="deadline-help"
+                                   value="{% if league_settings.player_registration_deadline %}{{ league_settings.player_registration_deadline|date:'Y-m-d\TH:i' }}{% endif %}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="transfer_deadline">Transfer window deadline</label>
+                            <input type="datetime-local" name="transfer_deadline" id="transfer_deadline" class="form-control" aria-describedby="deadline-help"
+                                   value="{% if league_settings.transfer_window_deadline %}{{ league_settings.transfer_window_deadline|date:'Y-m-d\TH:i' }}{% endif %}">
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Player Registration Deadline</label>
-                        <input type="datetime-local" name="player_deadline" class="form-control"
-                               value="{% if league_settings.player_registration_deadline %}{{ league_settings.player_registration_deadline|date:'Y-m-d\TH:i' }}{% endif %}">
-                        <small class="text-muted">Leave blank to clear.</small>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Transfer Window Deadline</label>
-                        <input type="datetime-local" name="transfer_deadline" class="form-control"
-                               value="{% if league_settings.transfer_window_deadline %}{{ league_settings.transfer_window_deadline|date:'Y-m-d\TH:i' }}{% endif %}">
-                        <small class="text-muted">Leave blank to clear.</small>
-                    </div>
+                    <p class="form-text mb-0 mt-3" id="deadline-help">Leave a field blank to clear it. Deadlines close their window automatically when reached.</p>
                 </div>
-                <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <p class="text-muted mb-0 small"><i class="fas fa-info-circle me-1"></i> Deadlines auto-close their windows when reached.</p>
-                    <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i> Save Deadlines</button>
+                <div class="panel-footer d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk me-1" aria-hidden="true"></i>Save deadlines</button>
                 </div>
             </form>
-        </div>
+        </section>
     </div>
 
+    <div class="col-lg-4 dash-stack">
+        <section class="panel" aria-labelledby="review-title">
+            <div class="panel-header"><h2 class="panel-title" id="review-title"><i class="fas fa-inbox" aria-hidden="true"></i>Needs action</h2></div>
+            <ul class="action-list">
+                <li><a href="{% url 'admin_dashboard:approve_reports' %}"><span class="action-icon action-icon--accent"><i class="fas fa-file-lines" aria-hidden="true"></i></span><span class="action-label">Review match reports</span>{% if pending_reports_count > 0 %}<span class="count-pill">{{ pending_reports_count }}</span>{% endif %}<i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin_dashboard:manage_transfers' %}"><span class="action-icon"><i class="fas fa-right-left" aria-hidden="true"></i></span><span class="action-label">View transfers<small>Pending and rejected</small></span>{% if pending_transfers > 0 %}<span class="count-pill count-pill--warning">{{ pending_transfers }}</span>{% endif %}<i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'referees:all_referees' %}"><span class="action-icon"><i class="fas fa-user-tie" aria-hidden="true"></i></span><span class="action-label">Referees</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="manage-title">
+            <div class="panel-header"><h2 class="panel-title" id="manage-title"><i class="fas fa-sitemap" aria-hidden="true"></i>Management</h2></div>
+            <ul class="action-list">
+                <li><a href="{% url 'teams:dashboard' %}"><span class="action-icon"><i class="fas fa-users" aria-hidden="true"></i></span><span class="action-label">Team management<small>Approve teams and registrations</small></span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'teams:admin_manage_players' %}"><span class="action-icon"><i class="fas fa-user-group" aria-hidden="true"></i></span><span class="action-label">Player management<small>Oversee player registrations</small></span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'teams:admin_manage_officials' %}"><span class="action-icon"><i class="fas fa-user-tie" aria-hidden="true"></i></span><span class="action-label">Officials management<small>Manage team officials</small></span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'matches:manage_matches' %}"><span class="action-icon"><i class="fas fa-futbol" aria-hidden="true"></i></span><span class="action-label">Match management<small>Fixtures and matches</small></span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="fixtures-title">
+            <div class="panel-header"><h2 class="panel-title" id="fixtures-title"><i class="fas fa-calendar-days" aria-hidden="true"></i>Fixtures</h2></div>
+            <ul class="action-list">
+                <li><a href="{% url 'admin_dashboard:generate_fixtures_admin' %}"><span class="action-icon action-icon--green"><i class="fas fa-circle-plus" aria-hidden="true"></i></span><span class="action-label">Generate fixtures</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}"><span class="action-icon action-icon--green"><i class="fas fa-clock" aria-hidden="true"></i></span><span class="action-label">Reschedule fixtures</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin_dashboard:statistics_dashboard' %}"><span class="action-icon"><i class="fas fa-chart-line" aria-hidden="true"></i></span><span class="action-label">View statistics</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+            </ul>
+        </section>
+    </div>
+</div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-(function() {
-    // Overview Doughnut — pending teams vs reports
-    var ctx1 = document.getElementById('overviewChart');
-    if (ctx1) {
-        new Chart(ctx1, {
-            type: 'doughnut',
-            data: {
-                labels: ['Pending Teams', 'Pending Reports'],
-                datasets: [{
-                    data: [{{ pending_teams_count|default:0 }}, {{ pending_reports_count|default:0 }}],
-                    backgroundColor: ['#6e6e73', '#1f1f23'],
-                    borderWidth: 0, hoverOffset: 8
-                }]
-            },
-            options: {
-                responsive: true, cutout: '62%',
-                plugins: {
-                    legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } }
-                }
-            }
-        });
-    }
-
-    // Transfer Activity Bar
-    var ctx2 = document.getElementById('transferChart');
-    if (ctx2) {
-        new Chart(ctx2, {
-            type: 'bar',
-            data: {
-                labels: ['Pending Transfers', 'Rejected Transfers'],
-                datasets: [{
-                    label: 'Count',
-                    data: [{{ pending_transfers|default:0 }}, {{ rejected_transfers|default:0 }}],
-                    backgroundColor: ['rgba(243,162,97,0.85)', 'rgba(224,33,63,0.75)'],
-                    borderRadius: 10, borderSkipped: false
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                }
-            }
-        });
-    }
-})();
-</script>
-{% endblock %}
+{% block extra_js %}<script src="{% static 'js/pages/admin.js' %}" defer></script>{% endblock %}
