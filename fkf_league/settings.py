@@ -93,6 +93,9 @@ TEMPLATES = [
                 "fkf_league.context_processors.league_settings_context",
                 "fkf_league.context_processors.site_info_context",
             ],
+            # fkf_league is the project package, not an installed app, so its
+            # template tag library must be registered explicitly.
+            "libraries": {"fkf_tags": "fkf_league.templatetags.fkf_tags"},
         },
     },
 ]
