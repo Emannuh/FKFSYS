@@ -1,34 +1,27 @@
-from django.contrib import admin
-from django.urls import path, include
+"""Root URL configuration."""
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
 from django.contrib.auth.decorators import login_required
-from admin_dashboard.views import dashboard  # Import your dashboard view
+from django.urls import include, path
+
+from admin_dashboard.views import dashboard
 
 urlpatterns = [
-    # Admin
     path('admin/', admin.site.urls),
-    
-    # Dashboard - ONE dashboard entry point
+    # Single role-aware dashboard entry point.
     path('dashboard/', login_required(dashboard), name='dashboard'),
-    
-    # App URLs
     path('', include('frontend.urls')),
     path('teams/', include('teams.urls')),
     path('payments/', include('payments.urls')),
     path('matches/', include('matches.urls')),
     path('referees/', include('referees.urls')),
-    
-    # Authentication
     path('accounts/', include('django.contrib.auth.urls')),
-    
-    # Admin dashboard URLs (if you need specific admin views)
     path('admin-dashboard/', include('admin_dashboard.urls')),
-    
-    # Tournament management
     path('tournaments/', include('tournaments.urls')),
 ]
 
 if settings.DEBUG:
+    # Static files are served by django.contrib.staticfiles' runserver in DEBUG;
+    # user uploads need an explicit route. In production both are served by the web server.
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

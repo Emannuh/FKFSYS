@@ -1,0 +1,32 @@
+{% load fkf_tags %}{% comment %}
+Fixture / result card (design-system component "fixture-card").
+{% include "partials/_fixture_card.html" with match=match %}
+Shows the score for live/completed matches, otherwise the kick-off time.
+Requires match.home_team, match.away_team and match.zone (use select_related).
+{% endcomment %}
+{% with status=match.status %}
+<a class="fixture-card{% if status == 'live' or status == 'ongoing' %} is-live{% endif %}" href="{% url 'matches:match_details' match.pk %}"
+   aria-label="{{ match.home_team.team_name }} versus {{ match.away_team.team_name }}">
+    <span class="fixture-card__team">
+        {% include "partials/_team_crest.html" with team=match.home_team %}
+        <span{% if status == 'completed' and match.home_score > match.away_score %} class="is-winner"{% endif %}>{{ match.home_team.team_name }}</span>
+    </span>
+    <span class="fixture-card__centre">
+        {% if status == 'completed' or status == 'live' or status == 'ongoing' %}
+            <span class="fixture-card__score">{{ match.home_score }}&ndash;{{ match.away_score }}</span>
+        {% else %}
+            <span class="fixture-card__time">{{ match.kickoff_datetime|date:"H:i" }}</span>
+        {% endif %}
+        <span class="d-block mt-1">{% match_badge status %}</span>
+    </span>
+    <span class="fixture-card__team fixture-card__team--away">
+        {% include "partials/_team_crest.html" with team=match.away_team %}
+        <span{% if status == 'completed' and match.away_score > match.home_score %} class="is-winner"{% endif %}>{{ match.away_team.team_name }}</span>
+    </span>
+    <span class="fixture-card__meta">
+        <span><i class="fas fa-calendar me-1" aria-hidden="true"></i>{{ match.kickoff_datetime|date:"D j M" }}</span>
+        <span>{{ match.zone.name }}{% if match.round_number %} &middot; Round {{ match.round_number }}{% endif %}</span>
+        {% if match.venue %}<span><i class="fas fa-location-dot me-1" aria-hidden="true"></i>{{ match.venue }}</span>{% endif %}
+    </span>
+</a>
+{% endwith %}

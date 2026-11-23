@@ -1,0 +1,4 @@
+{% comment %}
+Team crest: logo image or initials fallback.
+{% include "partials/_team_crest.html" with team=match.home_team size="sm" %}   size: sm | (default) | lg
+{% endcomment %}{% if team.logo %}<img class="team-crest{% if size %} team-crest--{{ size }}{% endif %}" src="{{ team.logo.url }}" alt="" loading="lazy" width="28" height="28">{% else %}<span class="team-crest{% if size %} team-crest--{{ size }}{% endif %}" aria-hidden="true">{{ team.team_name|slice:":2" }}</span>{% endif %}

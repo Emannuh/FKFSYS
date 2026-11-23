@@ -1,0 +1,55 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Styleguide — FKF Meru County League{% endblock %}
+{% block page_title %}Styleguide{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Design system v3</span>
+        <h1 class="page-title">Styleguide</h1>
+        <p class="page-subtitle">Every component, rendered in the light and dark theme. Rules and the legacy-class migration table live in <code>docs/design-system.md</code>.</p>
+    </div>
+    <div class="page-actions">
+        {% include "partials/_theme_toggle.html" with button_class="btn btn-outline-secondary" %}
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="mb-5" aria-labelledby="sg-tokens">
+    <div class="section-title"><h2 id="sg-tokens">Colour tokens</h2></div>
+    <div class="sg-swatches">
+        <div class="sg-swatch sg-swatch--accent"><span>--fkf-accent</span></div>
+        <div class="sg-swatch sg-swatch--accent-text"><span>--fkf-accent-text</span></div>
+        <div class="sg-swatch sg-swatch--accent-subtle"><span>--fkf-accent-subtle</span></div>
+        <div class="sg-swatch sg-swatch--bg"><span>--fkf-bg</span></div>
+        <div class="sg-swatch sg-swatch--surface"><span>--fkf-surface</span></div>
+        <div class="sg-swatch sg-swatch--surface-2"><span>--fkf-surface-2</span></div>
+        <div class="sg-swatch sg-swatch--text"><span>--fkf-text</span></div>
+        <div class="sg-swatch sg-swatch--text-muted"><span>--fkf-text-muted</span></div>
+        <div class="sg-swatch sg-swatch--border"><span>--fkf-border</span></div>
+        <div class="sg-swatch sg-swatch--ink"><span>--fkf-ink</span></div>
+        <div class="sg-swatch sg-swatch--success"><span>--fkf-success</span></div>
+        <div class="sg-swatch sg-swatch--warning"><span>--fkf-warning-solid</span></div>
+        <div class="sg-swatch sg-swatch--danger"><span>--fkf-danger</span></div>
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-xl-6">
+        <div class="sg-theme" data-bs-theme="light">
+            <p class="sg-theme__label">Light</p>
+            {% include "frontend/_styleguide_components.html" with theme="light" %}
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="sg-theme" data-bs-theme="dark">
+            <p class="sg-theme__label">Dark</p>
+            {% include "frontend/_styleguide_components.html" with theme="dark" %}
+        </div>
+    </div>
+</div>
+{% endblock %}

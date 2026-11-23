@@ -1,8 +1,9 @@
-{# partials/_empty_state.html
-   {% empty_state icon="calendar-times" color="muted" title="No Fixtures" message="..." %}
-#}
-<div class="text-center py-5 text-{{ color }}">
-  <i class="fas fa-{{ icon }} fa-3x mb-3 d-block opacity-25"></i>
-  <h5>{{ title }}</h5>
-  {% if message %}<p class="mb-0">{{ message }}</p>{% endif %}
+{% comment %}
+Empty state. Prefer the tag:  {% load fkf_tags %}{% empty_state icon="calendar-xmark" title="No fixtures" message="Fixtures appear once they are generated." %}
+or include directly with the same variables (icon = Font Awesome name without "fa-").
+{% endcomment %}
+<div class="empty-state">
+    <div class="empty-state__icon"><i class="fas fa-{{ icon|default:'inbox' }}" aria-hidden="true"></i></div>
+    <p class="empty-state__title">{{ title|default:"Nothing here yet" }}</p>
+    {% if message %}<p class="empty-state__text">{{ message }}</p>{% endif %}
 </div>

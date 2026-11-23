@@ -4,6 +4,7 @@ fkf_league/constants.py
 Shared constants and named status values.
 Use these instead of raw strings throughout the codebase.
 """
+from __future__ import annotations
 
 
 class MatchStatus:
@@ -39,21 +40,8 @@ class ReportStatus:
     REJECTED  = 'rejected'
 
 
-class RefereeStatus:
-    PENDING  = 'pending'
-    APPROVED = 'approved'
-    REJECTED = 'rejected'
-
-
-class PlayerPosition:
-    GK = 'GK'
-    DF = 'DF'
-    MF = 'MF'
-    FW = 'FW'
-
-
 # Kenya's 47 Counties (alphabetically ordered)
-KENYA_COUNTIES = [
+KENYA_COUNTIES: list[tuple[str, str]] = [
     ('baringo', 'Baringo'),
     ('bomet', 'Bomet'),
     ('bungoma', 'Bungoma'),

@@ -1,253 +1,182 @@
 ﻿{% extends "base.html" %}
+{% load fkf_tags %}
 
-{% block title %}FKF Meru County League Management System{% endblock %}
+{% block title %}FKF Meru County League — Fixtures, results &amp; tables{% endblock %}
+{% block content_theme %}{% endblock %}
 
-{% block extra_css %}
-<style>
-  .home-hero {
-    background: linear-gradient(135deg, var(--fkf-red-dark) 0%, var(--fkf-dark) 70%, #0f2027 100%);
-    border-radius: var(--radius-lg); padding: 3rem 2.5rem; color: white;
-    position: relative; overflow: hidden; margin-bottom: 2rem;
-    box-shadow: var(--shadow-xl);
-  }
-  .home-hero::before {
-    content: ''; position: absolute; right: -60px; top: -60px;
-    width: 260px; height: 260px; border-radius: 50%; background: rgba(255,255,255,0.04);
-  }
-  .home-hero::after {
-    content: ''; position: absolute; right: 60px; bottom: -80px;
-    width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,0.03);
-  }
-  .home-hero h1 { font-size: 2.4rem; line-height: 1.15; }
-  @media(max-width:576px){ .home-hero { padding:2rem 1.5rem; } .home-hero h1 { font-size:1.8rem; } }
-  .stat-num { font-size: 2rem; font-weight: 800; }
-</style>
+{% block hero %}
+<section class="hub-hero" aria-labelledby="hub-title">
+    <div class="container">
+        <div class="row g-4 align-items-end">
+            <div class="col-lg-7">
+                <span class="page-eyebrow">FKF Meru County League</span>
+                <h1 id="hub-title">
+                    {% if live_matches %}Live now{% elif next_matchday %}Next matchday: {{ next_matchday|date:"l j F" }}{% else %}Matchday hub{% endif %}
+                </h1>
+                <p>Fixtures, results, standings and registrations for every zone in Meru County.</p>
+            </div>
+            <div class="col-lg-5">
+                <div class="hub-stats">
+                    <div class="hub-stat"><strong>{{ total_teams }}</strong><span>Approved teams</span></div>
+                    <div class="hub-stat"><strong>{{ completed_matches }}</strong><span>Matches played</span></div>
+                    <div class="hub-stat"><strong>{{ total_goals }}</strong><span>Goals scored</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 {% endblock %}
 
 {% block content %}
 <div class="row g-4">
-    <!-- Main Column -->
-    <div class="col-lg-8">
+    <div class="col-lg-8 d-grid gap-4 align-content-start">
 
-        <!-- Hero Banner -->
-        <div class="home-hero" style="opacity:1; visibility:visible; position:relative; z-index:1;">
-            <div class="position-relative" style="z-index:1;">
-                <div class="mb-3">
-                    <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:4px 16px;border-radius:20px;font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;">
-                        <i class="fas fa-futbol me-1"></i> FKF Meru County — Official Platform
-                    </span>
-                </div>
-                <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:0.75rem;line-height:1.2;">FKF Meru County<br>League Management</h1>
-                <p style="opacity:0.85;font-size:1.05rem;max-width:500px;margin-bottom:1.75rem;">
-                    Register your team, manage matches, track statistics, and follow league standings — all in one place.
-                </p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a href="{% url 'teams:team_registration' %}" class="btn btn-lg" style="background:white;color:#c1121f;font-weight:700;border-radius:12px;padding:0.6rem 1.4rem;">
-                        <i class="fas fa-user-plus me-2"></i>Register Your Team
-                    </a>
-                    <a href="{% url 'teams:all_teams' %}" class="btn btn-lg" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.35);border-radius:12px;padding:0.6rem 1.4rem;">
-                        <i class="fas fa-users me-2"></i>View All Teams
-                    </a>
-                    <a href="{% url 'matches:league_tables' %}" class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:0.6rem 1.4rem;">
-                        <i class="fas fa-table me-2"></i>League Tables
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Feature Cards -->
-        <div class="row g-3 mb-4" style="opacity:1; visibility:visible; position:relative; z-index:1;">
-            <div class="col-sm-6">
-                <div class="feature-card p-4">
-                    <div class="feature-card-icon" style="background:linear-gradient(135deg,#4361ee,#3a0ca3);">
-                        <i class="fas fa-futbol"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2">Team Management</h5>
-                    <p class="text-muted small mb-3">Register your team, manage players, and track performance throughout the season.</p>
-                    <a href="{% url 'teams:team_registration' %}" class="btn btn-sm" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);color:white;border-radius:8px;">
-                        <i class="fas fa-arrow-right me-1"></i> Register Team
-                    </a>
-                </div>
-            </div>
-            <div class="col-sm-6">
-                <div class="feature-card p-4">
-                    <div class="feature-card-icon" style="background:linear-gradient(135deg,#f4a261,#e76f51);">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2">League Standings</h5>
-                    <p class="text-muted small mb-3">View real-time league tables, match results, and zone rankings.</p>
-                    <a href="{% url 'matches:league_tables' %}" class="btn btn-sm" style="background:linear-gradient(90deg,#f4a261,#e76f51);color:white;border-radius:8px;">
-                        <i class="fas fa-arrow-right me-1"></i> View Tables
-                    </a>
-                </div>
-            </div>
-            <div class="col-sm-6">
-                <div class="feature-card p-4">
-                    <div class="feature-card-icon" style="background:linear-gradient(135deg,#2dc653,#198754);">
-                        <i class="fas fa-calendar-alt"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2">Match Fixtures</h5>
-                    <p class="text-muted small mb-3">Check upcoming fixtures, match schedules, and venue information.</p>
-                    <a href="{% url 'matches:fixtures' %}" class="btn btn-sm" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;border-radius:8px;">
-                        <i class="fas fa-arrow-right me-1"></i> View Fixtures
-                    </a>
-                </div>
-            </div>
-            <div class="col-sm-6">
-                <div class="feature-card p-4">
-                    <div class="feature-card-icon" style="background:linear-gradient(135deg,#e63946,#c1121f);">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2">Statistics &amp; Rankings</h5>
-                    <p class="text-muted small mb-3">Track top scorers, player stats, and team performance metrics.</p>
-                    <a href="{% url 'matches:top_scorers' %}" class="btn btn-sm" style="background:linear-gradient(90deg,#e63946,#c1121f);color:white;border-radius:8px;">
-                        <i class="fas fa-arrow-right me-1"></i> View Stats
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Sidebar -->
-    <div class="col-lg-4">
-
-        <!-- Registration Deadlines -->
-        {% if league_settings %}
-        <div class="sidebar-card" style="opacity:1; visibility:visible; position:relative; z-index:1;">
-            <div class="sidebar-header" style="background:linear-gradient(90deg,#f4a261,#e76f51);">
-                <h6 class="mb-0 fw-bold"><i class="fas fa-clock me-2"></i>Registration Deadlines</h6>
-            </div>
-            <div class="p-3">
-                <!-- Team Registration -->
-                <div class="mb-3 pb-3 border-bottom">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold small"><i class="fas fa-users me-1 text-primary"></i> Team Registration</span>
-                        {% if league_settings.team_registration_open %}
-                        <span class="badge bg-success">OPEN</span>
-                        {% else %}
-                        <span class="badge bg-danger">CLOSED</span>
-                        {% endif %}
-                    </div>
-                    {% if league_settings.team_registration_open and league_settings.team_registration_deadline %}
-                        <div class="text-muted" style="font-size:0.8rem;">Closes: {{ league_settings.team_registration_deadline|date:"M d, Y H:i" }}</div>
-                        <div class="countdown-small" data-deadline="{{ league_settings.team_registration_deadline|date:'c' }}"></div>
-                    {% elif not league_settings.team_registration_open and league_settings.team_registration_closed_date %}
-                        <div class="text-muted" style="font-size:0.8rem;">Closed: {{ league_settings.team_registration_closed_date|date:"M d, Y H:i" }}</div>
-                    {% endif %}
-                </div>
-                <!-- Player Registration -->
-                <div class="mb-3 pb-3 border-bottom">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold small"><i class="fas fa-user-plus me-1 text-success"></i> Player Registration</span>
-                        {% if league_settings.player_registration_open %}
-                        <span class="badge bg-success">OPEN</span>
-                        {% else %}
-                        <span class="badge bg-danger">CLOSED</span>
-                        {% endif %}
-                    </div>
-                    {% if league_settings.player_registration_open and league_settings.player_registration_deadline %}
-                        <div class="text-muted" style="font-size:0.8rem;">Closes: {{ league_settings.player_registration_deadline|date:"M d, Y H:i" }}</div>
-                        <div class="countdown-small" data-deadline="{{ league_settings.player_registration_deadline|date:'c' }}"></div>
-                    {% elif not league_settings.player_registration_open and league_settings.player_registration_closed_date %}
-                        <div class="text-muted" style="font-size:0.8rem;">Closed: {{ league_settings.player_registration_closed_date|date:"M d, Y H:i" }}</div>
-                    {% endif %}
-                </div>
-                <!-- Transfer Window -->
-                <div class="mb-0">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-semibold small"><i class="fas fa-exchange-alt me-1 text-info"></i> Transfer Window</span>
-                        {% if league_settings.transfer_window_open %}
-                        <span class="badge bg-success">OPEN</span>
-                        {% else %}
-                        <span class="badge bg-danger">CLOSED</span>
-                        {% endif %}
-                    </div>
-                    {% if league_settings.transfer_window_open and league_settings.transfer_window_deadline %}
-                        <div class="text-muted" style="font-size:0.8rem;">Closes: {{ league_settings.transfer_window_deadline|date:"M d, Y H:i" }}</div>
-                        <div class="countdown-small" data-deadline="{{ league_settings.transfer_window_deadline|date:'c' }}"></div>
-                    {% elif not league_settings.transfer_window_open and league_settings.transfer_window_closed_date %}
-                        <div class="text-muted" style="font-size:0.8rem;">Closed: {{ league_settings.transfer_window_closed_date|date:"M d, Y H:i" }}</div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+        {% if live_matches %}
+        <section aria-labelledby="live-title">
+            <div class="section-title"><h2 id="live-title"><span class="status-badge status-accent status-live me-2">LIVE</span>In progress</h2></div>
+            <div class="fixture-list">{% for match in live_matches %}{% include "partials/_fixture_card.html" %}{% endfor %}</div>
+        </section>
         {% endif %}
 
-        <!-- Quick Stats -->
-        <div class="sidebar-card" style="opacity:1; visibility:visible; position:relative; z-index:1;">
-            <div class="sidebar-header" style="background:linear-gradient(90deg,#e63946,#c1121f);">
-                <h6 class="mb-0 fw-bold"><i class="fas fa-chart-bar me-2"></i>Quick Stats</h6>
+        <section aria-labelledby="fixtures-title">
+            <div class="section-title">
+                <h2 id="fixtures-title">{% if next_matchday %}Fixtures &middot; {{ next_matchday|date:"D j M" }}{% else %}Upcoming fixtures{% endif %}</h2>
+                <a href="{% url 'matches:fixtures' %}">All fixtures <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i></a>
             </div>
-            <div class="p-3">
-                <div class="row text-center g-2">
-                    <div class="col-6">
-                        <div style="background:#f8fafc;border-radius:10px;padding:14px 8px;">
-                            <div class="stat-num text-primary">{{ total_teams|default:"0" }}</div>
-                            <div class="text-muted small">Teams</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div style="background:#f8fafc;border-radius:10px;padding:14px 8px;">
-                            <div class="stat-num text-success">{{ completed_matches|default:"0" }}</div>
-                            <div class="text-muted small">Matches Played</div>
-                        </div>
+            {% if next_fixtures %}
+            <div class="fixture-list">{% for match in next_fixtures %}{% include "partials/_fixture_card.html" %}{% endfor %}</div>
+            {% else %}
+            <div class="panel">{% empty_state icon="calendar-xmark" title="No upcoming fixtures" message="Fixtures appear here once the league office publishes the schedule." %}</div>
+            {% endif %}
+        </section>
+
+        <section aria-labelledby="results-title">
+            <div class="section-title">
+                <h2 id="results-title">Latest results</h2>
+                <a href="{% url 'matches:fixtures' %}">Results <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i></a>
+            </div>
+            {% if latest_results %}
+            <div class="fixture-list">{% for match in latest_results %}{% include "partials/_fixture_card.html" %}{% endfor %}</div>
+            {% else %}
+            <div class="panel">{% empty_state icon="futbol" title="No results yet" message="Results are posted as soon as match reports are approved." %}</div>
+            {% endif %}
+        </section>
+
+        <section class="panel" aria-labelledby="tables-title">
+            <div class="panel-header flex-wrap">
+                <h2 class="panel-title" id="tables-title"><i class="fas fa-table" aria-hidden="true"></i>League tables</h2>
+                {% if zone_tables|length > 1 %}
+                <ul class="nav nav-segmented" role="tablist">
+                    {% for zt in zone_tables %}
+                    <li class="nav-item" role="presentation">
+                        <button type="button" class="nav-link{% if forloop.first %} active{% endif %}" id="zone-tab-{{ zt.zone.pk }}" data-bs-toggle="tab" data-bs-target="#zone-{{ zt.zone.pk }}" role="tab" aria-controls="zone-{{ zt.zone.pk }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">{{ zt.zone.name }}</button>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% if zone_tables %}
+            <div class="tab-content">
+                {% for zt in zone_tables %}
+                <div class="tab-pane fade{% if forloop.first %} show active{% endif %}" id="zone-{{ zt.zone.pk }}" role="tabpanel" aria-labelledby="zone-tab-{{ zt.zone.pk }}" tabindex="0">
+                    <div class="data-table-wrap">
+                        <table class="table data-table league-table">
+                            <caption class="visually-hidden">{{ zt.zone.name }} standings (top {{ zt.rows|length }})</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="pos">#</th>
+                                    <th scope="col">Team</th>
+                                    <th scope="col" class="num">P</th>
+                                    <th scope="col" class="num hide-sm">W</th>
+                                    <th scope="col" class="num hide-sm">D</th>
+                                    <th scope="col" class="num hide-sm">L</th>
+                                    <th scope="col" class="num">GD</th>
+                                    <th scope="col" class="num">Pts</th>
+                                    <th scope="col" class="hide-sm">Form</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in zt.rows %}
+                                <tr{% if row.position == 1 %} class="is-leader"{% endif %}>
+                                    <td class="pos">{{ row.position }}</td>
+                                    <td class="team-cell"><a class="chip" href="{% url 'teams:team_detail' row.team.pk %}">{% include "partials/_team_crest.html" with team=row.team size="sm" %}<span>{{ row.team.team_name }}</span></a></td>
+                                    <td class="num">{{ row.matches_played }}</td>
+                                    <td class="num hide-sm">{{ row.wins }}</td>
+                                    <td class="num hide-sm">{{ row.draws }}</td>
+                                    <td class="num hide-sm">{{ row.losses }}</td>
+                                    <td class="num">{{ row.goal_difference }}</td>
+                                    <td class="num pts">{{ row.points }}</td>
+                                    <td class="hide-sm">{% form_string row.form %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-        </div>
-
-        <!-- Latest News -->
-        <div class="sidebar-card" style="opacity:1; visibility:visible; position:relative; z-index:1;">
-            <div class="sidebar-header" style="background:linear-gradient(90deg,#4361ee,#3a0ca3);">
-                <h6 class="mb-0 fw-bold"><i class="fas fa-newspaper me-2"></i>Latest News</h6>
-            </div>
-            <div class="list-group list-group-flush">
-                <a href="{% url 'teams:team_registration' %}" class="list-group-item list-group-item-action border-0 py-3">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="fw-semibold small">Registration Open</span>
-                        <span class="badge bg-success-subtle text-success" style="font-size:0.7rem;">Now</span>
-                    </div>
-                    <p class="text-muted mb-0" style="font-size:0.82rem;">Team registration for 2025/2026 season is now open.</p>
-                </a>
-                <a href="{% url 'matches:fixtures' %}" class="list-group-item list-group-item-action border-0 py-3">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="fw-semibold small">Fixtures Released</span>
-                        <span class="badge bg-warning-subtle text-warning" style="font-size:0.7rem;">Soon</span>
-                    </div>
-                    <p class="text-muted mb-0" style="font-size:0.82rem;">First round fixtures released.</p>
-                </a>
-                <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action border-0 py-3">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="fw-semibold small">Referee Registration</span>
-                        <span class="badge bg-success-subtle text-success" style="font-size:0.7rem;">Now</span>
-                    </div>
-                    <p class="text-muted mb-0" style="font-size:0.82rem;">Referee registration is now open.</p>
-                </a>
-            </div>
-        </div>
-
-        <!-- Quick Links -->
-        <div class="sidebar-card" style="opacity:1; visibility:visible; position:relative; z-index:1;">
-            <div class="sidebar-header" style="background:linear-gradient(90deg,#1a1a2e,#2d3748);">
-                <h6 class="mb-0 fw-bold"><i class="fas fa-bolt me-2"></i>Quick Links</h6>
-            </div>
-            <div class="list-group list-group-flush">
-                <a href="{% url 'matches:top_scorers' %}" class="list-group-item list-group-item-action border-0 py-3">
-                    <i class="fas fa-futbol text-primary me-2"></i> Top Scorers
-                </a>
-                <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action border-0 py-3">
-                    <i class="fas fa-whistle text-success me-2"></i> Become a Referee
-                </a>
-                <a href="{% url 'frontend:rules' %}" class="list-group-item list-group-item-action border-0 py-3">
-                    <i class="fas fa-book text-danger me-2"></i> League Rules
-                </a>
-                <a href="{% url 'frontend:contact' %}" class="list-group-item list-group-item-action border-0 py-3">
-                    <i class="fas fa-envelope text-warning me-2"></i> Contact Us
-                </a>
-            </div>
-        </div>
-
+            <div class="panel-footer"><a href="{% url 'matches:league_tables' %}">Full standings <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i></a></div>
+            {% else %}
+            {% empty_state icon="table" title="Standings not available yet" message="Tables fill in after the first results of the season." %}
+            {% endif %}
+        </section>
     </div>
-</div>
 
+    <aside class="col-lg-4 d-grid gap-4 align-content-start" aria-label="League information">
+        {% if league_settings %}
+        <section class="panel" aria-labelledby="reg-title">
+            <div class="panel-header"><h2 class="panel-title" id="reg-title"><i class="fas fa-clipboard-check" aria-hidden="true"></i>Registration windows</h2></div>
+            <div class="panel-body d-grid gap-2">
+                {% reg_window_card "Team registration" "fas fa-users" league_settings.team_registration_open league_settings.team_registration_deadline league_settings.team_registration_closed_date %}
+                {% reg_window_card "Player registration" "fas fa-user-plus" league_settings.player_registration_open league_settings.player_registration_deadline league_settings.player_registration_closed_date %}
+                {% reg_window_card "Transfer window" "fas fa-right-left" league_settings.transfer_window_open league_settings.transfer_window_deadline league_settings.transfer_window_closed_date %}
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    {% if league_settings.team_registration_open %}<a class="btn btn-primary btn-sm" href="{% url 'teams:team_registration' %}">Register a team</a>{% endif %}
+                    <a class="btn btn-outline-secondary btn-sm" href="{% url 'referees:referee_registration' %}">Become a referee</a>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="panel" aria-labelledby="scorers-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="scorers-title"><i class="fas fa-futbol" aria-hidden="true"></i>Top scorers</h2>
+                <a href="{% url 'matches:top_scorers' %}">All</a>
+            </div>
+            {% if top_scorers %}
+            <ol class="rank-list">
+                {% for player in top_scorers %}
+                <li>
+                    <span class="rank">{{ forloop.counter }}</span>
+                    {% include "partials/_team_crest.html" with team=player.team size="sm" %}
+                    <span class="who"><strong>{{ player.first_name }} {{ player.last_name }}</strong><span>{{ player.team.team_name }}</span></span>
+                    <span class="value">{{ player.goals_scored }}<span class="visually-hidden"> goals</span></span>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            {% empty_state icon="futbol" title="No goals recorded yet" %}
+            {% endif %}
+        </section>
+
+        <section class="panel" aria-labelledby="tournaments-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="tournaments-title"><i class="fas fa-trophy" aria-hidden="true"></i>Tournaments</h2>
+                <a href="{% url 'tournaments:tournament_list' %}">All</a>
+            </div>
+            {% if tournaments %}
+            <ul class="rank-list">
+                {% for t in tournaments %}
+                <li>
+                    <span class="who">{% if t.slug %}<a class="fw-semibold" href="{% url 'tournaments:tournament_detail' t.slug %}">{{ t.name }}</a>{% else %}<strong>{{ t.name }}</strong>{% endif %}<span>{{ t.start_date|date:"j M" }} &ndash; {{ t.end_date|date:"j M Y" }}</span></span>
+                    {% if t.status == 'ongoing' %}<span class="status-badge status-accent">Ongoing</span>{% elif t.status == 'registration' %}<span class="status-badge status-success">Registration open</span>{% else %}<span class="status-badge status-neutral">{{ t.get_status_display }}</span>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            {% empty_state icon="trophy" title="No active tournaments" %}
+            {% endif %}
+        </section>
+    </aside>
+</div>
 {% endblock %}

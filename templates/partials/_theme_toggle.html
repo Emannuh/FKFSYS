@@ -1,0 +1,8 @@
+{% comment %}
+Light/dark toggle. app.js wires every [data-theme-toggle]; choice persists in localStorage("fkf-theme").
+{% include "partials/_theme_toggle.html" with button_class="btn btn-ghost btn-icon" %}
+{% endcomment %}
+<button type="button" class="theme-toggle {{ button_class|default:'btn btn-ghost btn-icon' }}" data-theme-toggle aria-pressed="false" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <i class="fas fa-moon theme-icon-light" aria-hidden="true"></i>
+    <i class="fas fa-sun theme-icon-dark" aria-hidden="true"></i>
+</button>

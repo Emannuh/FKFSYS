@@ -1,0 +1,35 @@
+{% load site_navigation %}
+<footer class="site-footer">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-12 col-lg-4">
+                <a class="site-brand mb-3" href="{% url 'frontend:home' %}">
+                    <span class="brand-mark"><i class="fas fa-futbol" aria-hidden="true"></i></span>
+                    <span>FKF Meru County League</span>
+                </a>
+                <p class="mb-0">Official Football Kenya Federation Meru County league platform: fixtures, results, standings and registrations.</p>
+            </div>
+            {% footer_sections as sections %}
+            {% for section in sections %}
+            <nav class="col-6 col-lg-2" aria-label="{{ section.title }}">
+                <h2>{{ section.title }}</h2>
+                <ul>
+                    {% for item in section.items %}<li><a href="{{ item.url }}">{{ item.title }}</a></li>{% endfor %}
+                </ul>
+            </nav>
+            {% endfor %}
+            <div class="col-12 col-lg-4">
+                <h2>Contact</h2>
+                <ul>
+                    <li><i class="fas fa-map-marker-alt me-2" aria-hidden="true"></i>Meru County, Kenya</li>
+                    <li><i class="fas fa-envelope me-2" aria-hidden="true"></i><a href="mailto:info@fkfmeru.co.ke">info@fkfmeru.co.ke</a></li>
+                    <li><i class="fas fa-clock me-2" aria-hidden="true"></i>Mon&ndash;Fri, 9:00&ndash;17:00</li>
+                </ul>
+            </div>
+        </div>
+        <div class="site-footer-meta d-flex flex-wrap justify-content-between gap-2">
+            <span>&copy; {% now "Y" %} FKF Meru County League</span>
+            <span>Powered by Emmanuel Technology Services</span>
+        </div>
+    </div>
+</footer>
