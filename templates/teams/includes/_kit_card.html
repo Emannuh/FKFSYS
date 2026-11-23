@@ -1,0 +1,72 @@
+{% comment %}
+One kit editor card. Used by teams/select_kit.html in a loop over `kit` dicts
+built by teams.views.kits._kit_cards: key, js_id, title, required, image, parts[].
+Element ids ({{ kit.js_id }}KitImage, ...JerseyPreview, ...) are read by static/js/pages/teams.js.
+Swatch backgrounds are inline because the values are the team's own kit colours (data).
+{% endcomment %}
+<article class="panel kit-card h-100" data-kit="{{ kit.key }}" aria-labelledby="kit-{{ kit.key }}-title">
+    <div class="panel-header">
+        <h3 class="panel-title" id="kit-{{ kit.key }}-title"><i class="fas fa-shirt" aria-hidden="true"></i>{{ kit.title }}</h3>
+        {% if kit.required %}
+        <span class="badge status-badge status-accent">Required</span>
+        {% else %}
+        <span class="badge status-badge status-neutral">Optional</span>
+        {% endif %}
+    </div>
+    <div class="panel-body kit-card__body">
+        <div class="kit-figure" aria-hidden="true">
+            {% for p in kit.parts %}
+            <div class="kit-{{ p.part }} kit-figure__{{ p.part }}" id="{{ kit.js_id }}{{ p.label }}Preview" style="background-color: {{ p.value }};">{{ p.label }}</div>
+            {% endfor %}
+        </div>
+
+        <fieldset class="kit-card__colours">
+            <legend class="kit-card__legend">Colours</legend>
+            <div class="row g-2">
+                {% for p in kit.parts %}
+                <div class="col-4">
+                    <label class="form-label kit-card__label" for="kit-{{ p.name }}">{{ p.label }}{% if kit.required %} <span class="text-danger" aria-hidden="true">*</span>{% endif %}</label>
+                    <input type="color" class="form-control form-control-color kit-color-input" id="kit-{{ p.name }}"
+                           name="{{ p.name }}" value="{{ p.value }}"{% if kit.required %} required{% endif %}>
+                </div>
+                {% endfor %}
+            </div>
+        </fieldset>
+
+        <div class="kit-card__image">
+            <label class="form-label kit-card__label" for="{{ kit.js_id }}KitImage">
+                {% if kit.image %}Replace kit image{% else %}Kit image{% endif %}{% if kit.required %} <span class="text-danger" aria-hidden="true">*</span>{% endif %}
+            </label>
+            <input type="file" class="form-control" name="{{ kit.key }}_kit_image" accept="image/*"
+                   id="{{ kit.js_id }}KitImage" aria-describedby="{{ kit.js_id }}KitImageHelp"
+                   data-kit-label="{{ kit.title }}"
+                   {% if kit.required %}data-kit-required="1"{% endif %}
+                   {% if kit.image %}data-has-image="1"{% elif kit.required %}required{% endif %}>
+            <div class="form-text" id="{{ kit.js_id }}KitImageHelp">
+                {% if kit.required %}Required. {% else %}Optional. {% endif %}PNG or JPG, max 5MB. Show the actual kit design.
+            </div>
+
+            {% if kit.image %}
+            <div class="current-image kit-thumb" data-current-image-for="{{ kit.js_id }}KitImage">
+                <img src="{{ kit.image.url }}" alt="Current {{ kit.title|lower }} image" class="kit-thumb__img">
+                <div class="kit-thumb__meta">
+                    <span class="kit-thumb__title"><i class="fas fa-circle-check text-success" aria-hidden="true"></i> Current image</span>
+                    <span class="kit-thumb__note">Kept unless you upload a new one.</span>
+                    <span class="d-flex flex-wrap gap-2 mt-1">
+                        <a href="{{ kit.image.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">View<span class="visually-hidden"> {{ kit.title|lower }} image</span></a>
+                        <button type="button" class="btn btn-sm btn-ghost" data-change-image="{{ kit.js_id }}KitImage">Change<span class="visually-hidden"> {{ kit.title|lower }} image</span></button>
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+
+            <div id="{{ kit.js_id }}KitPreview" class="kit-thumb d-none">
+                <img id="{{ kit.js_id }}KitPreviewImg" src="" alt="New {{ kit.title|lower }} image preview" class="kit-thumb__img">
+                <div class="kit-thumb__meta">
+                    <span class="kit-thumb__title"><i class="fas fa-eye" aria-hidden="true"></i> New image</span>
+                    <span class="kit-thumb__note">Uploads when you save.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>

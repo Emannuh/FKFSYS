@@ -1,0 +1,46 @@
+/* ==========================================================================
+   Teams area (templates/teams/**, tournament team pages). Tokens only.
+   ========================================================================== */
+
+/* --- Kit editor (select_kit.html, includes/_kit_card.html) ---------------- */
+.kit-card__body { display: grid; gap: var(--fkf-space-4); }
+.kit-card__colours { border: 0; margin: 0; padding: 0; min-width: 0; }
+.kit-card__legend,
+.kit-card__label { font-size: var(--fkf-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fkf-text-muted); margin-bottom: var(--fkf-space-1); }
+.kit-card__legend { float: none; width: auto; padding: 0; margin-bottom: var(--fkf-space-2); }
+.kit-color-input.form-control-color { width: 100%; height: 44px; padding: 4px; cursor: pointer; border-radius: var(--fkf-radius-sm); }
+.kit-color-input.form-control-color:hover { border-color: var(--fkf-border-strong); }
+
+/* Stylised kit: jersey, shorts, socks stacked like a strip on a hanger */
+.kit-figure {
+  display: grid; justify-items: center; gap: 4px; padding: var(--fkf-space-4) var(--fkf-space-3);
+  background: var(--fkf-surface-2); border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius);
+}
+.kit-figure > div {
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--fkf-text-xs); font-weight: 700; letter-spacing: 0.04em;
+  color: var(--fkf-white); text-shadow: 0 0 2px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--fkf-border-strong);
+}
+.kit-figure__jersey { width: 116px; height: 64px; border-radius: 18px 18px 6px 6px; }
+.kit-figure__shorts { width: 88px; height: 32px; border-radius: 4px 4px 10px 10px; }
+.kit-figure__socks { width: 64px; height: 22px; border-radius: 4px; }
+
+.kit-thumb {
+  display: flex; gap: var(--fkf-space-3); align-items: flex-start; margin-top: var(--fkf-space-3);
+  padding: var(--fkf-space-2); border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius-sm); background: var(--fkf-surface-2);
+}
+.kit-thumb[hidden] { display: none; }
+.kit-thumb__img { width: 72px; height: 72px; object-fit: contain; border-radius: 4px; background: var(--fkf-surface); border: 1px solid var(--fkf-border); flex-shrink: 0; }
+.kit-thumb__meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: var(--fkf-text-sm); }
+.kit-thumb__title { font-weight: 700; }
+.kit-thumb__note { font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+
+.kit-actions { position: sticky; bottom: var(--fkf-space-3); z-index: 5; box-shadow: var(--fkf-shadow-lg); }
+.kit-requirements { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--fkf-space-1) var(--fkf-space-4); font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+.kit-requirements i { margin-right: 0.35rem; color: var(--fkf-green-text); }
+.kit-requirements li:nth-child(2) i { color: var(--fkf-text-muted); }
+@media (max-width: 575.98px) {
+  .kit-actions { position: static; }
+  .kit-actions .btn { flex: 1 1 auto; }
+}
