@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block title %}{% if can_edit %}Submit{% else %}View{% endif %} Tournament Squad{% endblock %}
 
 {% block content %}
@@ -14,7 +14,7 @@
                 {% if match.home_team %}{{ match.home_team.display_name }}{% else %}TBD{% endif %}
                 vs
                 {% if match.away_team %}{{ match.away_team.display_name }}{% else %}TBD{% endif %}
-                â€“ {{ match.match_date|date:"d/m/Y"|default:"TBD" }}
+                – {{ match.match_date|date:"d/m/Y"|default:"TBD" }}
             </p>
         </div>
         <a href="{% url 'tournaments:tournament_team_matches' %}" class="btn btn-outline-secondary">
@@ -33,14 +33,6 @@
         {% endif %}
     </div>
 
-    {% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    {% endfor %}
-    {% endif %}
 
     <!-- Match duration info -->
     <div class="alert alert-light border mb-4">
@@ -62,7 +54,7 @@
             <div class="card shadow mb-4">
                 <div class="card-header" style="background:linear-gradient(90deg,#2dc653,#198754);color:white;">
                     <h5 class="mb-0">
-                        <i class="fas fa-running me-2"></i>Starting XI (7â€“11 players)
+                        <i class="fas fa-running me-2"></i>Starting XI (7–11 players)
                         <span class="badge bg-white text-success float-end" id="startingCount">0/11</span>
                     </h5>
                     <small>Must include at least 1 goalkeeper | Minimum 7 players required</small>
@@ -101,7 +93,7 @@
                         <i class="fas fa-users me-2"></i>Substitutes (up to 14)
                         <span class="badge bg-white text-info float-end" id="subsCount">0/14</span>
                     </h5>
-                    <small>Optional â€“ select substitute players</small>
+                    <small>Optional – select substitute players</small>
                 </div>
                 <div class="card-body" style="max-height: 600px; overflow-y: auto;">
                     {% regroup eligible_players by get_position_display as position_groups %}

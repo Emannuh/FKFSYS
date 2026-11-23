@@ -36,7 +36,7 @@
                             {{ reg.display_name }}
                             {% if reg.team_type == 'external' %}<span class="badge bg-info ms-1">External</span>{% endif %}
                         </td>
-                        <td>{{ reg.registered_by.get_full_name|default:reg.registered_by.username|default:"—" }}</td>
+                        <td>{% if reg.registered_by %}{{ reg.registered_by.get_full_name|default:reg.registered_by.username }}{% else %}—{% endif %}</td>
                         <td>{{ reg.registered_at|date:"d/m/Y H:i" }}</td>
                         <td>
                             <span class="badge bg-{% if reg.status == 'approved' %}success{% elif reg.status == 'rejected' %}danger{% elif reg.status == 'withdrawn' %}secondary{% else %}warning{% endif %}">

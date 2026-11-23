@@ -1,17 +1,17 @@
-﻿{% extends 'base.html' %}
-{% block title %}Fixtures â€“ {{ tournament.name }}{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Fixtures – {{ tournament.name }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2><i class="fas fa-calendar-alt text-primary me-2"></i>{{ tournament.name }} â€“ Fixtures</h2>
+            <h2><i class="fas fa-calendar-alt text-primary me-2"></i>{{ tournament.name }} – Fixtures</h2>
         </div>
         <div class="btn-group">
             <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-arrow-left me-1"></i>Overview
             </a>
-            {% if request.user.is_superuser or request.user.groups.all|length %}
+            {% if can_manage %}
             <a href="{% url 'tournaments:create_match' tournament.slug %}" class="btn btn-success btn-sm">
                 <i class="fas fa-plus me-1"></i>Add Match
             </a>
@@ -41,7 +41,7 @@
                         <th>Away</th>
                         <th>Venue</th>
                         <th>Status</th>
-                        {% if request.user.is_superuser or request.user.groups.all|length %}
+                        {% if can_manage %}
                         <th>Action</th>
                         {% endif %}
                     </tr>
@@ -53,12 +53,12 @@
                         <td class="fw-bold">{% if m.home_team %}{{ m.home_team.display_name }}{% else %}TBD{% endif %}</td>
                         <td class="text-center fw-bold">
                             {% if m.status == 'completed' %}
-                            {{ m.home_score }} â€“ {{ m.away_score }}
+                            {{ m.home_score }} – {{ m.away_score }}
                             {% if m.home_penalties is not None %}
                             <br><small class="text-muted">({{ m.home_penalties }}-{{ m.away_penalties }} pens)</small>
                             {% endif %}
                             {% elif m.status == 'live' %}
-                            <span class="badge bg-danger">LIVE {{ m.home_score }} â€“ {{ m.away_score }}</span>
+                            <span class="badge bg-danger">LIVE {{ m.home_score }} – {{ m.away_score }}</span>
                             {% else %}
                             vs
                             {% endif %}
@@ -70,7 +70,7 @@
                                 {{ m.get_status_display }}
                             </span>
                         </td>
-                        {% if request.user.is_superuser or request.user.groups.all|length %}
+                        {% if can_manage %}
                         <td>
                             {% if m.status != 'completed' %}
                             <a href="{% url 'tournaments:record_result' m.pk %}" class="btn btn-sm btn-outline-success" title="Record Result">

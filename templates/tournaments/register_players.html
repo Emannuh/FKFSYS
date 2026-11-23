@@ -1,12 +1,12 @@
-﻿{% extends 'base.html' %}
-{% block title %}Register Players â€“ {{ tournament.name }}{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Register Players – {{ tournament.name }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2><i class="fas fa-user-plus text-success me-2"></i>Tournament Squad</h2>
-            <p class="text-muted mb-0">{{ tournament.name }} â€“ {{ team.team_name }}</p>
+            <p class="text-muted mb-0">{{ tournament.name }} – {{ team.team_name }}</p>
         </div>
         <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-arrow-left me-1"></i>Back
@@ -51,6 +51,7 @@
         <div class="card-body">
             <form method="post">
                 {% csrf_token %}
+                {% include 'tournaments/includes/form_errors.html' %}
                 <div class="mb-3">
                     {{ form.players }}
                 </div>
