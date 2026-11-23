@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Status — FKF Meru League{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h1 class="h5 mb-0">M-PESA payment — {{ team.team_name }}</h1>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-3">
+          <dt class="col-5">Amount</dt><dd class="col-7">KSh {{ payment.amount|floatformat:0 }}</dd>
+          <dt class="col-5">Phone</dt><dd class="col-7">{{ payment.masked_phone }}</dd>
+          <dt class="col-5">Requested</dt><dd class="col-7">{{ payment.transaction_date|date:"M d, Y H:i" }}</dd>
+          {% if payment.mpesa_receipt_number and payment.status == 'completed' %}
+          <dt class="col-5">Receipt</dt><dd class="col-7">{{ payment.mpesa_receipt_number }}</dd>
+          {% endif %}
+        </dl>
+
+        <div role="status" aria-live="polite">
+          {% if payment.status == 'completed' %}
+          <div class="alert alert-success mb-3">Payment received. Your registration will now be reviewed.</div>
+          <a href="{% url 'teams:registration_success' %}" class="btn btn-success">Continue</a>
+          {% elif payment.status == 'failed' %}
+          <div class="alert alert-danger mb-3">The payment was not completed{% if payment.result_desc %}: {{ payment.result_desc }}{% endif %}.</div>
+          <a href="{% url 'payments:payment_page' team.id %}" class="btn btn-primary">Try again</a>
+          {% else %}
+          <div class="alert alert-warning mb-3">Waiting for confirmation. Enter your M-PESA PIN on your phone, then refresh this page.</div>
+          <a href="{% url 'payments:payment_status' payment.id %}" class="btn btn-primary" id="refreshStatus">Refresh status</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% if payment.status == 'pending' %}
+<script>setTimeout(function () { window.location.reload(); }, 15000);</script>
+{% endif %}
+{% endblock %}
