@@ -1,40 +1,50 @@
 """
 fkf_league/context_processors.py
 
-Global template context processors.
+league_settings_context
+    Exposes the LeagueSettings singleton as ``{{ league_settings }}``. The lookup is
+    lazy (only pages that actually use it pay for the query) and memoised on the
+    request, so views and templates share one fetch per request.
 
-league_settings_context:
-    Makes LeagueSettings available in every template as {{ league_settings }}
-    without each view needing to call LeagueSettings.get_settings().
-
-    This replaces the repeated pattern across views:
-        settings = LeagueSettings.get_settings()
-        context = { ..., 'league_settings': settings, ... }
-
-site_info_context:
-    Makes basic site metadata available everywhere (current year, site name).
+site_info_context
+    Site-wide constants: ``{{ current_year }}``, ``{{ site_name }}``.
 """
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from django.db import DatabaseError
+from django.http import HttpRequest
 from django.utils import timezone
+from django.utils.functional import SimpleLazyObject
+
+logger = logging.getLogger(__name__)
+
+SITE_NAME = 'FKF Meru County League'
+_CACHE_ATTR = '_cached_league_settings'
 
 
-def league_settings_context(request):
-    """
-    Inject the singleton LeagueSettings into every template context.
-    Uses a per-request cache on the request object to avoid multiple DB hits
-    within the same request cycle.
-    """
-    if not hasattr(request, '_cached_league_settings'):
+def get_request_league_settings(request: HttpRequest) -> Any:
+    """Return LeagueSettings for this request (fetched at most once), or None on DB error."""
+    if not hasattr(request, _CACHE_ATTR):
+        from teams.models import LeagueSettings  # local import: avoids app-registry import cycles
+
         try:
-            from teams.models import LeagueSettings
-            request._cached_league_settings = LeagueSettings.get_settings()
-        except Exception:
-            request._cached_league_settings = None
-    return {'league_settings': request._cached_league_settings}
+            value = LeagueSettings.get_settings()
+        except DatabaseError:
+            logger.exception('Could not load LeagueSettings')
+            value = None
+        setattr(request, _CACHE_ATTR, value)
+    return getattr(request, _CACHE_ATTR)
 
 
-def site_info_context(request):
-    """Inject site-wide constants available in all templates."""
+def league_settings_context(request: HttpRequest) -> dict[str, Any]:
+    return {'league_settings': SimpleLazyObject(lambda: get_request_league_settings(request))}
+
+
+def site_info_context(request: HttpRequest) -> dict[str, Any]:
     return {
         'current_year': timezone.now().year,
-        'site_name':    'FKF Meru County League',
+        'site_name': SITE_NAME,
     }
