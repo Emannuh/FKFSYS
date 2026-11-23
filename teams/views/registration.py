@@ -5,7 +5,7 @@ from django.shortcuts import redirect, render
 from ..forms import TeamRegistrationForm
 from ..models import LeagueSettings, Team
 
-REGISTRATION_FEE_KSH = 16000  # keep in sync with payments.views.payment_page
+from payments.services import REGISTRATION_FEE
 
 
 def team_registration(request):
@@ -33,7 +33,7 @@ def team_registration(request):
         messages.error(request, 'Please correct the errors below.')
 
     return render(request, 'teams/register_improved.html', {
-        'form': form, 'registration_fee': REGISTRATION_FEE_KSH,
+        'form': form, 'registration_fee': REGISTRATION_FEE,
     })
 
 

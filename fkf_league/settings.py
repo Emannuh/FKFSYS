@@ -160,6 +160,13 @@ MPESA_CONFIG = {
     "CALLBACK_URL": os.environ.get("MPESA_CALLBACK_URL"),
     "ENVIRONMENT": os.environ.get("MPESA_ENVIRONMENT", "sandbox"),
 }
+# Optional source-IP allow-list for the Daraja callback (empty = token check only).
+MPESA_CALLBACK_ALLOWED_IPS = env_list("MPESA_CALLBACK_ALLOWED_IPS")
+
+# Audit log: whether to trust X-Forwarded-For for client IPs. When unset, the
+# audit logger trusts it only if SECURE_PROXY_SSL_HEADER is configured.
+if "AUDIT_TRUST_X_FORWARDED_FOR" in os.environ:
+    AUDIT_TRUST_X_FORWARDED_FOR = env_bool("AUDIT_TRUST_X_FORWARDED_FOR")
 
 
 # ── Email ──────────────────────────────────────────────────────────────────

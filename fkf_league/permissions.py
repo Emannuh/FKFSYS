@@ -48,8 +48,8 @@ def is_super_admin(user: Any) -> bool:
 
 
 def is_league_admin(user: Any) -> bool:
-    """Staff or 'League Admin' group member."""
-    return _is_staff(user) or _in_any_group(user, GROUP_LEAGUE_ADMIN)
+    """Superuser, staff or 'League Admin' group member."""
+    return bool(getattr(user, "is_superuser", False)) or _is_staff(user) or _in_any_group(user, GROUP_LEAGUE_ADMIN)
 
 
 def is_league_admin_or_manager(user: Any) -> bool:
