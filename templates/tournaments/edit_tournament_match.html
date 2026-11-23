@@ -1,76 +1,57 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 {% block title %}Edit Match #{{ match.match_number }} – {{ tournament.name }}{% endblock %}
+{% block page_title %}Edit match{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h3><i class="fas fa-edit text-primary me-2"></i>Edit Match Details</h3>
-                    <p class="text-muted mb-0">{{ tournament.name }} – {{ match.get_stage_display }} #{{ match.match_number }}</p>
-                </div>
-                <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-arrow-left me-1"></i>Back to Fixtures
-                </a>
-            </div>
-
-
-            <!-- Match info -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body text-center">
-                    <div class="d-flex justify-content-center align-items-center gap-4 my-2">
-                        <h5 class="mb-0">{% if match.home_team %}{{ match.home_team.display_name }}{% else %}TBD{% endif %}</h5>
-                        <span class="display-6 text-muted">vs</span>
-                        <h5 class="mb-0">{% if match.away_team %}{{ match.away_team.display_name }}{% else %}TBD{% endif %}</h5>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Edit form -->
-            <div class="card shadow-sm">
-                <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-                    <h6 class="mb-0"><i class="fas fa-cog me-1"></i>Match Settings</h6>
-                </div>
-                <div class="card-body">
-                    <form method="post" novalidate>
-                        {% csrf_token %}
-                        {% include 'tournaments/includes/form_errors.html' %}
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">{% include 'tournaments/includes/form_field.html' with field=form.home_team %}</div>
-                            <div class="col-md-6">{% include 'tournaments/includes/form_field.html' with field=form.away_team %}</div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">{% include 'tournaments/includes/form_field.html' with field=form.match_date %}</div>
-                            <div class="col-md-6">{% include 'tournaments/includes/form_field.html' with field=form.kickoff_time %}</div>
-                        </div>
-                        {% include 'tournaments/includes/form_field.html' with field=form.venue %}
-
-                        <hr>
-                        <h6 class="text-muted mb-3"><i class="fas fa-stopwatch me-1" aria-hidden="true"></i>Duration Settings</h6>
-                        <p class="small text-muted">
-                            Tournaments may have different match durations per round.
-                            Adjust the total and half duration accordingly.
-                        </p>
-                        <div class="row mb-3">
-                            <div class="col-md-4">{% include 'tournaments/includes/form_field.html' with field=form.match_duration %}</div>
-                            <div class="col-md-4">{% include 'tournaments/includes/form_field.html' with field=form.half_duration %}</div>
-                            <div class="col-md-4">{% include 'tournaments/includes/form_field.html' with field=form.extra_time_duration %}</div>
-                        </div>
-                        {% include 'tournaments/includes/form_field.html' with field=form.notes %}
-
-                        <div class="text-end">
-                            <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-secondary me-2">Cancel</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i>Save Changes
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">{{ tournament.name }}</span>
+        <h1 class="page-title h2">Edit Match Details</h1>
+        <p class="page-subtitle">{{ tournament.name }} – {{ match.get_stage_display }} #{{ match.match_number }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Fixtures</a>
     </div>
 </div>
 {% endblock %}
 
+{% block content %}
+<div class="form-narrow dash-stack">
+    <div class="fixture-card">
+        <span class="fixture-card__team"><span>{% if match.home_team %}{{ match.home_team.display_name }}{% else %}TBD{% endif %}</span></span>
+        <span class="fixture-card__centre"><span class="fixture-card__time">vs</span></span>
+        <span class="fixture-card__team fixture-card__team--away"><span>{% if match.away_team %}{{ match.away_team.display_name }}{% else %}TBD{% endif %}</span></span>
+    </div>
+
+    <form method="post" novalidate class="panel">
+        {% csrf_token %}
+        <div class="panel-header"><h2 class="panel-title"><i class="fas fa-gear" aria-hidden="true"></i>Match Settings</h2></div>
+        <div class="panel-body">
+            {% include 'tournaments/includes/form_errors.html' %}
+            <div class="row">
+                <div class="col-md-6">{% include 'tournaments/includes/form_field.html' with field=form.home_team %}</div>
+                <div class="col-md-6">{% include 'tournaments/includes/form_field.html' with field=form.away_team %}</div>
+                <div class="col-md-6">{% include 'tournaments/includes/form_field.html' with field=form.match_date %}</div>
+                <div class="col-md-6">{% include 'tournaments/includes/form_field.html' with field=form.kickoff_time %}</div>
+            </div>
+            {% include 'tournaments/includes/form_field.html' with field=form.venue %}
+
+            <h3 class="h6 mt-4 mb-1"><i class="fas fa-stopwatch me-1" aria-hidden="true"></i>Duration Settings</h3>
+            <p class="form-text mt-0 mb-3">Tournaments may have different match durations per round. Adjust the total and half duration accordingly.</p>
+            <div class="row">
+                <div class="col-md-4">{% include 'tournaments/includes/form_field.html' with field=form.match_duration %}</div>
+                <div class="col-md-4">{% include 'tournaments/includes/form_field.html' with field=form.half_duration %}</div>
+                <div class="col-md-4">{% include 'tournaments/includes/form_field.html' with field=form.extra_time_duration %}</div>
+            </div>
+            {% include 'tournaments/includes/form_field.html' with field=form.notes %}
+        </div>
+        <div class="panel-footer form-actions">
+            <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk me-1" aria-hidden="true"></i>Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
