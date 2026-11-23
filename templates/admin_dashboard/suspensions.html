@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Manage Suspensions - Admin Dashboard{% endblock %}
@@ -15,6 +15,38 @@
     <div class="col-12">
         <h2 class="text-primary">Player Suspensions</h2>
         <p class="lead">Manage player suspensions and bans</p>
+    </div>
+</div>
+
+<!-- All active suspensions (source of truth: Suspension records) -->
+<div class="card mb-4">
+    <div class="card-header ch-red">
+        <h2 class="h5 mb-0">All Active Suspensions</h2>
+    </div>
+    <div class="card-body">
+        {% if active_suspensions %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr><th scope="col">Player</th><th scope="col">Team</th><th scope="col">Reason</th><th scope="col">Matches remaining</th><th scope="col">Since</th><th scope="col">Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for s in active_suspensions %}
+                    <tr>
+                        <td>{{ s.player.full_name }}</td>
+                        <td>{{ s.player.team.team_name }}</td>
+                        <td>{{ s.get_reason_display }}{% if s.details %} — {{ s.details|truncatechars:60 }}{% endif %}</td>
+                        <td>{{ s.matches_remaining }} of {{ s.matches_missed }}</td>
+                        <td>{{ s.start_date|date:"M d, Y" }}</td>
+                        <td><a href="{% url 'admin_dashboard:manage_suspension' s.player_id %}" class="btn btn-sm btn-primary-custom">Manage</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No active suspensions.</p>
+        {% endif %}
     </div>
 </div>
 
@@ -48,7 +80,7 @@
                                 {% endif %}
                                 <div>
                                     <strong>{{ player.full_name }}</strong><br>
-                                    <small>#{{ player.jersey_number }} â€¢ {{ player.position }}</small>
+                                    <small>#{{ player.jersey_number }} • {{ player.position }}</small>
                                 </div>
                             </div>
                         </td>
@@ -117,7 +149,7 @@
                                 {% endif %}
                                 <div>
                                     <strong>{{ player.full_name }}</strong><br>
-                                    <small>#{{ player.jersey_number }} â€¢ {{ player.position }}</small>
+                                    <small>#{{ player.jersey_number }} • {{ player.position }}</small>
                                 </div>
                             </div>
                         </td>
@@ -179,7 +211,7 @@
                                 {% endif %}
                                 <div>
                                     <strong>{{ player.full_name }}</strong><br>
-                                    <small>#{{ player.jersey_number }} â€¢ {{ player.position }}</small>
+                                    <small>#{{ player.jersey_number }} • {{ player.position }}</small>
                                 </div>
                             </div>
                         </td>

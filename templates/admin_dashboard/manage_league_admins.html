@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block title %}User Management{% endblock %}
 
 {% block content %}
@@ -75,29 +75,28 @@
                 {% csrf_token %}
                 <div class="row g-3">
                     <div class="col-md-2">
-                        <label class="form-label">Username <span class="text-danger">*</span></label>
-                        <input type="text" name="username" class="form-control" required placeholder="username">
+                        <label class="form-label" for="new-username">Username <span class="text-danger">*</span></label>
+                        <input type="text" id="new-username" name="username" class="form-control" required placeholder="username">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Email <span class="text-danger">*</span></label>
-                        <input type="email" name="email" class="form-control" required placeholder="user@example.com">
+                        <label class="form-label" for="new-email">Email <span class="text-danger">*</span></label>
+                        <input type="email" id="new-email" name="email" class="form-control" required placeholder="user@example.com">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">First Name <span class="text-danger">*</span></label>
-                        <input type="text" name="first_name" class="form-control" required placeholder="John">
+                        <label class="form-label" for="new-first_name">First Name <span class="text-danger">*</span></label>
+                        <input type="text" id="new-first_name" name="first_name" class="form-control" required placeholder="John">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Last Name <span class="text-danger">*</span></label>
-                        <input type="text" name="last_name" class="form-control" required placeholder="Doe">
+                        <label class="form-label" for="new-last_name">Last Name <span class="text-danger">*</span></label>
+                        <input type="text" id="new-last_name" name="last_name" class="form-control" required placeholder="Doe">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Role <span class="text-danger">*</span></label>
-                        <select name="role" class="form-select" required>
+                        <label class="form-label" for="new-role">Role <span class="text-danger">*</span></label>
+                        <select name="role" id="new-role" class="form-select" required>
                             <option value="">Select Role...</option>
-                            <option value="League Admin">League Admin</option>
-                            <option value="Team Managers">Team Manager</option>
-                            <option value="Referee">Referee</option>
-                            <option value="Referees Manager">Referees Manager</option>
+                            {% for group in all_groups %}
+                            <option value="{{ group.name }}">{{ group.name }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
@@ -107,7 +106,7 @@
                     </div>
                 </div>
                 <div class="alert alert-info mt-3 mb-0">
-                    <i class="fas fa-info-circle"></i> A random password will be generated and displayed. <strong>Save it!</strong>
+                    <i class="fas fa-info-circle"></i> The new user is emailed a single-use link to set their own password. No password is shown or sent.
                 </div>
             </form>
         </div>
@@ -118,8 +117,8 @@
         <div class="card-body">
             <form method="get" class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">Filter by Role</label>
-                    <select name="role" class="form-select" onchange="this.form.submit()">
+                    <label class="form-label" for="filter-role">Filter by Role</label>
+                    <select name="role" id="filter-role" class="form-select" onchange="this.form.submit()">
                         <option value="all" {% if role_filter == 'all' %}selected{% endif %}>All Roles</option>
                         <option value="League Admin" {% if role_filter == 'League Admin' %}selected{% endif %}>League Admin</option>
                         <option value="Team Managers" {% if role_filter == 'Team Managers' %}selected{% endif %}>Team Managers</option>
@@ -128,17 +127,17 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Filter by Status</label>
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <label class="form-label" for="filter-status">Filter by Status</label>
+                    <select name="status" id="filter-status" class="form-select" onchange="this.form.submit()">
                         <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
                         <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
                         <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Only</option>
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Search Users</label>
+                    <label class="form-label" for="filter-search">Search Users</label>
                     <div class="input-group">
-                        <input type="text" name="search" class="form-control" placeholder="Search by username, email, or name..." value="{{ search_query }}">
+                        <input type="search" id="filter-search" name="search" class="form-control" placeholder="Search by username, email, or name..." value="{{ search_query }}">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-search"></i> Search
                         </button>
@@ -154,7 +153,7 @@
     <!-- Users Table -->
     <div class="card">
         <div class="card-header ch-dark">
-            <h5 class="mb-0"><i class="fas fa-list"></i> All Users ({{ users.count }})</h5>
+            <h5 class="mb-0"><i class="fas fa-list"></i> All Users ({{ page_obj.paginator.count }})</h5>
         </div>
         <div class="card-body">
             {% if users %}
@@ -173,73 +172,75 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for user in users %}
+                        {% for u in users %}
                         <tr>
                             <td>
-                                <strong>{{ user.username }}</strong>
-                                {% if user.is_superuser %}
+                                <strong>{{ u.username }}</strong>
+                                {% if u.is_superuser %}
                                 <span class="badge bg-danger ms-1">Superuser</span>
                                 {% endif %}
-                                {% if user.is_staff %}
+                                {% if u.is_staff %}
                                 <span class="badge bg-warning text-dark ms-1">Staff</span>
                                 {% endif %}
                             </td>
-                            <td>{{ user.first_name }} {{ user.last_name }}</td>
-                            <td>{{ user.email }}</td>
+                            <td>{{ u.first_name }} {{ u.last_name }}</td>
+                            <td>{{ u.email }}</td>
                             <td>
-                                {% for group in user.groups.all %}
+                                {% for group in u.groups.all %}
                                 <span class="badge bg-secondary">{{ group.name }}</span>
                                 {% empty %}
                                 <span class="text-muted">No role</span>
                                 {% endfor %}
                             </td>
                             <td>
-                                {% if user.is_active %}
+                                {% if u.is_active %}
                                 <span class="badge bg-success">Active</span>
                                 {% else %}
                                 <span class="badge bg-danger">Inactive</span>
                                 {% endif %}
                             </td>
-                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                            <td>{{ u.date_joined|date:"M d, Y" }}</td>
                             <td>
-                                {% if user.last_login %}
-                                {{ user.last_login|date:"M d, Y H:i" }}
+                                {% if u.last_login %}
+                                {{ u.last_login|date:"M d, Y H:i" }}
                                 {% else %}
                                 <span class="text-muted">Never</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="btn-group" role="group">
-                                    <!-- Edit Roles -->
-                                    <a href="{% url 'admin_dashboard:edit_user_roles' user.id %}" 
-                                       class="btn btn-sm btn-info" title="Edit Roles">
-                                        <i class="fas fa-user-tag"></i>
+                                <div class="btn-group" role="group" aria-label="Actions for {{ u.username }}">
+                                    <a href="{% url 'admin_dashboard:edit_user_roles' u.id %}"
+                                       class="btn btn-sm btn-info" title="Edit Roles" aria-label="Edit roles">
+                                        <i class="fas fa-user-tag" aria-hidden="true"></i>
                                     </a>
-                                    
-                                    <!-- Toggle Status -->
-                                    <a href="{% url 'admin_dashboard:toggle_league_admin_status' user.id %}" 
-                                       class="btn btn-sm btn-{% if user.is_active %}warning{% else %}success{% endif %}"
-                                       onclick="return confirm('{% if user.is_active %}Deactivate{% else %}Activate{% endif %} {{ user.username }}?')"
-                                       title="{% if user.is_active %}Deactivate{% else %}Activate{% endif %}">
-                                        <i class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"></i>
-                                    </a>
-                                    
-                                    <!-- Reset Password -->
-                                    <a href="{% url 'admin_dashboard:reset_league_admin_password' user.id %}" 
-                                       class="btn btn-sm btn-primary"
-                                       onclick="return confirm('Reset password for {{ user.username }}?')"
-                                       title="Reset Password">
-                                        <i class="fas fa-key"></i>
-                                    </a>
-                                    
-                                    <!-- Delete User -->
-                                    {% if not user.is_superuser and user != request.user %}
-                                    <a href="{% url 'admin_dashboard:delete_user' user.id %}" 
-                                       class="btn btn-sm btn-danger"
-                                       onclick="return confirm('âš ï¸ DELETE {{ user.username }}? This cannot be undone!')"
-                                       title="Delete User">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
+                                    {% if not u.is_superuser and u != request.user %}
+                                    <form method="post" action="{% url 'admin_dashboard:toggle_league_admin_status' u.id %}" class="d-inline"
+                                          onsubmit="return confirm('{% if u.is_active %}Deactivate{% else %}Activate{% endif %} {{ u.username|escapejs }}?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-{% if u.is_active %}warning{% else %}success{% endif %}"
+                                                title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}"
+                                                aria-label="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                            <i class="fas fa-{% if u.is_active %}ban{% else %}check{% endif %}" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    {% if u != request.user %}
+                                    <form method="post" action="{% url 'admin_dashboard:reset_league_admin_password' u.id %}" class="d-inline"
+                                          onsubmit="return confirm('Reset password for {{ u.username|escapejs }}? Their current password will stop working.')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-primary" title="Reset Password" aria-label="Reset password">
+                                            <i class="fas fa-key" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    {% if not u.is_superuser and u != request.user %}
+                                    <form method="post" action="{% url 'admin_dashboard:delete_user' u.id %}" class="d-inline"
+                                          onsubmit="return confirm('DELETE {{ u.username|escapejs }}? This cannot be undone!')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete User" aria-label="Delete user">
+                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
                                     {% endif %}
                                 </div>
                             </td>
@@ -248,6 +249,15 @@
                     </tbody>
                 </table>
             </div>
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="User pages">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&amp;role={{ role_filter|urlencode }}&amp;status={{ status_filter|urlencode }}&amp;search={{ search_query|urlencode }}">Previous</a></li>{% endif %}
+                    <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&amp;role={{ role_filter|urlencode }}&amp;status={{ status_filter|urlencode }}&amp;search={{ search_query|urlencode }}">Next</a></li>{% endif %}
+                </ul>
+            </nav>
+            {% endif %}
             {% else %}
             <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle"></i> No users found matching your filters.
@@ -277,7 +287,7 @@
                     <ul>
                         <li><i class="fas fa-user-tag text-info"></i> <strong>Edit Roles:</strong> Change user's role assignments</li>
                         <li><i class="fas fa-ban text-warning"></i> <strong>Deactivate:</strong> User cannot login (reversible)</li>
-                        <li><i class="fas fa-key text-primary"></i> <strong>Reset Password:</strong> Generate new password</li>
+                        <li><i class="fas fa-key text-primary"></i> <strong>Reset Password:</strong> Email a set-password link</li>
                         <li><i class="fas fa-trash text-danger"></i> <strong>Delete:</strong> Permanently remove user</li>
                     </ul>
                 </div>

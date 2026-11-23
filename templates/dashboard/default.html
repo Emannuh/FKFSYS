@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — FKF Meru League{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="h3">Welcome, {{ user.get_full_name|default:user.username }}</h1>
+    <p>Your account does not have a dashboard role yet, so there is nothing to manage here.</p>
+    <p>If you were expecting access as a team manager, referee or league official, please contact the league administrator to have the correct role assigned to your account.</p>
+    <a href="{% url 'frontend:home' %}" class="btn btn-primary">Go to the home page</a>
+</div>
+{% endblock %}

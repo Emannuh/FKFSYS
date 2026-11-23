@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -86,10 +86,10 @@
                                 {% if report.referee %}
                                     {{ report.referee.full_name }}
                                     {% if not report.referee.user %}
-                                        <small class="text-danger d-block">âš ï¸ No user account linked - referee cannot login</small>
+                                        <small class="text-danger d-block">⚠️ No user account linked - referee cannot login</small>
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-danger">âŒ No referee assigned</span>
+                                    <span class="text-danger">❌ No referee assigned</span>
                                 {% endif %}
                             </td>
                         </tr>

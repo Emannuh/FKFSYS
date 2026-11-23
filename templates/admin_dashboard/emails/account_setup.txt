@@ -1,0 +1,15 @@
+Dear {{ user.get_full_name|default:user.username }},
+
+An account has been created for you on the FKF Meru County League Management System.
+
+Username: {{ user.username }}
+{% if role %}Role: {{ role }}
+{% endif %}
+Choose your password here (single use, expires automatically):
+{{ setup_url }}
+
+After setting it, log in at {{ login_url }}
+
+If you did not expect this email, ignore it and contact the league administrator.
+
+FKF Meru County League Administration

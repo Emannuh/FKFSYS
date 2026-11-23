@@ -1,0 +1,11 @@
+{% extends "admin_dashboard/emails/_layout.html" %}
+{% block title %}Welcome to FKF Meru League{% endblock %}
+{% block body %}
+<p>An account has been created for you on the FKF Meru County League Management System.</p>
+<div class="box">
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    {% if role %}<p><strong>Role:</strong> {{ role }}</p>{% endif %}
+    <p>Choose your password to activate your login:</p>
+    <a href="{{ setup_url }}" class="button">Set your password</a>
+</div>
+{% endblock %}
