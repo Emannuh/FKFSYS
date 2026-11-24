@@ -1,0 +1,21 @@
+{% comment %}
+Fixtures grouped by match day, each match as a fixture card.
+{% include "matches/_fixture_days.html" with matches=upcoming_matches %}
+Context: matches (Match iterable with home_team/away_team/zone selected, ordered by date).
+Day headings are h3: put the include under an h2 section title.
+{% endcomment %}{% now "Y-m-d" as today_str %}
+{% regroup matches by match_date|date:"Y-m-d" as days %}
+<div class="fx-days">
+    {% for day in days %}
+    <section aria-label="{{ day.list.0.match_date|date:'l j F Y' }}">
+        <h3 class="fx-day__head">
+            {% if day.grouper == today_str %}<span class="status-badge status-accent">Today</span>{% endif %}
+            <span>{{ day.list.0.match_date|date:"D j M Y" }}</span>
+            <span class="fx-day__count">{{ day.list|length }} match{{ day.list|length|pluralize:"es" }}</span>
+        </h3>
+        <div class="fixture-list">
+            {% for match in day.list %}{% include "partials/_fixture_card.html" %}{% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+</div>

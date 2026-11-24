@@ -1,156 +1,96 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static fkf_tags %}
 
 {% block title %}Top Scorers — FKF Meru County League{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
+
+{% block page_header %}
+<header class="page-header">
+    <div>
+        <span class="page-eyebrow">Golden Boot</span>
+        <h1 class="page-title">Top scorers</h1>
+        <p class="page-subtitle">FKF Meru County League goal-scoring rankings, overall and by zone.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'matches:league_tables' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-table me-1" aria-hidden="true"></i>League tables</a>
+        <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>Fixtures</a>
+    </div>
+</header>
+{% endblock %}
 
 {% block content %}
-
-<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
-  <div>
-    <h2 class="mb-1"><i class="fas fa-star me-2" style="color:var(--fkf-gold);"></i>Top Scorers</h2>
-    <p class="text-muted mb-0" style="font-size:.875rem;">FKF Meru County League — Golden Boot Rankings</p>
-  </div>
-  <div class="d-flex gap-2">
-    <a href="{% url 'matches:league_tables' %}" class="btn btn-outline-primary btn-sm">
-      <i class="fas fa-table me-1"></i>League Tables
-    </a>
-    <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="fas fa-calendar-alt me-1"></i>Fixtures
-    </a>
-  </div>
-</div>
-
 <div class="row g-4">
-  <!-- Top Scorers -->
-  <div class="col-lg-8">
-    <div class="card">
-      <div class="card-header" style="background:linear-gradient(90deg,var(--fkf-red),var(--fkf-red-dark));">
-        <h5 class="mb-0 text-white"><i class="fas fa-futbol me-2"></i>Goals Scored</h5>
-      </div>
-      {% if top_scorers %}
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead>
-              <tr>
-                <th style="width:50px;">#</th>
-                <th>Player</th>
-                <th>Team</th>
-                <th title="Goals">Goals</th>
-                <th title="Matches Played" class="d-none d-md-table-cell">MP</th>
-                <th title="Goals per Match" class="d-none d-md-table-cell">G/M</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for player in top_scorers %}
-              <tr>
-                <td>
-                  <div class="stat-rank
-                    {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-n{% endif %}">
-                    {{ forloop.counter }}
-                  </div>
-                </td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    {% if player.photo %}
-                    <img src="{{ player.photo.url }}" alt="{{ player.full_name }}"
-                         style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
-                    {% else %}
-                    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--fkf-red),var(--fkf-red-dark));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:.75rem;flex-shrink:0;">
-                      {{ player.full_name|slice:":1"|upper }}
-                    </div>
-                    {% endif %}
-                    <div>
-                      <div class="fw-600">{{ player.full_name }}</div>
-                      <small class="text-muted">{{ player.get_position_display|default:player.position }}</small>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span class="badge" style="background:#f1f5f9;color:var(--text-main);font-weight:600;">
-                    {{ player.team.team_name }}
-                  </span>
-                </td>
-                <td>
-                  <span class="badge" style="background:linear-gradient(135deg,var(--fkf-red),var(--fkf-red-dark));color:white;font-size:.95rem;padding:4px 12px;">
-                    {{ player.goals_scored }}
-                  </span>
-                </td>
-                <td class="d-none d-md-table-cell text-muted">{{ player.matches_played|default:"—" }}</td>
-                <td class="d-none d-md-table-cell text-muted">
-                  {% if player.matches_played and player.matches_played > 0 %}
-                    {{ player.goals_scored|floatformat:0 }}
-                  {% else %}—{% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {% else %}
-      <div class="card-body text-center py-5 text-muted">
-        <i class="fas fa-futbol fa-3x mb-3 d-block opacity-25"></i>
-        <h5>No goal scorers yet</h5>
-        <p class="mb-0">Stats will appear here once matches are played.</p>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Sidebar stats -->
-  <div class="col-lg-4">
-    <!-- Top Assists / Cards if available, else league quick stats -->
-    <div class="card mb-3">
-      <div class="card-header" style="background:linear-gradient(90deg,var(--fkf-gold),var(--fkf-gold-dark));">
-        <h6 class="mb-0 text-white"><i class="fas fa-bolt me-2"></i>Golden Boot Race</h6>
-      </div>
-      <div class="card-body p-0">
-        {% if top_scorers %}
-        {% for player in top_scorers|slice:":5" %}
-        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:10px;">
-          <div style="width:22px;text-align:center;font-weight:800;font-size:.82rem;color:var(--text-muted);">{{ forloop.counter }}</div>
-          <div class="flex-grow-1">
-            <div class="fw-600" style="font-size:.85rem;">{{ player.full_name }}</div>
-            <div style="font-size:.74rem;color:var(--text-muted);">{{ player.team.team_name }}</div>
-          </div>
-          <!-- Progress bar -->
-          <div style="width:80px;">
-            {% with top=top_scorers.0.goals_scored %}
-            <div style="background:#f1f5f9;border-radius:10px;height:8px;overflow:hidden;">
-              <div style="background:linear-gradient(90deg,var(--fkf-gold),var(--fkf-red));height:100%;border-radius:10px;width:{{ player.goals_scored|default:0 }}0%;transition:.5s;"></div>
+    <div class="col-lg-8">
+        <section class="panel" aria-labelledby="scorers-title">
+            <div class="panel-header flex-wrap">
+                <h2 class="panel-title" id="scorers-title"><i class="fas fa-futbol" aria-hidden="true"></i>Goals scored</h2>
+                {% if top_scorers and zones|length > 1 %}
+                <ul class="nav nav-segmented" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button type="button" class="nav-link active" id="scorers-tab-all" data-bs-toggle="tab" data-bs-target="#scorers-all" role="tab" aria-controls="scorers-all" aria-selected="true">All zones</button>
+                    </li>
+                    {% for zone in zones %}
+                    <li class="nav-item" role="presentation">
+                        <button type="button" class="nav-link" id="scorers-tab-{{ zone.pk }}" data-bs-toggle="tab" data-bs-target="#scorers-{{ zone.pk }}" role="tab" aria-controls="scorers-{{ zone.pk }}" aria-selected="false">{{ zone.name }}</button>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
             </div>
+            {% if top_scorers %}
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="scorers-all" role="tabpanel" aria-labelledby="scorers-tab-all" tabindex="0">
+                    {% include "matches/_scorer_table.html" with scorers=top_scorers caption="All zones" %}
+                </div>
+                {% if zones|length > 1 %}
+                {% for zone, scorers in scorers_by_zone.items %}
+                <div class="tab-pane fade" id="scorers-{{ zone.pk }}" role="tabpanel" aria-labelledby="scorers-tab-{{ zone.pk }}" tabindex="0">
+                    {% if scorers %}
+                    {% include "matches/_scorer_table.html" with scorers=scorers caption=zone.name %}
+                    {% else %}
+                    {% empty_state icon="futbol" title="No goals in this zone yet" %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+            {% else %}
+            {% empty_state icon="futbol" title="No goal scorers yet" message="Stats will appear here once matches are played." %}
+            {% endif %}
+        </section>
+    </div>
+
+    <aside class="col-lg-4 d-grid gap-4 align-content-start" aria-label="Golden Boot race and links">
+        <section class="panel" aria-labelledby="race-title">
+            <div class="panel-header"><h2 class="panel-title" id="race-title"><i class="fas fa-bolt" aria-hidden="true"></i>Golden Boot race</h2></div>
+            {% if top_scorers %}
+            {% with top=top_scorers.0.goals_scored %}
+            <ol class="rank-list">
+                {% for player in top_scorers|slice:":5" %}
+                <li>
+                    <span class="rank">{{ forloop.counter }}</span>
+                    <span class="who"><strong>{{ player.full_name }}</strong><span>{{ player.team.team_name }}</span></span>
+                    <span class="boot-bar" aria-hidden="true"><span style="width: {% widthratio player.goals_scored top 100 %}%"></span></span>
+                    <span class="value">{{ player.goals_scored }}<span class="visually-hidden"> goals</span></span>
+                </li>
+                {% endfor %}
+            </ol>
             {% endwith %}
-          </div>
-          <strong style="font-size:.9rem;min-width:20px;text-align:right;">{{ player.goals_scored }}</strong>
-        </div>
-        {% endfor %}
-        {% else %}
-        <div class="text-center py-4 text-muted"><small>No data yet</small></div>
-        {% endif %}
-      </div>
-    </div>
+            {% else %}
+            {% empty_state icon="bolt" title="No data yet" %}
+            {% endif %}
+        </section>
 
-    <div class="card">
-      <div class="card-header" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);">
-        <h6 class="mb-0 text-white"><i class="fas fa-link me-2"></i>Quick Links</h6>
-      </div>
-      <div class="list-group list-group-flush">
-        <a href="{% url 'matches:league_tables' %}" class="list-group-item list-group-item-action border-0 py-3">
-          <i class="fas fa-table text-primary me-2"></i>League Tables
-        </a>
-        <a href="{% url 'matches:fixtures' %}" class="list-group-item list-group-item-action border-0 py-3">
-          <i class="fas fa-calendar-alt text-success me-2"></i>Match Fixtures
-        </a>
-        <a href="{% url 'teams:all_teams' %}" class="list-group-item list-group-item-action border-0 py-3">
-          <i class="fas fa-users text-warning me-2"></i>All Teams
-        </a>
-        <a href="{% url 'referees:referee_registration' %}" class="list-group-item list-group-item-action border-0 py-3">
-          <i class="fas fa-whistle text-danger me-2"></i>Become a Referee
-        </a>
-      </div>
-    </div>
-  </div>
+        <section class="panel" aria-labelledby="links-title">
+            <div class="panel-header"><h2 class="panel-title" id="links-title"><i class="fas fa-link" aria-hidden="true"></i>Quick links</h2></div>
+            <ul class="link-list">
+                <li><a href="{% url 'matches:league_tables' %}"><i class="fas fa-table" aria-hidden="true"></i>League tables<i class="fas fa-arrow-right" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'matches:fixtures' %}"><i class="fas fa-calendar-alt" aria-hidden="true"></i>Match fixtures<i class="fas fa-arrow-right" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'teams:all_teams' %}"><i class="fas fa-users" aria-hidden="true"></i>All teams<i class="fas fa-arrow-right" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'referees:referee_registration' %}"><i class="fas fa-user-tie" aria-hidden="true"></i>Become a referee<i class="fas fa-arrow-right" aria-hidden="true"></i></a></li>
+            </ul>
+        </section>
+    </aside>
 </div>
-
 {% endblock %}

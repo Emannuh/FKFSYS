@@ -1,0 +1,31 @@
+{% comment %}
+Public tournament header: breadcrumb, title block and section tabs.
+Usage: include with tournament=tournament active="overview|fixtures|standings"
+Admin actions are rendered by the page below this include.
+{% endcomment %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'tournaments:tournament_list' %}">Tournaments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ tournament.name }}</li>
+    </ol>
+</nav>
+{% if tournament.banner and active == 'overview' %}<img src="{{ tournament.banner.url }}" class="tournament-banner" alt="">{% endif %}
+<header class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+        {% if tournament.logo %}<img src="{{ tournament.logo.url }}" alt="" class="team-crest team-crest--lg" width="56" height="56">{% else %}<span class="team-crest team-crest--lg" aria-hidden="true"><i class="fas fa-trophy"></i></span>{% endif %}
+        <div>
+            <span class="page-eyebrow">Tournament{% if active == 'fixtures' %} &middot; Fixtures{% elif active == 'standings' %} &middot; Standings{% endif %}</span>
+            <h1 class="page-title">{{ tournament.name }}</h1>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                {% include "tournaments/includes/status_badge.html" with t=tournament %}
+                <span class="status-badge status-neutral">{{ tournament.get_format_display }}</span>
+                {% if tournament.zone %}<span class="status-badge status-neutral"><i class="fas fa-location-dot" aria-hidden="true"></i>{{ tournament.zone }}</span>{% endif %}
+            </div>
+        </div>
+    </div>
+</header>
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item"><a class="nav-link{% if active == 'overview' %} active{% endif %}"{% if active == 'overview' %} aria-current="page"{% endif %} href="{% url 'tournaments:tournament_detail' tournament.slug %}">Overview</a></li>
+    <li class="nav-item"><a class="nav-link{% if active == 'fixtures' %} active{% endif %}"{% if active == 'fixtures' %} aria-current="page"{% endif %} href="{% url 'tournaments:tournament_fixtures' tournament.slug %}">Fixtures</a></li>
+    <li class="nav-item"><a class="nav-link{% if active == 'standings' %} active{% endif %}"{% if active == 'standings' %} aria-current="page"{% endif %} href="{% url 'tournaments:tournament_standings' tournament.slug %}">Standings</a></li>
+</ul>

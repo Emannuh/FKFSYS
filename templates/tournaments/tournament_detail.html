@@ -1,252 +1,146 @@
 {% extends 'base.html' %}
+{% load static fkf_tags %}
+
 {% block title %}{{ tournament.name }} – FKF Meru League{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
+
+{% block page_header %}
+{% include "tournaments/includes/tournament_header.html" with active="overview" %}
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <!-- Header -->
-    <div class="card mb-4 shadow-sm">
-        {% if tournament.banner %}
-        <img src="{{ tournament.banner.url }}" class="card-img-top" style="max-height:260px;object-fit:cover;" alt="{{ tournament.name }}">
-        {% endif %}
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start flex-wrap">
-                <div>
-                    <h2 class="mb-1">
-                        {% if tournament.logo %}<img src="{{ tournament.logo.url }}" alt="" class="me-2" style="height:40px;">{% endif %}
-                        {{ tournament.name }}
-                    </h2>
-                    <div class="d-flex flex-wrap gap-1 mb-2">
-                        <span class="badge bg-{% if tournament.status == 'registration' %}success{% elif tournament.status == 'ongoing' %}primary{% elif tournament.status == 'completed' %}secondary{% else %}warning{% endif %} fs-6">
-                            {{ tournament.get_status_display }}
-                        </span>
-                        <span class="badge bg-info fs-6">{{ tournament.get_format_display }}</span>
-                        {% if tournament.zone %}<span class="badge bg-dark fs-6">{{ tournament.zone }}</span>{% endif %}
-                    </div>
-                </div>
-                <!-- Admin buttons -->
-                {% if can_manage %}
-                <div class="btn-group">
-                    <a href="{% url 'tournaments:edit_tournament' tournament.slug %}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-edit"></i> Edit
-                    </a>
-                    <a href="{% url 'tournaments:manage_registrations' tournament.slug %}" class="btn btn-outline-warning btn-sm">
-                        <i class="fas fa-clipboard-list"></i> Registrations
-                    </a>
-                    <a href="{% url 'tournaments:create_match' tournament.slug %}" class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-plus"></i> Add Match
-                    </a>
-                </div>
-                {% endif %}
+{% if can_manage %}
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{% url 'tournaments:edit_tournament' tournament.slug %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-edit me-1" aria-hidden="true"></i>Edit</a>
+    <a href="{% url 'tournaments:manage_registrations' tournament.slug %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-clipboard-list me-1" aria-hidden="true"></i>Registrations</a>
+    <a href="{% url 'tournaments:create_match' tournament.slug %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-plus me-1" aria-hidden="true"></i>Add match</a>
+</div>
+
+{% if tournament.status == 'draft' %}
+<div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4" role="status">
+    <div><i class="fas fa-eye-slash me-1" aria-hidden="true"></i><strong>This tournament is in Draft mode</strong> — it is not visible to teams. Open registration to make it public and allow teams to sign up.</div>
+    <form method="post" action="{% url 'tournaments:change_status' tournament.slug %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="registration">
+        <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-unlock me-1" aria-hidden="true"></i>Open registration</button>
+    </form>
+</div>
+{% elif tournament.status == 'registration' %}
+<div class="alert alert-success d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4" role="status">
+    <div><i class="fas fa-door-open me-1" aria-hidden="true"></i><strong>Registration is open.</strong> Teams can register until {{ tournament.registration_deadline|date:"d M Y, H:i" }}.</div>
+    <form method="post" action="{% url 'tournaments:change_status' tournament.slug %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="registration_closed">
+        <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="fas fa-lock me-1" aria-hidden="true"></i>Close registration</button>
+    </form>
+</div>
+{% elif tournament.status == 'registration_closed' %}
+<div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4" role="status">
+    <div><i class="fas fa-lock me-1" aria-hidden="true"></i><strong>Registration closed.</strong> Ready to start the tournament.</div>
+    <form method="post" action="{% url 'tournaments:change_status' tournament.slug %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="ongoing">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-play me-1" aria-hidden="true"></i>Start tournament</button>
+    </form>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-users" aria-hidden="true"></i>Teams</span><span class="stat-tile__value">{{ registrations|length }}/{{ tournament.max_teams }}</span><span class="stat-tile__meta">approved</span></div></div>
+    <div class="col-6 col-md-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-calendar" aria-hidden="true"></i>Starts</span><span class="stat-tile__value">{{ tournament.start_date|date:"j M" }}</span><span class="stat-tile__meta">{{ tournament.start_date|date:"Y" }}</span></div></div>
+    <div class="col-6 col-md-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-flag-checkered" aria-hidden="true"></i>Ends</span><span class="stat-tile__value">{{ tournament.end_date|date:"j M" }}</span><span class="stat-tile__meta">{{ tournament.end_date|date:"Y" }}</span></div></div>
+    <div class="col-6 col-md-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-money-bill" aria-hidden="true"></i>Entry fee</span><span class="stat-tile__value">KSh {{ tournament.entry_fee|floatformat:0 }}</span></div></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8 d-grid gap-4 align-content-start">
+        {% if tournament.description %}<p class="lead mb-0">{{ tournament.description }}</p>{% endif %}
+
+        <section class="panel" aria-labelledby="upcoming-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="upcoming-title"><i class="fas fa-clock" aria-hidden="true"></i>Upcoming matches</h2>
+                <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}">All fixtures</a>
             </div>
-            <p>{{ tournament.description }}</p>
-            <div class="row text-center mt-3">
-                <div class="col-6 col-md-3 mb-2">
-                    <div class="fw-bold fs-4">{{ tournament.approved_teams }}/{{ tournament.max_teams }}</div>
-                    <small class="text-muted">Teams</small>
-                </div>
-                <div class="col-6 col-md-3 mb-2">
-                    <div class="fw-bold fs-4">{{ tournament.start_date|date:"d M" }}</div>
-                    <small class="text-muted">Start Date</small>
-                </div>
-                <div class="col-6 col-md-3 mb-2">
-                    <div class="fw-bold fs-4">{{ tournament.end_date|date:"d M" }}</div>
-                    <small class="text-muted">End Date</small>
-                </div>
-                <div class="col-6 col-md-3 mb-2">
-                    <div class="fw-bold fs-4">KSh {{ tournament.entry_fee }}</div>
-                    <small class="text-muted">Entry Fee</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Admin: Draft status banner -->
-    {% if can_manage %}
-    {% if tournament.status == 'draft' %}
-    <div class="alert alert-warning d-flex justify-content-between align-items-center shadow-sm mb-4">
-        <div>
-            <i class="fas fa-eye-slash me-1"></i>
-            <strong>This tournament is in Draft mode</strong> — it is not visible to teams.
-            Open registration to make it public and allow teams to sign up.
-        </div>
-        <form method="post" action="{% url 'tournaments:change_status' tournament.slug %}" class="d-inline">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="registration">
-            <button type="submit" class="btn btn-success btn-sm">
-                <i class="fas fa-unlock me-1"></i>Open Registration
-            </button>
-        </form>
-    </div>
-    {% elif tournament.status == 'registration' %}
-    <div class="alert alert-success d-flex justify-content-between align-items-center shadow-sm mb-4">
-        <div>
-            <i class="fas fa-door-open me-1"></i>
-            <strong>Registration is open.</strong> Teams can register until {{ tournament.registration_deadline|date:"d M Y, H:i" }}.
-        </div>
-        <form method="post" action="{% url 'tournaments:change_status' tournament.slug %}" class="d-inline">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="registration_closed">
-            <button type="submit" class="btn btn-warning btn-sm">
-                <i class="fas fa-lock me-1"></i>Close Registration
-            </button>
-        </form>
-    </div>
-    {% elif tournament.status == 'registration_closed' %}
-    <div class="alert alert-info d-flex justify-content-between align-items-center shadow-sm mb-4">
-        <div>
-            <i class="fas fa-lock me-1"></i>
-            <strong>Registration closed.</strong> Ready to start the tournament.
-        </div>
-        <form method="post" action="{% url 'tournaments:change_status' tournament.slug %}" class="d-inline">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="ongoing">
-            <button type="submit" class="btn btn-primary btn-sm">
-                <i class="fas fa-play me-1"></i>Start Tournament
-            </button>
-        </form>
-    </div>
-    {% endif %}
-    {% endif %}
-
-    <!-- Navigation pills -->
-    <ul class="nav nav-pills mb-4 justify-content-center">
-        <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#overview">Overview</a></li>
-        <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#teams-tab">Teams</a></li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'tournaments:tournament_fixtures' tournament.slug %}">Fixtures</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'tournaments:tournament_standings' tournament.slug %}">Standings</a>
-        </li>
-    </ul>
-
-    <div class="tab-content">
-        <!-- Overview -->
-        <div class="tab-pane fade show active" id="overview">
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;"><h6 class="mb-0"><i class="fas fa-gavel me-1"></i>Rules</h6></div>
-                        <div class="card-body">{{ tournament.rules|linebreaksbr|default:"Rules not published yet." }}</div>
-                    </div>
-                </div>
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;"><h6 class="mb-0"><i class="fas fa-medal me-1"></i>Prizes</h6></div>
-                        <div class="card-body">{{ tournament.prize_info|linebreaksbr|default:"Prize info will be announced." }}</div>
-                    </div>
-                </div>
-            </div>
-
             {% if upcoming %}
-            <h5 class="mb-3"><i class="fas fa-clock me-1"></i>Upcoming Matches</h5>
-            <div class="table-responsive mb-4">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr><th>Date</th><th>Match</th><th>Stage</th><th>Venue</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for m in upcoming %}
-                        <tr>
-                            <td>{{ m.match_date|date:"d M, H:i" }}</td>
-                            <td class="fw-bold">
-                                {% if m.home_team %}{{ m.home_team.display_name }}{% else %}TBD{% endif %}
-                                vs
-                                {% if m.away_team %}{{ m.away_team.display_name }}{% else %}TBD{% endif %}
-                            </td>
-                            <td><span class="badge bg-info">{{ m.get_stage_display }}</span></td>
-                            <td>{{ m.venue|default:tournament.venue }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+            <div class="data-table-wrap">
+                <table class="table data-table">
+                    <caption class="visually-hidden">Upcoming matches</caption>
+                    <thead><tr><th scope="col" class="col-min">Date</th><th scope="col" class="text-end">Home</th><th scope="col" class="text-center col-min"><span class="visually-hidden">Score</span></th><th scope="col">Away</th><th scope="col" class="hide-sm">Stage</th><th scope="col" class="hide-sm">Venue</th><th scope="col" class="hide-sm">Status</th></tr></thead>
+                    <tbody>{% for m in upcoming %}{% include "tournaments/includes/match_row.html" with m=m show_stage=True can_manage=False %}{% endfor %}</tbody>
                 </table>
             </div>
+            {% else %}
+            {% empty_state icon="calendar-xmark" title="No upcoming matches" message="Fixtures appear here once they are scheduled." %}
             {% endif %}
+        </section>
 
-            {% if results %}
-            <h5 class="mb-3"><i class="fas fa-check-circle me-1"></i>Recent Results</h5>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr><th>Date</th><th>Match</th><th>Score</th><th>Stage</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for m in results %}
-                        <tr>
-                            <td>{{ m.match_date|date:"d M" }}</td>
-                            <td>
-                                {% if m.home_team %}{{ m.home_team.display_name }}{% else %}TBD{% endif %}
-                                vs
-                                {% if m.away_team %}{{ m.away_team.display_name }}{% else %}TBD{% endif %}
-                            </td>
-                            <td class="fw-bold">
-                                {{ m.home_score }} – {{ m.away_score }}
-                                {% if m.home_penalties is not None %}
-                                <small class="text-muted">({{ m.home_penalties }}-{{ m.away_penalties }} pens)</small>
-                                {% endif %}
-                            </td>
-                            <td><span class="badge bg-secondary">{{ m.get_stage_display }}</span></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+        {% if results %}
+        <section class="panel" aria-labelledby="results-title">
+            <div class="panel-header"><h2 class="panel-title" id="results-title"><i class="fas fa-check-circle" aria-hidden="true"></i>Recent results</h2></div>
+            <div class="data-table-wrap">
+                <table class="table data-table">
+                    <caption class="visually-hidden">Recent results</caption>
+                    <thead><tr><th scope="col" class="col-min">Date</th><th scope="col" class="text-end">Home</th><th scope="col" class="text-center col-min">Score</th><th scope="col">Away</th><th scope="col" class="hide-sm">Stage</th><th scope="col" class="hide-sm">Venue</th><th scope="col" class="hide-sm">Status</th></tr></thead>
+                    <tbody>{% for m in results %}{% include "tournaments/includes/match_row.html" with m=m show_stage=True can_manage=False %}{% endfor %}</tbody>
                 </table>
             </div>
-            {% endif %}
-        </div>
+        </section>
+        {% endif %}
 
-        <!-- Teams tab -->
-        <div class="tab-pane fade" id="teams-tab">
-            {% if tournament.is_registration_open %}
-            <div class="alert alert-success">
-                <i class="fas fa-clipboard-check me-1"></i>
-                Registration is open until {{ tournament.registration_deadline|date:"d M Y, H:i" }}.
-                <div class="mt-2">
-                    {% if request.user.is_authenticated %}
-                    <a href="{% url 'tournaments:register_team' tournament.slug %}" class="btn btn-success btn-sm">
-                        <i class="fas fa-futbol me-1"></i>Register League Team
-                    </a>
-                    {% else %}
-                    <a href="{% url 'login' %}?next={% url 'tournaments:register_team' tournament.slug %}" class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-sign-in-alt me-1"></i>Login to Register League Team
-                    </a>
-                    {% endif %}
-                    {% if tournament.allow_external_teams %}
-                    <a href="{% url 'tournaments:register_external_team' tournament.slug %}" class="btn btn-info btn-sm ms-1">
-                        <i class="fas fa-plus-circle me-1"></i>Register External Team
-                    </a>
-                    {% endif %}
-                </div>
+        <section class="panel" aria-labelledby="teams-title" id="teams-tab">
+            <div class="panel-header">
+                <h2 class="panel-title" id="teams-title"><i class="fas fa-shield-alt" aria-hidden="true"></i>Teams</h2>
+                <span class="small text-muted">{{ registrations|length }} approved</span>
             </div>
-            {% endif %}
-
             {% if registrations %}
-            <div class="row">
+            <div class="panel-body d-flex flex-wrap gap-2">
                 {% for reg in registrations %}
-                <div class="col-md-4 col-lg-3 mb-3">
-                    <div class="card text-center shadow-sm h-100">
-                        <div class="card-body">
-                            {% if reg.team and reg.team.logo %}
-                            <img src="{{ reg.team.logo.url }}" alt="" class="rounded-circle mb-2" style="width:60px;height:60px;object-fit:cover;">
-                            {% elif reg.external_team and reg.external_team.logo %}
-                            <img src="{{ reg.external_team.logo.url }}" alt="" class="rounded-circle mb-2" style="width:60px;height:60px;object-fit:cover;">
-                            {% else %}
-                            <div class="rounded-circle bg-secondary mx-auto mb-2 d-flex align-items-center justify-content-center" style="width:60px;height:60px;">
-                                <i class="fas fa-shield-alt text-white"></i>
-                            </div>
-                            {% endif %}
-                            <h6 class="mb-1">{{ reg.display_name }}</h6>
-                            {% if reg.team_type == 'external' %}<span class="badge bg-info">External</span>{% endif %}
-                            {% if reg.seed %}<span class="badge bg-warning">Seed #{{ reg.seed }}</span>{% endif %}
-                        </div>
-                    </div>
-                </div>
+                <span class="chip">
+                    {% if reg.team and reg.team.logo %}<img src="{{ reg.team.logo.url }}" alt="" class="team-crest team-crest--sm" width="22" height="22">{% elif reg.external_team and reg.external_team.logo %}<img src="{{ reg.external_team.logo.url }}" alt="" class="team-crest team-crest--sm" width="22" height="22">{% else %}<span class="team-crest team-crest--sm" aria-hidden="true">{{ reg.display_name|slice:":2" }}</span>{% endif %}
+                    <span>{{ reg.display_name }}{% if reg.team_type == 'external' %} <span class="chip__meta">External</span>{% endif %}{% if reg.seed %} <span class="chip__meta">Seed #{{ reg.seed }}</span>{% endif %}</span>
+                </span>
                 {% endfor %}
             </div>
             {% else %}
-            <p class="text-muted text-center">No teams registered yet.</p>
+            {% empty_state icon="shield-alt" title="No teams registered yet." %}
             {% endif %}
-        </div>
+        </section>
     </div>
+
+    <aside class="col-lg-4 d-grid gap-4 align-content-start" aria-label="Registration, rules and prizes">
+        {% if tournament.is_registration_open %}
+        <section class="panel" aria-labelledby="reg-title">
+            <div class="panel-header"><h2 class="panel-title" id="reg-title"><i class="fas fa-clipboard-check" aria-hidden="true"></i>Registration open</h2></div>
+            <div class="panel-body d-grid gap-2">
+                <p class="small text-muted mb-1">Teams can register until <strong>{{ tournament.registration_deadline|date:"d M Y, H:i" }}</strong>.</p>
+                {% if request.user.is_authenticated %}
+                <a href="{% url 'tournaments:register_team' tournament.slug %}" class="btn btn-primary"><i class="fas fa-futbol me-1" aria-hidden="true"></i>Register league team</a>
+                {% else %}
+                <a href="{% url 'login' %}?next={% url 'tournaments:register_team' tournament.slug %}" class="btn btn-primary"><i class="fas fa-sign-in-alt me-1" aria-hidden="true"></i>Log in to register league team</a>
+                {% endif %}
+                {% if tournament.allow_external_teams %}
+                <a href="{% url 'tournaments:register_external_team' tournament.slug %}" class="btn btn-outline-secondary"><i class="fas fa-plus-circle me-1" aria-hidden="true"></i>Register external team</a>
+                {% endif %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="panel" aria-labelledby="rules-title">
+            <div class="panel-header"><h2 class="panel-title" id="rules-title"><i class="fas fa-gavel" aria-hidden="true"></i>Rules</h2></div>
+            <div class="panel-body small">{{ tournament.rules|linebreaksbr|default:"Rules not published yet." }}</div>
+        </section>
+        <section class="panel" aria-labelledby="prizes-title">
+            <div class="panel-header"><h2 class="panel-title" id="prizes-title"><i class="fas fa-medal" aria-hidden="true"></i>Prizes</h2></div>
+            <div class="panel-body small">{{ tournament.prize_info|linebreaksbr|default:"Prize info will be announced." }}</div>
+        </section>
+        {% if tournament.venue %}
+        <section class="panel" aria-labelledby="venue-title">
+            <div class="panel-header"><h2 class="panel-title" id="venue-title"><i class="fas fa-location-dot" aria-hidden="true"></i>Venue</h2></div>
+            <div class="panel-body small">{{ tournament.venue }}</div>
+        </section>
+        {% endif %}
+    </aside>
 </div>
 {% endblock %}
-

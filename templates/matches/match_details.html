@@ -1,183 +1,110 @@
 {% extends 'base.html' %}
-{% load fkf_tags %}
+{% load static fkf_tags %}
 
 {% block title %}{{ match.home_team.team_name }} vs {{ match.away_team.team_name }} — FKF Meru League{% endblock %}
-
-{% block extra_css %}
-<style>
-  .match-hero {
-    background: linear-gradient(135deg, #0a0a0b 0%, #2a2a2e 100%);
-    border-radius: var(--radius-lg); color: white;
-    padding: 2rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-lg);
-  }
-  .team-col { text-align: center; }
-  .team-col .t-logo {
-    width: 90px; height: 90px; border-radius: 50%; object-fit: cover;
-    border: 3px solid rgba(255,255,255,.25); margin: 0 auto .75rem; display: block;
-  }
-  .team-col .t-placeholder {
-    width: 90px; height: 90px; border-radius: 50%;
-    background: rgba(255,255,255,.1); border: 3px solid rgba(255,255,255,.2);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto .75rem; font-size: 1.8rem; font-weight: 800; color: white;
-  }
-  .score-center {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-  }
-  .big-score {
-    font-size: 3rem; font-weight: 900; letter-spacing: 4px;
-    line-height: 1;
-  }
-  .event-item {
-    display: flex; align-items: flex-start; gap: 10px;
-    padding: .6rem 0; border-bottom: 1px solid var(--border-light);
-  }
-  .event-item:last-child { border-bottom: none; }
-  .event-min {
-    min-width: 42px; text-align: center;
-    background: var(--fkf-dark); color: white;
-    border-radius: var(--radius-sm); padding: 3px 6px;
-    font-size: .75rem; font-weight: 700; flex-shrink: 0;
-  }
-</style>
-{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
 
 {% block content %}
-
-<!-- Breadcrumb -->
-<nav aria-label="breadcrumb" class="mb-3">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'frontend:home' %}">Home</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'matches:fixtures' %}">Fixtures</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Match Details</li>
-  </ol>
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'frontend:home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'matches:fixtures' %}">Fixtures</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Match details</li>
+    </ol>
 </nav>
 
-<!-- Match Hero -->
-<div class="match-hero" data-aos="fade-down">
-  <div class="row align-items-center g-3">
-    <!-- Home Team -->
-    <div class="col-4 team-col">
-      {% if match.home_team.logo %}
-      <img src="{{ match.home_team.logo.url }}" alt="{{ match.home_team.team_name }}" class="t-logo">
-      {% else %}
-      <div class="t-placeholder">{{ match.home_team.team_name|slice:":2"|upper }}</div>
-      {% endif %}
-      <h5 class="mb-0 text-white">{{ match.home_team.team_name }}</h5>
-      <small style="color:rgba(255,255,255,.55);">{{ match.home_team.location }}</small>
+<h1 class="visually-hidden">{{ match.home_team.team_name }} vs {{ match.away_team.team_name }}</h1>
+
+<section class="match-board" aria-label="Scoreboard">
+    <div class="match-board__grid">
+        <div class="match-board__team">
+            {% include "partials/_team_crest.html" with team=match.home_team %}
+            <h2>{{ match.home_team.team_name }}</h2>
+            {% if match.home_team.location %}<span class="loc">{{ match.home_team.location }}</span>{% endif %}
+        </div>
+
+        <div class="match-board__centre">
+            {% if match.status == 'completed' %}
+            <span class="match-board__score" aria-label="Final score {{ match.home_score }} to {{ match.away_score }}">{{ match.home_score }}<span class="sep" aria-hidden="true">&ndash;</span>{{ match.away_score }}</span>
+            <span class="status-badge status-success">Full time</span>
+            {% elif match.status == 'ongoing' or match.status == 'live' %}
+            <span class="match-board__score match-board__score--live" aria-label="Live score {{ match.home_score|default:0 }} to {{ match.away_score|default:0 }}">{{ match.home_score|default:0 }}<span class="sep" aria-hidden="true">&ndash;</span>{{ match.away_score|default:0 }}</span>
+            <span class="status-badge status-accent status-live">LIVE</span>
+            {% else %}
+            <span class="match-board__vs">VS</span>
+            <span class="match-board__kickoff">{{ match.kickoff_time|default:"TBD" }}{% if match.kickoff_time %} EAT{% endif %}</span>
+            {% match_badge match.status %}
+            {% endif %}
+        </div>
+
+        <div class="match-board__team">
+            {% include "partials/_team_crest.html" with team=match.away_team %}
+            <h2>{{ match.away_team.team_name }}</h2>
+            {% if match.away_team.location %}<span class="loc">{{ match.away_team.location }}</span>{% endif %}
+        </div>
     </div>
 
-    <!-- Score -->
-    <div class="col-4 score-center">
-      {% if match.status == 'completed' %}
-      <div class="big-score">
-        <span style="color:var(--fkf-red);">{{ match.home_score }}</span>
-        <span style="color:rgba(255,255,255,.4);font-size:2rem;margin:0 8px;">—</span>
-        <span style="color:#4cc9f0;">{{ match.away_score }}</span>
-      </div>
-      <small class="mt-1" style="color:rgba(255,255,255,.5);font-size:.72rem;letter-spacing:1px;">FULL TIME</small>
-      {% elif match.status == 'ongoing' or match.status == 'live' %}
-      <div class="big-score">
-        <span style="color:var(--fkf-red);">{{ match.home_score|default:0 }}</span>
-        <span style="color:rgba(255,255,255,.4);font-size:2rem;margin:0 8px;">—</span>
-        <span style="color:#4cc9f0;">{{ match.away_score|default:0 }}</span>
-      </div>
-      <span class="live-badge mt-1">LIVE</span>
-      {% else %}
-      <div style="font-size:1.8rem;color:rgba(255,255,255,.35);letter-spacing:6px;font-weight:800;">VS</div>
-      {% endif %}
-
-      <div class="mt-2 text-center" style="font-size:.78rem;color:rgba(255,255,255,.6);">
-        <div><i class="fas fa-calendar me-1"></i>{{ match.match_date|date:"D, M d Y" }}</div>
-        <div><i class="fas fa-clock me-1"></i>{{ match.kickoff_time|default:"TBD" }} EAT</div>
-        <div><i class="fas fa-map-marker-alt me-1"></i>{{ match.venue|default:"TBD" }}</div>
-      </div>
-      <div class="mt-2">
-        <span class="badge ms-1">{% match_badge match.status %}</span>
-        {% if match.zone %}<span class="badge bg-light text-dark ms-1">{{ match.zone.name }}</span>{% endif %}
-        {% if match.round_number %}<span class="badge bg-secondary ms-1">Round {{ match.round_number }}</span>{% endif %}
-      </div>
+    <div class="match-board__meta">
+        <span><i class="fas fa-calendar" aria-hidden="true"></i>{{ match.match_date|date:"D j M Y" }}</span>
+        <span><i class="fas fa-clock" aria-hidden="true"></i>{{ match.kickoff_time|default:"TBD" }} EAT</span>
+        <span><i class="fas fa-location-dot" aria-hidden="true"></i>{{ match.venue|default:"TBD" }}</span>
+        {% if match.zone %}<span><i class="fas fa-map" aria-hidden="true"></i>{{ match.zone.name }}{% if match.round_number %} &middot; Round {{ match.round_number }}{% endif %}</span>{% endif %}
     </div>
+</section>
 
-    <!-- Away Team -->
-    <div class="col-4 team-col">
-      {% if match.away_team.logo %}
-      <img src="{{ match.away_team.logo.url }}" alt="{{ match.away_team.team_name }}" class="t-logo">
-      {% else %}
-      <div class="t-placeholder">{{ match.away_team.team_name|slice:":2"|upper }}</div>
-      {% endif %}
-      <h5 class="mb-0 text-white">{{ match.away_team.team_name }}</h5>
-      <small style="color:rgba(255,255,255,.55);">{{ match.away_team.location }}</small>
-    </div>
-  </div>
-</div>
-
-<!-- Details Row -->
 <div class="row g-4">
-  <section class="col-md-6" aria-labelledby="goalsHeading">
-    <div class="card">
-      <div class="card-header" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);">
-        <h2 class="h6 mb-0 text-white" id="goalsHeading"><i class="fas fa-futbol me-2" aria-hidden="true"></i>Goals</h2>
-      </div>
-      <div class="card-body">
-        {% for goal in goals %}
-        <div class="event-item">
-          <span class="event-min">{{ goal.minute }}'</span>
-          <div>
-            <strong>{{ goal.scorer.full_name }}</strong> <small class="text-muted">({{ goal.team.team_name }})</small>
-            {% if goal.is_penalty %}<span class="badge bg-secondary ms-1">Pen</span>{% endif %}
-            {% if goal.is_own_goal %}<span class="badge bg-warning text-dark ms-1">OG</span>{% endif %}
-          </div>
+    <section class="col-md-6" aria-labelledby="goalsHeading">
+        <div class="panel h-100">
+            <div class="panel-header"><h2 class="panel-title" id="goalsHeading"><i class="fas fa-futbol" aria-hidden="true"></i>Goals</h2></div>
+            {% if goals %}
+            <ol class="event-list">
+                {% for goal in goals %}
+                <li>
+                    <span class="event-min">{{ goal.minute }}'</span>
+                    <span class="event-who"><strong>{{ goal.scorer.full_name }}</strong><span>{{ goal.team.team_name }}</span></span>
+                    {% if goal.is_penalty %}<span class="status-badge status-neutral">Pen</span>{% endif %}
+                    {% if goal.is_own_goal %}<span class="status-badge status-warning">OG</span>{% endif %}
+                    <i class="fas fa-futbol event-icon" aria-hidden="true"></i>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            {% empty_state icon="futbol" title="No goals recorded for this match." %}
+            {% endif %}
         </div>
-        {% empty %}
-        <p class="text-center py-4 text-muted mb-0">No goals recorded for this match.</p>
-        {% endfor %}
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="col-md-6" aria-labelledby="cardsHeading">
-    <div class="card">
-      <div class="card-header" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);">
-        <h2 class="h6 mb-0 text-white" id="cardsHeading"><i class="fas fa-square me-2" aria-hidden="true"></i>Cards</h2>
-      </div>
-      <div class="card-body">
-        {% for card in cards %}
-        <div class="event-item">
-          <span class="event-min">{{ card.minute }}'</span>
-          <div>
-            <span class="badge {% if card.card_type == 'red' %}bg-danger{% else %}bg-warning text-dark{% endif %} me-1">{{ card.get_card_type_display }}</span>
-            <strong>{{ card.player.full_name }}</strong> <small class="text-muted">({{ card.team.team_name }})</small>
-          </div>
+    <section class="col-md-6" aria-labelledby="cardsHeading">
+        <div class="panel h-100">
+            <div class="panel-header"><h2 class="panel-title" id="cardsHeading"><i class="fas fa-square" aria-hidden="true"></i>Cards</h2></div>
+            {% if cards %}
+            <ol class="event-list">
+                {% for card in cards %}
+                <li>
+                    <span class="event-min">{{ card.minute }}'</span>
+                    <span class="card-flag {% if card.card_type == 'red' %}card-flag--red{% else %}card-flag--yellow{% endif %}" aria-hidden="true"></span>
+                    <span class="event-who"><strong>{{ card.player.full_name }}</strong><span>{{ card.get_card_type_display }} &middot; {{ card.team.team_name }}</span></span>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            {% empty_state icon="square" title="No cards recorded for this match." %}
+            {% endif %}
         </div>
-        {% empty %}
-        <p class="text-center py-4 text-muted mb-0">No cards recorded for this match.</p>
-        {% endfor %}
-      </div>
-    </div>
-  </section>
+    </section>
 </div>
 
-<!-- Action Buttons -->
 <div class="mt-4 d-flex flex-wrap gap-2">
-  <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary">
-    <i class="fas fa-arrow-left me-1"></i>Back to Fixtures
-  </a>
-  {% if can_edit_match %}
-  <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-outline-primary">
-    <i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>Reschedule
-  </a>
-  {% endif %}
-  {% if can_edit_result %}
-  <a href="{% url 'matches:admin_edit_match_result' match.id %}" class="btn btn-outline-warning">
-    <i class="fas fa-pen me-1" aria-hidden="true"></i>{% if match.status == 'completed' %}Correct Score{% else %}Enter Result{% endif %}
-  </a>
-  {% endif %}
-  {% if can_view_officials %}
-  <a href="{% url 'matches:view_match_officials' match.id %}" class="btn btn-outline-secondary">
-    <i class="fas fa-user-tie me-1" aria-hidden="true"></i>Officials
-  </a>
-  {% endif %}
+    <a href="{% url 'matches:fixtures' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to fixtures</a>
+    {% if can_edit_match %}
+    <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-outline-secondary"><i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>Reschedule</a>
+    {% endif %}
+    {% if can_edit_result %}
+    <a href="{% url 'matches:admin_edit_match_result' match.id %}" class="btn btn-primary"><i class="fas fa-pen me-1" aria-hidden="true"></i>{% if match.status == 'completed' %}Correct score{% else %}Enter result{% endif %}</a>
+    {% endif %}
+    {% if can_view_officials %}
+    <a href="{% url 'matches:view_match_officials' match.id %}" class="btn btn-outline-secondary"><i class="fas fa-user-tie me-1" aria-hidden="true"></i>Officials</a>
+    {% endif %}
 </div>
-
 {% endblock %}
