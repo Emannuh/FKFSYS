@@ -1,0 +1,14 @@
+{% comment %}
+Fellow officials for one appointment as compact role chips.
+Usage: {% include "referees/_officials_chips.html" with od=appointment.officials_data %}
+{% endcomment %}
+<ul class="ref-officials" aria-label="Match officials">
+    {% if od.main_referee %}<li class="ref-official ref-official--lead"><abbr title="Main referee">R</abbr><span>{{ od.main_referee }}</span></li>{% endif %}
+    {% if od.assistant_1 %}<li class="ref-official"><abbr title="Assistant referee 1">AR1</abbr><span>{{ od.assistant_1 }}</span></li>{% endif %}
+    {% if od.assistant_2 %}<li class="ref-official"><abbr title="Assistant referee 2">AR2</abbr><span>{{ od.assistant_2 }}</span></li>{% endif %}
+    {% if od.fourth_official %}<li class="ref-official"><abbr title="Fourth official">4th</abbr><span>{{ od.fourth_official }}</span></li>{% endif %}
+    {% if od.reserve_referee %}<li class="ref-official"><abbr title="Reserve referee">RES</abbr><span>{{ od.reserve_referee }}</span></li>{% endif %}
+    {% if od.var %}<li class="ref-official"><abbr title="Video assistant referee">VAR</abbr><span>{{ od.var }}</span></li>{% endif %}
+    {% if od.avar1 %}<li class="ref-official"><abbr title="Assistant VAR">AVAR</abbr><span>{{ od.avar1 }}</span></li>{% endif %}
+    {% if od.match_commissioner %}<li class="ref-official"><abbr title="Match commissioner">MC</abbr><span>{{ od.match_commissioner }}</span></li>{% endif %}
+</ul>

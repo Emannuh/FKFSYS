@@ -1,34 +1,34 @@
-{# Partial: Goals Section #}
+{# Partial: goals formset (comprehensive + flash reports). JS: static/js/pages/referees.js (#add-goal-form, #goal-formset, #empty-goal, .remove-goal-form) #}
 {% load crispy_forms_tags crispy_forms_filters %}
-<div class="card mb-4">
-    <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">Scorers</h4>
-        <button type="button" class="btn btn-sm btn-success" id="add-goal-form">
-            <i class="fas fa-plus"></i> Add Goal
+<section class="panel ref-form-section" id="section-goals" aria-labelledby="section-goals-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="section-goals-title"><span class="ref-step" aria-hidden="true">{{ step_goals|default:"2" }}</span><i class="fas fa-futbol" aria-hidden="true"></i>Scorers</h2>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="add-goal-form">
+            <i class="fas fa-plus me-1" aria-hidden="true"></i>Add goal
         </button>
     </div>
-    <div class="card-body" id="goal-formset">
+    <div class="panel-body ref-formset" id="goal-formset" data-prefix="{{ goal_formset.prefix }}">
         {{ goal_formset.management_form }}
+        {{ goal_formset.non_form_errors }}
         {% for form in goal_formset %}
-        <div class="formset-form {% if form.instance.pk %}existing-form{% else %}new-form{% endif %} border-bottom pb-3 mb-3" id="goal-form-{{ forloop.counter0 }}">
+        <div class="formset-form ref-formset-row {% if form.instance.pk %}existing-form{% else %}new-form{% endif %}" id="goal-form-{{ forloop.counter0 }}">
+            {{ form.non_field_errors }}
             <div class="row g-3">
-                <div class="col-md-3">{{ form.team|as_crispy_field }}</div>
-                <div class="col-md-3">{{ form.player|as_crispy_field }}</div>
-                <div class="col-md-2">{{ form.assist_by|as_crispy_field }}</div>
-                <div class="col-md-2">{{ form.minute|as_crispy_field }}</div>
-                <div class="col-md-2">{{ form.goal_type|as_crispy_field }}</div>
-            </div>
-            <div class="row g-3 mt-2">
-                <div class="col-md-2">{{ form.jersey_number|as_crispy_field }}</div>
-                <div class="col-md-8">{{ form.notes|as_crispy_field }}</div>
-                <div class="col-md-2">
+                <div class="col-sm-6 col-lg-3">{{ form.team|as_crispy_field }}</div>
+                <div class="col-sm-6 col-lg-3">{{ form.player|as_crispy_field }}</div>
+                <div class="col-sm-6 col-lg-2">{{ form.assist_by|as_crispy_field }}</div>
+                <div class="col-6 col-lg-2">{{ form.minute|as_crispy_field }}</div>
+                <div class="col-6 col-lg-2">{{ form.goal_type|as_crispy_field }}</div>
+                <div class="col-6 col-lg-2">{{ form.jersey_number|as_crispy_field }}</div>
+                <div class="col-12 col-lg-8">{{ form.notes|as_crispy_field }}</div>
+                <div class="col-6 col-lg-2 d-flex align-items-end justify-content-end">
                     {% if form.instance.pk %}
-                        <div class="form-check mt-4">
+                        <div class="form-check mb-3">
                             {{ form.DELETE }}
                             <label class="form-check-label text-danger" for="{{ form.DELETE.id_for_label }}">Delete</label>
                         </div>
                     {% else %}
-                        <button type="button" class="btn btn-outline-danger mt-4 remove-goal-form">Remove</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger mb-3 remove-goal-form">Remove</button>
                     {% endif %}
                 </div>
             </div>
@@ -40,23 +40,21 @@
     {# Template for adding new goal forms dynamically #}
     <div id="empty-goal" class="d-none">
         {% with form=goal_formset.empty_form %}
-        <div class="formset-form new-form border-bottom pb-3 mb-3" id="goal-form-__prefix__">
+        <div class="formset-form ref-formset-row new-form" id="goal-form-__prefix__">
             <div class="row g-3">
-                <div class="col-md-3">{{ form.team|as_crispy_field }}</div>
-                <div class="col-md-3">{{ form.player|as_crispy_field }}</div>
-                <div class="col-md-2">{{ form.assist_by|as_crispy_field }}</div>
-                <div class="col-md-2">{{ form.minute|as_crispy_field }}</div>
-                <div class="col-md-2">{{ form.goal_type|as_crispy_field }}</div>
-            </div>
-            <div class="row g-3 mt-2">
-                <div class="col-md-2">{{ form.jersey_number|as_crispy_field }}</div>
-                <div class="col-md-8">{{ form.notes|as_crispy_field }}</div>
-                <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-danger mt-4 remove-goal-form">Remove</button>
+                <div class="col-sm-6 col-lg-3">{{ form.team|as_crispy_field }}</div>
+                <div class="col-sm-6 col-lg-3">{{ form.player|as_crispy_field }}</div>
+                <div class="col-sm-6 col-lg-2">{{ form.assist_by|as_crispy_field }}</div>
+                <div class="col-6 col-lg-2">{{ form.minute|as_crispy_field }}</div>
+                <div class="col-6 col-lg-2">{{ form.goal_type|as_crispy_field }}</div>
+                <div class="col-6 col-lg-2">{{ form.jersey_number|as_crispy_field }}</div>
+                <div class="col-12 col-lg-8">{{ form.notes|as_crispy_field }}</div>
+                <div class="col-6 col-lg-2 d-flex align-items-end justify-content-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger mb-3 remove-goal-form">Remove</button>
                 </div>
             </div>
             {{ form.id }}
         </div>
         {% endwith %}
     </div>
-</div>
+</section>
