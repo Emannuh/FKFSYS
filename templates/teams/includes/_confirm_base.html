@@ -1,0 +1,45 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% comment %}
+Confirm-page pattern for staff actions (suspend / unsuspend / delete player or official).
+Child templates fill: confirm_tone (danger|warning|success), confirm_icon (FA name),
+eyebrow, heading, confirm_title, confirm_text, confirm_details (detail-list rows),
+confirm_fields (optional form inputs), cancel_url, submit_class, submit_icon, submit_label.
+The form posts to the current URL, as the original pages did.
+{% endcomment %}
+
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/teams.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">{% block eyebrow %}League admin{% endblock %}</span>
+        <h1 class="page-title">{% block heading %}{% endblock %}</h1>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="confirm-page">
+    <form method="post" class="panel confirm-card confirm-card--{% block confirm_tone %}danger{% endblock %}">
+        {% csrf_token %}
+        <div class="panel-body">
+            <div class="confirm-card__head">
+                <span class="confirm-card__icon" aria-hidden="true"><i class="fas fa-{% block confirm_icon %}triangle-exclamation{% endblock %}"></i></span>
+                <div>
+                    <h2 class="confirm-card__title">{% block confirm_title %}{% endblock %}</h2>
+                    <p class="confirm-card__text">{% block confirm_text %}{% endblock %}</p>
+                </div>
+            </div>
+            <dl class="detail-list">{% block confirm_details %}{% endblock %}</dl>
+            {% block confirm_fields %}{% endblock %}
+        </div>
+        <div class="panel-footer confirm-card__actions">
+            <a href="{% block cancel_url %}{% endblock %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn {% block submit_class %}btn-danger{% endblock %}"><i class="fas fa-{% block submit_icon %}check{% endblock %} me-1" aria-hidden="true"></i>{% block submit_label %}Confirm{% endblock %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

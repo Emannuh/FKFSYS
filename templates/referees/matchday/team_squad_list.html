@@ -1,104 +1,81 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags %}
 
-{% block title %}Matchday Squads - {{ team.name }}{% endblock %}
+{% block title %}Matchday Squads - {{ team.team_name }}{% endblock %}
+{% block page_title %}Matchday squads{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/referees.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Matchday</span>
+        <h1 class="page-title h2">Matchday squad management</h1>
+        <p class="page-subtitle">{{ team.team_name }} &middot; matches in the next 7 days.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to dashboard</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-2">
-                <i class="fas fa-users"></i> Matchday Squad Management
-            </h1>
-            <p class="text-muted">{{ team.name }}</p>
-        </div>
-        <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-        </a>
-    </div>
-
-    <!-- Info Alert -->
-    <div class="alert alert-info">
-        <h5><i class="fas fa-info-circle me-2"></i>Squad Submission Guidelines</h5>
-        <ul class="mb-0">
-            <li>Squad submission opens <strong>2 hours before kick-off</strong></li>
-            <li>Select <strong>11 starting players</strong> (must include 1 goalkeeper)</li>
-            <li>Select <strong>14 substitute players</strong> (must include at least 1 goalkeeper)</li>
-            <li>Suspended players are automatically excluded</li>
-            <li>Squad is locked at kick-off time</li>
-        </ul>
-    </div>
-
-    <!-- Upcoming Matches -->
-    {% if matches_data %}
-    <div class="card shadow">
-        <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Upcoming Matches</h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
+<div class="row g-4">
+    <div class="col-xl-8">
+        <section class="panel" aria-labelledby="md-upcoming-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="md-upcoming-title"><i class="fas fa-calendar-days" aria-hidden="true"></i>Upcoming matches</h2>
+                <span class="status-badge status-neutral">{{ matches_data|length }}</span>
+            </div>
+            {% if matches_data %}
+            <div class="data-table-wrap">
+                <table class="table data-table align-middle mb-0">
+                    <thead>
                         <tr>
-                            <th>Match Details</th>
-                            <th>Date & Time</th>
-                            <th>Squad Status</th>
-                            <th>Submission Window</th>
-                            <th class="text-center">Action</th>
+                            <th scope="col">Match</th>
+                            <th scope="col">Date</th>
+                            <th scope="col">Squad</th>
+                            <th scope="col" class="hide-sm">Window</th>
+                            <th scope="col" class="col-min"><span class="visually-hidden">Action</span></th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for data in matches_data %}
                         <tr>
-                            <td>
-                                <div class="fw-bold">
-                                    {{ data.match.home_team }} vs {{ data.match.away_team }}
-                                </div>
-                                <small class="text-muted">{{ data.match.venue|default:"TBA" }}</small>
+                            <td class="ref-match-cell">
+                                <div class="fw-semibold">{{ data.match.home_team }} vs {{ data.match.away_team }}</div>
+                                <div class="small text-body-secondary">{{ data.match.venue|default:"TBA" }}</div>
+                            </td>
+                            <td class="text-nowrap">
+                                <span class="ref-num fw-semibold">{{ data.match.match_date|date:"d/m/Y" }}</span>
+                                <div class="small text-body-secondary">{{ data.match.kickoff_time|default:"TBD" }}</div>
                             </td>
                             <td>
-                                <div>{{ data.match.match_date|date:"d/m/Y" }}</div>
-                                <small class="text-muted">{{ data.match.kickoff_time|default:"TBD" }}</small>
+                                {% if data.squad.status == 'pending' %}<span class="badge status-badge status-warning">Pending</span>{% else %}{% squad_badge data.squad.status %}{% endif %}
+                                <div class="small text-body-secondary mt-1 ref-num">Starting {{ data.starting_count }}/11 &middot; Subs {{ data.subs_count }}/14</div>
                             </td>
-                            <td>
-                                {% if data.squad.status == 'locked' %}
-                                    <span class="badge bg-secondary"><i class="fas fa-lock"></i> Locked</span>
-                                {% elif data.squad.status == 'approved' %}
-                                    <span class="badge bg-success"><i class="fas fa-check-circle"></i> Approved</span>
-                                {% elif data.squad.status == 'submitted' %}
-                                    <span class="badge bg-info"><i class="fas fa-clock"></i> Awaiting Approval</span>
-                                {% else %}
-                                    <span class="badge bg-warning"><i class="fas fa-exclamation-triangle"></i> Pending</span>
-                                {% endif %}
-                                <div class="small mt-1">
-                                    Starting: {{ data.starting_count }}/11 | Subs: {{ data.subs_count }}/14
-                                </div>
-                            </td>
-                            <td>
+                            <td class="hide-sm">
                                 {% if data.submission_opens %}
                                     {% if data.can_submit %}
-                                        <span class="badge bg-success">Open Now</span>
+                                        <span class="status-badge status-success">Open now</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">Opens {{ data.submission_opens|date:"d/m H:i" }}</span>
+                                        <span class="status-badge status-neutral">Opens {{ data.submission_opens|date:"d/m H:i" }}</span>
                                     {% endif %}
                                 {% else %}
-                                    <span class="badge bg-secondary">TBD</span>
+                                    <span class="status-badge status-neutral">TBD</span>
                                 {% endif %}
                             </td>
-                            <td class="text-center">
+                            <td class="col-min">
                                 {% if data.can_submit %}
                                     <a href="{% url 'referees:submit_matchday_squad' data.match.id %}" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-edit me-1"></i>
-                                        {% if data.squad.status == 'pending' %}Submit Squad{% else %}Edit Squad{% endif %}
+                                        <i class="fas fa-pen me-1" aria-hidden="true"></i>{% if data.squad.status == 'pending' %}Submit squad{% else %}Edit squad{% endif %}
                                     </a>
                                 {% elif data.squad.status == 'submitted' or data.squad.status == 'approved' %}
-                                    <a href="{% url 'referees:submit_matchday_squad' data.match.id %}" class="btn btn-sm btn-outline-info">
-                                        <i class="fas fa-eye me-1"></i>View Squad
+                                    <a href="{% url 'referees:submit_matchday_squad' data.match.id %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-eye me-1" aria-hidden="true"></i>View squad
                                     </a>
                                 {% else %}
-                                    <button class="btn btn-sm btn-secondary" disabled>
-                                        <i class="fas fa-clock me-1"></i>Not Available
-                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled>Not available</button>
                                 {% endif %}
                             </td>
                         </tr>
@@ -106,17 +83,24 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+            {% else %}
+                {% empty_state icon="calendar-xmark" title="No upcoming matches" message="You don't have any matches scheduled in the next 7 days." %}
+            {% endif %}
+        </section>
     </div>
-    {% else %}
-    <div class="card shadow">
-        <div class="card-body text-center py-5">
-            <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
-            <h4>No Upcoming Matches</h4>
-            <p class="text-muted">You don't have any matches scheduled in the next 7 days.</p>
-        </div>
+    <div class="col-xl-4">
+        <section class="panel" aria-labelledby="md-guide-title">
+            <div class="panel-header"><h2 class="panel-title" id="md-guide-title"><i class="fas fa-circle-info" aria-hidden="true"></i>Squad submission guidelines</h2></div>
+            <div class="panel-body small">
+                <ul class="ref-md-checklist mb-0">
+                    <li>Squad submission opens <strong>2 hours before kick-off</strong></li>
+                    <li>Select <strong>11 starting players</strong> (must include 1 goalkeeper)</li>
+                    <li>Select <strong>14 substitute players</strong> (must include at least 1 goalkeeper)</li>
+                    <li>Suspended players are automatically excluded</li>
+                    <li>Squad is locked at kick-off time</li>
+                </ul>
+            </div>
+        </section>
     </div>
-    {% endif %}
 </div>
 {% endblock %}
-

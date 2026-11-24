@@ -1,80 +1,21 @@
-﻿{% extends 'base.html' %}
+﻿{% extends 'teams/includes/_confirm_base.html' %}
 
 {% block title %}Unsuspend Official - Admin{% endblock %}
-
-{% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 mx-auto">
-            <div class="card border-success">
-                <div class="card-header" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;">
-                    <h4><i class="fas fa-check"></i> Unsuspend Team Official</h4>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> You are about to lift the suspension for this official. They will be able to perform their duties again.
-                    </div>
-
-                    <!-- Official Info -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5>Official Details</h5>
-                            <table class="table table-borderless">
-                                <tr>
-                                    <th width="30%">Name:</th>
-                                    <td><strong>{{ official.full_name }}</strong></td>
-                                </tr>
-                                <tr>
-                                    <th>Team:</th>
-                                    <td>{{ official.team.team_name }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Position:</th>
-                                    <td><span class="badge badge-info">{{ official.get_position_display }}</span></td>
-                                </tr>
-                                <tr>
-                                    <th>Phone:</th>
-                                    <td>{{ official.phone_number }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Current Suspension Details -->
-                    <div class="card mb-4 border-danger">
-                        <div class="card-header" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;">
-                            <h5 class="mb-0">Current Suspension</h5>
-                        </div>
-                        <div class="card-body">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <th width="30%">Matches Remaining:</th>
-                                    <td><span class="badge badge-danger">{{ official.suspension_matches }} matches</span></td>
-                                </tr>
-                                <tr>
-                                    <th>Suspension Reason:</th>
-                                    <td>{{ official.suspension_reason|linebreaks }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Confirmation Form -->
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Cancel
-                            </a>
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-check"></i> Unsuspend Official
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% block page_title %}Unsuspend official{% endblock %}
+{% block eyebrow %}Team officials &middot; {{ official.team.team_name }}{% endblock %}
+{% block heading %}Unsuspend Team Official{% endblock %}
+{% block confirm_tone %}success{% endblock %}
+{% block confirm_icon %}circle-check{% endblock %}
+{% block confirm_title %}Lift the suspension for {{ official.full_name }}?{% endblock %}
+{% block confirm_text %}You are about to lift the suspension for this official. They will be able to perform their duties again.{% endblock %}
+{% block confirm_details %}
+<div><dt>Name</dt><dd><strong>{{ official.full_name }}</strong></dd></div>
+<div><dt>Team</dt><dd>{{ official.team.team_name }}</dd></div>
+<div><dt>Position</dt><dd>{{ official.get_position_display }}</dd></div>
+<div><dt>Phone</dt><dd>{{ official.phone_number }}</dd></div>
+<div><dt>Matches Remaining</dt><dd><span class="badge status-badge status-danger">{{ official.suspension_matches }} matches</span></dd></div>
+<div><dt>Suspension Reason</dt><dd>{{ official.suspension_reason|linebreaksbr }}</dd></div>
 {% endblock %}
-
+{% block cancel_url %}{% url 'teams:admin_manage_officials' %}{% endblock %}
+{% block submit_class %}btn-success{% endblock %}
+{% block submit_label %}Unsuspend Official{% endblock %}

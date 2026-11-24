@@ -1,55 +1,18 @@
-﻿{% extends 'base.html' %}
+﻿{% extends 'teams/includes/_confirm_base.html' %}
 
 {% block title %}Delete Official - {{ official.full_name }}{% endblock %}
-
-{% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-6 offset-md-3">
-            <div class="card border-danger">
-                <div class="card-header" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;">
-                    <h5><i class="fas fa-trash"></i> Delete Team Official</h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-danger">
-                        <h5><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h5>
-                        <p class="mb-0">This action cannot be undone!</p>
-                    </div>
-                    
-                    <div class="official-info mb-4">
-                        <table class="table table-bordered">
-                            <tr>
-                                <th width="40%">Name</th>
-                                <td>{{ official.full_name }}</td>
-                            </tr>
-                            <tr>
-                                <th>Team</th>
-                                <td>{{ official.team.team_name }}</td>
-                            </tr>
-                            <tr>
-                                <th>Position</th>
-                                <td>{{ official.get_position_display }}</td>
-                            </tr>
-                            <tr>
-                                <th>Phone</th>
-                                <td>{{ official.phone_number }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    
-                    <form method="post" class="text-center">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger btn-lg">
-                            <i class="fas fa-trash"></i> Yes, Delete Official
-                        </button>
-                        <a href="{% url 'teams:admin_manage_officials' %}" class="btn btn-secondary btn-lg">
-                            <i class="fas fa-times"></i> Cancel
-                        </a>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% block page_title %}Delete official{% endblock %}
+{% block eyebrow %}Team officials &middot; {{ official.team.team_name }}{% endblock %}
+{% block heading %}Delete Team Official{% endblock %}
+{% block confirm_icon %}trash-can{% endblock %}
+{% block confirm_title %}Confirm Deletion{% endblock %}
+{% block confirm_text %}<strong>{{ official.full_name }}</strong> will be removed. This action cannot be undone!{% endblock %}
+{% block confirm_details %}
+<div><dt>Name</dt><dd>{{ official.full_name }}</dd></div>
+<div><dt>Team</dt><dd>{{ official.team.team_name }}</dd></div>
+<div><dt>Position</dt><dd>{{ official.get_position_display }}</dd></div>
+<div><dt>Phone</dt><dd>{{ official.phone_number }}</dd></div>
 {% endblock %}
-
+{% block cancel_url %}{% url 'teams:admin_manage_officials' %}{% endblock %}
+{% block submit_icon %}trash{% endblock %}
+{% block submit_label %}Yes, Delete Official{% endblock %}

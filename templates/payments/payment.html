@@ -1,156 +1,81 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Complete Payment — FKF Meru League{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
 
-{% block extra_css %}
-<style>
-  .step-circle {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: var(--border-light); color: var(--text-muted);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 8px; font-weight: 700; font-size: 1rem;
-    border: 3px solid var(--border-mid); transition: var(--transition);
-  }
-  .step-label { font-size: .82rem; font-weight: 500; color: var(--text-muted); }
-  .step-indicator.completed .step-circle { background: var(--fkf-green); border-color: var(--fkf-green); color: white; }
-  .step-indicator.completed .step-label { color: var(--text-main); font-weight: 600; }
-  .step-indicator.active .step-circle {
-    background: var(--fkf-blue); border-color: var(--fkf-blue); color: white;
-    animation: pulse-blue 2s infinite;
-  }
-  .step-indicator.active .step-label { color: var(--text-main); font-weight: 600; }
-  @keyframes pulse-blue {
-    0%,100% { box-shadow: 0 0 0 0 rgba(31,31,35,.45); }
-    50%      { box-shadow: 0 0 0 10px rgba(31,31,35,0); }
-  }
-  .step-connector {
-    flex: 1; height: 3px; background: var(--border-light);
-    border-radius: 3px; margin-top: -24px;
-  }
-  .step-connector.done { background: var(--fkf-green); }
-  .amount-display {
-    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-    border: 2px solid #bbf7d0; border-radius: var(--radius-lg);
-    padding: 1.5rem; text-align: center; margin-bottom: 1.5rem;
-  }
-</style>
+{% block page_header %}
+<header class="page-header">
+    <div>
+        <span class="page-eyebrow">Team registration</span>
+        <h1 class="page-title">Complete payment</h1>
+        <p class="page-subtitle">Pay the registration fee for {{ team.team_name }} with M-PESA.</p>
+    </div>
+</header>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-7 col-lg-6">
+<ol class="stepper" aria-label="Registration progress">
+    <li class="is-done">Team details</li>
+    <li class="is-current" aria-current="step">Payment</li>
+    <li>Complete</li>
+</ol>
 
-    <!-- Steps -->
-    <div class="card mb-4">
-      <div class="card-body py-3">
-        <div class="d-flex align-items-center justify-content-center gap-0">
-          <div class="step-indicator completed text-center" style="min-width:80px;">
-            <div class="step-circle"><i class="fas fa-check"></i></div>
-            <div class="step-label">Register</div>
-          </div>
-          <div class="step-connector done" style="margin-bottom:20px;"></div>
-          <div class="step-indicator active text-center" style="min-width:80px;">
-            <div class="step-circle">2</div>
-            <div class="step-label">Payment</div>
-          </div>
-          <div class="step-connector" style="margin-bottom:20px;"></div>
-          <div class="step-indicator text-center" style="min-width:80px;">
-            <div class="step-circle">3</div>
-            <div class="step-label">Complete</div>
-          </div>
-        </div>
-      </div>
-    </div>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <form method="POST" id="paymentForm" class="panel" data-busy-label="Processing…">
+            {% csrf_token %}
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-mobile-alt" aria-hidden="true"></i>Pay via M-PESA</h2></div>
+            <div class="panel-body d-grid gap-4">
+                <div class="amount-callout">
+                    <span><span class="d-block small fw-semibold text-uppercase text-muted">Registration fee</span><span class="small text-muted">One-time payment</span></span>
+                    <strong>KSh {{ amount }}</strong>
+                </div>
 
-    <!-- Payment Card -->
-    <div class="card">
-      <div class="card-header" style="background:linear-gradient(90deg,var(--fkf-green),var(--fkf-green-dark));">
-        <h5 class="mb-0 text-white"><i class="fas fa-mobile-alt me-2"></i>Pay via M-PESA</h5>
-      </div>
-      <div class="card-body">
+                <div>
+                    <label for="id_phone_number" class="form-label"><i class="fas fa-phone me-1" aria-hidden="true"></i>M-PESA phone number</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text prefix"><i class="fas fa-mobile-alt" aria-hidden="true"></i></span>
+                        {{ form.phone_number }}
+                    </div>
+                    <div class="form-text" id="phoneHelp">Enter the number registered with M-PESA (e.g. +254712345678 or 0712345678)</div>
+                    {% if form.phone_number.errors %}<div class="invalid-feedback d-block" role="alert">{{ form.phone_number.errors|join:" " }}</div>{% endif %}
+                </div>
 
-        <!-- Team Summary -->
-        <div class="alert alert-info mb-4">
-          <div class="fw-700 mb-2"><i class="fas fa-shield-alt me-1"></i>{{ team.team_name }}</div>
-          <div class="row g-1" style="font-size:.85rem;">
-            <div class="col-6"><span class="text-muted">Code:</span> <strong>{{ team.team_code }}</strong></div>
-            <div class="col-6"><span class="text-muted">Location:</span> {{ team.location }}</div>
-            <div class="col-6"><span class="text-muted">Manager:</span> {{ team.contact_person }}</div>
-          </div>
-        </div>
-
-        <!-- Amount -->
-        <div class="amount-display">
-          <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--fkf-green-dark);">
-            Registration Fee
-          </div>
-          <div style="font-size:2.8rem;font-weight:900;color:var(--fkf-green-dark);line-height:1.1;">
-            KSh {{ amount }}
-          </div>
-          <div style="font-size:.8rem;color:var(--text-muted);">One-time payment</div>
-        </div>
-
-        <!-- Form -->
-        <form method="POST" id="paymentForm">
-          {% csrf_token %}
-          <div class="mb-4">
-            <label for="id_phone_number" class="form-label">
-              <i class="fas fa-phone me-1" aria-hidden="true"></i>M-PESA Phone Number
-            </label>
-            <div class="input-group input-group-lg">
-              <span class="input-group-text" style="background:var(--fkf-green);color:white;border-color:var(--fkf-green);">
-                <i class="fas fa-mobile-alt"></i>
-              </span>
-              {{ form.phone_number }}
+                <div>
+                    <h3 class="h6 mb-3">How to pay</h3>
+                    <ol class="steps">
+                        <li><span>Enter your M-PESA number above.</span></li>
+                        <li><span>Select the Pay button.</span></li>
+                        <li><span>A prompt appears on your phone.</span></li>
+                        <li><span>Enter your M-PESA PIN to confirm.</span></li>
+                    </ol>
+                </div>
             </div>
-            <div class="form-text" id="phoneHelp">Enter the number registered with M-PESA (e.g. +254712345678 or 0712345678)</div>
-            {% if form.phone_number.errors %}
-            <div class="text-danger small mt-1" role="alert">{{ form.phone_number.errors }}</div>
-            {% endif %}
-          </div>
-
-          <div class="alert alert-warning mb-4">
-            <strong><i class="fas fa-lightbulb me-1"></i>How to pay:</strong>
-            <ol class="mb-0 ps-3 mt-1" style="font-size:.875rem;">
-              <li>Enter your M-PESA number above</li>
-              <li>Click the Pay button</li>
-              <li>A push notification will appear on your phone</li>
-              <li>Enter your M-PESA PIN to confirm</li>
-            </ol>
-          </div>
-
-          <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-lg" id="payBtn"
-                    style="background:linear-gradient(135deg,var(--fkf-green),var(--fkf-green-dark));color:white;font-weight:700;">
-              <i class="fas fa-credit-card me-2"></i>Pay KSh {{ amount }} with M-PESA
-            </button>
-            <a href="{% url 'frontend:home' %}" class="btn btn-outline-secondary">
-              <i class="fas fa-arrow-left me-1"></i>Cancel
-            </a>
-          </div>
+            <div class="panel-footer form-actions justify-content-between">
+                <a href="{% url 'frontend:home' %}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-success btn-lg" id="payBtn"><i class="fas fa-lock me-2" aria-hidden="true"></i>Pay KSh {{ amount }} with M-PESA</button>
+            </div>
         </form>
-
-        <div class="text-center mt-3" style="font-size:.78rem;color:var(--text-muted);">
-          <i class="fas fa-lock me-1"></i>Secure payment powered by Safaricom M-PESA
-        </div>
-      </div>
+        <p class="small text-muted mt-3"><i class="fas fa-shield-halved me-1" aria-hidden="true"></i>Secure payment powered by Safaricom M-PESA. Your PIN is never shared with the league.</p>
     </div>
 
-    <div class="card mt-3">
-      <div class="card-body py-2" style="font-size:.82rem;">
-        <i class="fas fa-question-circle text-primary me-1"></i>
-        Issues? Email <strong>admin@fkfmeru.com</strong>
-      </div>
-    </div>
-
-  </div>
+    <aside class="col-lg-5 d-grid gap-4 align-content-start" aria-label="Team summary">
+        <section class="panel">
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-shield-alt" aria-hidden="true"></i>Your team</h2></div>
+            <div class="panel-body">
+                <dl class="facts">
+                    <div><dt>Team</dt><dd>{{ team.team_name }}</dd></div>
+                    <div><dt>Code</dt><dd>{{ team.team_code }}</dd></div>
+                    <div><dt>Location</dt><dd>{{ team.location }}</dd></div>
+                    <div><dt>Manager</dt><dd>{{ team.contact_person }}</dd></div>
+                </dl>
+            </div>
+            <div class="panel-footer">Issues? Email <strong>admin@fkfmeru.com</strong></div>
+        </section>
+    </aside>
 </div>
-
-<script>
-document.getElementById('paymentForm').addEventListener('submit', function() {
-  var btn = document.getElementById('payBtn');
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing…';
-  btn.disabled = true;
-});
-</script>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/pages/public.js' %}" defer></script>{% endblock %}

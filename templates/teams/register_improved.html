@@ -1,204 +1,101 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Team Registration - FKF Meru County League{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
+
+{% block page_header %}
+<header class="page-header">
+    <div>
+        <span class="page-eyebrow">Join the league</span>
+        <h1 class="page-title">Team registration</h1>
+        <p class="page-subtitle">Register your team for the FKF Meru County League. It takes about two minutes, then you pay the registration fee by M-PESA.</p>
+    </div>
+</header>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <!-- Progress Steps -->
-            <div class="card mb-4 shadow-sm">
-                <div class="card-body py-3">
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <div class="step-indicator active">
-                                <div class="step-circle">1</div>
-                                <div class="step-label">Team Details</div>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="step-indicator">
-                                <div class="step-circle">2</div>
-                                <div class="step-label">Payment</div>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="step-indicator">
-                                <div class="step-circle">3</div>
-                                <div class="step-label">Complete</div>
-                            </div>
-                        </div>
+<ol class="stepper" aria-label="Registration progress">
+    <li class="is-current" aria-current="step">Team details</li>
+    <li>Payment</li>
+    <li>Complete</li>
+</ol>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="POST" enctype="multipart/form-data" id="teamForm" class="panel" data-busy-label="Saving and proceeding to payment…">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger m-3 mb-0" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-shield-alt" aria-hidden="true"></i>Team information</h2></div>
+            <div class="panel-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="id_team_name" class="form-label">Team name <span class="text-danger" aria-hidden="true">*</span></label>
+                        {{ form.team_name }}
+                        {% if form.team_name.errors %}<div class="invalid-feedback d-block">{{ form.team_name.errors|join:" " }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="id_location" class="form-label">Location / town <span class="text-danger" aria-hidden="true">*</span></label>
+                        {{ form.location }}
+                        {% if form.location.errors %}<div class="invalid-feedback d-block">{{ form.location.errors|join:" " }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="id_home_ground" class="form-label">Home ground <span class="text-danger" aria-hidden="true">*</span></label>
+                        {{ form.home_ground }}
+                        {% if form.home_ground.errors %}<div class="invalid-feedback d-block">{{ form.home_ground.errors|join:" " }}</div>{% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Registration Fee Notice -->
-            <div class="alert alert-success mb-4 shadow-sm">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h5 class="alert-heading mb-2"><i class="fas fa-clipboard-check me-2"></i>Quick Registration Process</h5>
-                        <p class="mb-1"><strong>Step 1:</strong> Fill in your team details (2 minutes)</p>
-                        <p class="mb-0"><strong>Step 2:</strong> Pay KSh {{ registration_fee|default:"1,000" }} via M-PESA (instant)</p>
+            <div class="panel-header border-top"><h2 class="panel-title"><i class="fas fa-user-tie" aria-hidden="true"></i>Team officials &amp; contact</h2></div>
+            <div class="panel-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="id_contact_person" class="form-label">Team manager / contact person <span class="text-danger" aria-hidden="true">*</span></label>
+                        {{ form.contact_person }}
+                        {% if form.contact_person.errors %}<div class="invalid-feedback d-block">{{ form.contact_person.errors|join:" " }}</div>{% endif %}
                     </div>
-                    <div class="col-md-4 text-center">
-                        <div class="display-6 fw-bold text-success">KSh {{ registration_fee|default:"1,000" }}</div>
-                        <small class="text-muted">Registration Fee</small>
+                    <div class="col-md-6">
+                        <label for="id_phone_digits" class="form-label">Phone number <span class="text-danger" aria-hidden="true">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text prefix">+254</span>
+                            {{ form.phone_digits }}
+                        </div>
+                        <div class="form-text">{{ form.phone_digits.help_text }}</div>
+                        {% if form.phone_digits.errors %}<div class="invalid-feedback d-block">{{ form.phone_digits.errors|join:" " }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="id_email" class="form-label">Email address</label>
+                        {{ form.email }}
+                        <div class="form-text">Optional but recommended</div>
+                        {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors|join:" " }}</div>{% endif %}
                     </div>
                 </div>
             </div>
 
-            <div class="card shadow">
-                <div class="card-header bg-danger text-white py-3">
-                    <h4 class="mb-0"><i class="fas fa-futbol me-2"></i>Team Registration</h4>
-                    <small>Step 1 of 2: Provide your team details</small>
-                </div>
-                <div class="card-body p-4">
-                    <form method="POST" enctype="multipart/form-data" id="teamForm">
-                        {% csrf_token %}
-                        
-                        <!-- Team Information Section -->
-                        <div class="registration-section mb-4">
-                            <h5 class="section-title"><i class="fas fa-info-circle me-2"></i>Team Information</h5>
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label for="id_team_name" class="form-label fw-bold">Team Name *</label>
-                                    {{ form.team_name }}
-                                    {% if form.team_name.errors %}
-                                    <div class="text-danger small mt-1">{{ form.team_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_location" class="form-label fw-bold">Location/Town *</label>
-                                    {{ form.location }}
-                                    {% if form.location.errors %}
-                                    <div class="text-danger small mt-1">{{ form.location.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_home_ground" class="form-label fw-bold">Home Ground *</label>
-                                    {{ form.home_ground }}
-                                    {% if form.home_ground.errors %}
-                                    <div class="text-danger small mt-1">{{ form.home_ground.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Team Officials Section -->
-                        <div class="registration-section mb-4">
-                            <h5 class="section-title"><i class="fas fa-user-tie me-2"></i>Team Officials & Contact</h5>
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label for="id_contact_person" class="form-label fw-bold">Team Manager/Contact Person *</label>
-                                    {{ form.contact_person }}
-                                    {% if form.contact_person.errors %}
-                                    <div class="text-danger small mt-1">{{ form.contact_person.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_phone_digits" class="form-label fw-bold">Phone Number *</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text fw-bold bg-primary text-white">+254</span>
-                                        {{ form.phone_digits }}
-                                    </div>
-                                    <div class="form-text">{{ form.phone_digits.help_text }}</div>
-                                    {% if form.phone_digits.errors %}
-                                    <div class="text-danger small mt-1">{{ form.phone_digits.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_email" class="form-label fw-bold">Email Address</label>
-                                    {{ form.email }}
-                                    <div class="form-text">Optional but recommended</div>
-                                    {% if form.email.errors %}
-                                    <div class="text-danger small mt-1">{{ form.email.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                            </div>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-danger btn-lg" id="submitBtn">
-                                <i class="fas fa-arrow-right me-2"></i>Continue to Payment (Step 2)
-                            </button>
-                            <a href="{% url 'frontend:home' %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-2"></i>Cancel Registration
-                            </a>
-                        </div>
-                    </form>
-                </div>
+            <div class="panel-footer form-actions justify-content-between">
+                <a href="{% url 'frontend:home' %}" class="btn btn-outline-secondary">Cancel registration</a>
+                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Continue to payment<i class="fas fa-arrow-right ms-2" aria-hidden="true"></i></button>
             </div>
-        </div>
+        </form>
     </div>
+
+    <aside class="col-lg-4 d-grid gap-4 align-content-start" aria-label="Registration fee and process">
+        <section class="panel">
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-receipt" aria-hidden="true"></i>Registration fee</h2></div>
+            <div class="panel-body">
+                <div class="amount-callout mb-3"><span class="small text-muted">One-time fee</span><strong>KSh {{ registration_fee|default:"1,000" }}</strong></div>
+                <ol class="steps">
+                    <li><span><strong>Team details</strong>Fill in your team and contact details.</span></li>
+                    <li><span><strong>Pay by M-PESA</strong>Approve the push prompt on your phone.</span></li>
+                    <li><span><strong>Review</strong>The league office reviews your team and assigns a zone.</span></li>
+                </ol>
+            </div>
+        </section>
+    </aside>
 </div>
-
-<style>
-    .step-indicator {
-        position: relative;
-    }
-    
-    .step-circle {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: #e9ecef;
-        color: #6c757d;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 10px;
-        font-weight: bold;
-        font-size: 18px;
-        border: 3px solid #dee2e6;
-    }
-    
-    .step-indicator.active .step-circle {
-        background: #c8102e;
-        color: white;
-        border-color: #c8102e;
-    }
-    
-    .step-label {
-        font-size: 14px;
-        font-weight: 500;
-        color: #6c757d;
-    }
-    
-    .step-indicator.active .step-label {
-        color: #212529;
-        font-weight: 600;
-    }
-    
-    .registration-section {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        border-left: 4px solid #c8102e;
-    }
-    
-    .section-title {
-        color: #c8102e;
-        margin-bottom: 15px;
-        font-weight: 600;
-    }
-    
-    .form-control:focus {
-        border-color: #c8102e;
-        box-shadow: 0 0 0 0.2rem rgba(200,16,46, 0.25);
-    }
-</style>
-
-<script>
-    document.getElementById('teamForm').addEventListener('submit', function(e) {
-        const btn = document.getElementById('submitBtn');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving & Proceeding to Payment...';
-        btn.disabled = true;
-    });
-</script>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/pages/public.js' %}" defer></script>{% endblock %}

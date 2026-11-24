@@ -195,3 +195,33 @@ a.score-capsule, a.score-capsule:hover { color: var(--fkf-white); text-decoratio
   .fixture-card__team { align-items: center; font-size: var(--fkf-text-xs); }
   .fixture-card__team > span:not(.team-crest) { white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
 }
+
+/* --- Auth pages (registration/_auth_base.html) ------------------------- */
+.auth-page .login-card-header { position: relative; border-bottom: 0; padding-bottom: calc(var(--fkf-space-5) + var(--fkf-flag-h)); }
+.auth-page .login-card-header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--fkf-flag-h); background: var(--fkf-flag); }
+.auth-page .login-logo { background: var(--fkf-red); box-shadow: inset 0 -3px 0 var(--fkf-green); }
+.auth-divider { display: flex; align-items: center; gap: var(--fkf-space-3); margin: var(--fkf-space-5) 0 var(--fkf-space-3); font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--fkf-border); }
+.auth-help ul { margin: var(--fkf-space-1) 0 0; padding-left: 1.1rem; }
+
+/* --- Stepper (team registration → payment → complete) ----------------- */
+.stepper { list-style: none; margin: 0 0 var(--fkf-space-5); padding: 0; display: flex; gap: var(--fkf-space-2); counter-reset: stepper; }
+.stepper li {
+  flex: 1; display: flex; align-items: center; gap: var(--fkf-space-2); min-width: 0;
+  padding-top: var(--fkf-space-2); border-top: 3px solid var(--fkf-border);
+  font-size: var(--fkf-text-sm); font-weight: 600; color: var(--fkf-text-muted);
+}
+.stepper li::before {
+  counter-increment: stepper; content: counter(stepper);
+  width: 1.6rem; height: 1.6rem; flex-shrink: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--fkf-surface-2); border: 1px solid var(--fkf-border); font-size: var(--fkf-text-xs); font-weight: 800;
+}
+.stepper li.is-done { border-top-color: var(--fkf-green); color: var(--fkf-text); }
+.stepper li.is-done::before { content: "\2713"; background: var(--fkf-green); border-color: var(--fkf-green); color: var(--fkf-white); }
+.stepper li.is-current { border-top-color: var(--fkf-red); color: var(--fkf-text); }
+.stepper li.is-current::before { background: var(--fkf-red); border-color: var(--fkf-red); color: var(--fkf-white); }
+
+.code-callout { display: inline-flex; align-items: center; gap: var(--fkf-space-2); padding: var(--fkf-space-2) var(--fkf-space-3); border-radius: var(--fkf-radius); background: var(--fkf-surface-2); border: 1px dashed var(--fkf-border-strong); }
+.code-callout code { font-size: var(--fkf-text-lg); font-weight: 800; color: var(--fkf-text); letter-spacing: 0.04em; }
+.input-group-text.prefix { font-weight: 700; background: var(--fkf-surface-2); color: var(--fkf-text); }

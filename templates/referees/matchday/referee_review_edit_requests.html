@@ -1,126 +1,67 @@
-<!-- referees/matchday/referee_review_edit_requests.html -->
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags %}
 
 {% block title %}Review Squad Edit Requests{% endblock %}
+{% block page_title %}Squad edit requests{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/referees.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Main referee</span>
+        <h1 class="page-title h2">Squad edit requests</h1>
+        <p class="page-subtitle">Review and respond to team requests to edit approved squads.</p>
+    </div>
+    <div class="page-actions">
+        <span class="status-badge status-success align-self-center">Approved: {{ approved_count }}</span>
+        <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to dashboard</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-2 text-gray-800">📋 Squad Edit Requests</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'referees:referee_dashboard' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Edit Requests</li>
-                </ol>
-            </nav>
-            <p class="text-muted mb-0">Review and respond to team requests to edit approved squads</p>
-            <div class="mt-2">
-                <span class="badge bg-info">Approved: {{ approved_count }}</span>
+{% if pending_requests %}
+<div class="row g-4">
+    {% for request in pending_requests %}
+    <div class="col-lg-6">
+        <section class="panel h-100 d-flex flex-column" aria-labelledby="req-{{ request.id }}-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="req-{{ request.id }}-title"><i class="fas fa-pen-to-square" aria-hidden="true"></i>{{ request.squad.team.team_name }}</h2>
+                <span class="status-badge status-warning">Pending review</span>
             </div>
-        </div>
-        <div class="btn-group">
-            <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-            </a>
-        </div>
-    </div>
-
-    {% if pending_requests %}
-        <div class="row">
-            {% for request in pending_requests %}
-            <div class="col-lg-6 mb-4">
-                <div class="card shadow">
-                    <div class="card-header py-3 bg-warning text-dark">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="m-0 font-weight-bold">
-                                <i class="fas fa-edit me-2"></i>{{ request.squad.team.team_name }}
-                            </h6>
-                            <span class="badge bg-warning">Pending Review</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <!-- Match Info -->
-                        <div class="mb-3">
-                            <h6 class="text-primary">{{ request.squad.match.home_team.team_name }} vs {{ request.squad.match.away_team.team_name }}</h6>
-                            <small class="text-muted">
-                                {{ request.squad.match.match_date|date:"M d, Y" }} at {{ request.squad.match.kickoff_time|default:"TBD" }}
-                            </small>
-                        </div>
-
-                        <!-- Request Details -->
-                        <div class="mb-3">
-                            <strong>Requested by:</strong> {{ request.requested_by.get_full_name }}<br>
-                            <strong>Requested on:</strong> {{ request.requested_at|date:"M d, Y H:i" }}<br>
-                            <strong>Reason:</strong>
-                            <div class="mt-2 p-2 bg-light rounded">
-                                {{ request.reason }}
-                            </div>
-                        </div>
-
-                        <!-- Action Form -->
-                        <form method="post" class="mt-3">
-                            {% csrf_token %}
-                            <input type="hidden" name="request_id" value="{{ request.id }}">
-                            
-                            <div class="mb-3">
-                                <label for="notes_{{ request.id }}" class="form-label">
-                                    <strong>Review Notes (Optional)</strong>
-                                </label>
-                                <textarea 
-                                    name="notes" 
-                                    id="notes_{{ request.id }}" 
-                                    class="form-control" 
-                                    rows="2" 
-                                    placeholder="Add any notes about your decision..."
-                                ></textarea>
-                            </div>
-
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <button type="submit" name="action" value="decline" class="btn btn-outline-danger me-md-2">
-                                    <i class="fas fa-times me-1"></i>Decline
-                                </button>
-                                <button type="submit" name="action" value="approve" class="btn btn-success">
-                                    <i class="fas fa-check me-1"></i>Approve
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            <div class="panel-body flex-grow-1">
+                <p class="fw-semibold mb-1">{{ request.squad.match.home_team.team_name }} vs {{ request.squad.match.away_team.team_name }}</p>
+                <p class="small text-body-secondary">{{ request.squad.match.match_date|date:"M d, Y" }} at {{ request.squad.match.kickoff_time|default:"TBD" }}</p>
+                <dl class="ref-dl mb-3">
+                    <dt>Requested by</dt><dd>{{ request.requested_by.get_full_name }}</dd>
+                    <dt>Requested on</dt><dd>{{ request.requested_at|date:"M d, Y H:i" }}</dd>
+                </dl>
+                <h3 class="ref-subhead">Reason</h3>
+                <p class="ref-md-quote">{{ request.reason }}</p>
+            </div>
+            <form method="post" class="panel-footer">
+                {% csrf_token %}
+                <input type="hidden" name="request_id" value="{{ request.id }}">
+                <label for="notes_{{ request.id }}" class="form-label">Review notes (optional)</label>
+                <textarea name="notes" id="notes_{{ request.id }}" class="form-control mb-3" rows="2" placeholder="Add any notes about your decision..."></textarea>
+                <div class="d-flex flex-wrap justify-content-end gap-2">
+                    <button type="submit" name="action" value="decline" class="btn btn-outline-danger"><i class="fas fa-xmark me-1" aria-hidden="true"></i>Decline</button>
+                    <button type="submit" name="action" value="approve" class="btn btn-success"><i class="fas fa-check me-1" aria-hidden="true"></i>Approve</button>
                 </div>
-            </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="card shadow">
-            <div class="card-body text-center py-5">
-                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
-                <h4>No Pending Requests</h4>
-                <p class="text-muted">All squad edit requests have been reviewed.</p>
-                <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-primary">
-                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
-                </a>
-            </div>
-        </div>
-    {% endif %}
+            </form>
+        </section>
+    </div>
+    {% endfor %}
 </div>
-
-<script>
-// Auto-submit form when action button is clicked
-document.querySelectorAll('button[type="submit"][name="action"]').forEach(button => {
-    button.addEventListener('click', function(e) {
-        // Find the closest form and set the action value
-        const form = this.closest('form');
-        const actionInput = form.querySelector('input[name="action"]');
-        if (!actionInput) {
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'action';
-            hiddenInput.value = this.value;
-            form.appendChild(hiddenInput);
-        }
-    });
-});
-</script>
+{% else %}
+<section class="panel">
+    <div class="empty-state">
+        <div class="empty-state__icon"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
+        <p class="empty-state__title">No pending requests</p>
+        <p class="empty-state__text">All squad edit requests have been reviewed.</p>
+        <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to dashboard</a>
+    </div>
+</section>
+{% endif %}
 {% endblock %}

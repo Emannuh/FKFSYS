@@ -1,97 +1,88 @@
 {% extends 'base.html' %}
+{% load static fkf_tags %}
+
 {% block title %}Players – {{ ext_team.team_name }}{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
+
+{% block page_header %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'tournaments:tournament_list' %}">Tournaments</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'tournaments:tournament_detail' tournament.slug %}">{{ tournament.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Squad</li>
+    </ol>
+</nav>
+<header class="page-header">
+    <div>
+        <span class="page-eyebrow">{{ tournament.name }}</span>
+        <h1 class="page-title">{{ ext_team.team_name }} squad</h1>
+        <p class="page-subtitle">{{ squad.count }} of {{ tournament.max_squad_size }} players registered.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back</a>
+    </div>
+</header>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3><i class="fas fa-users text-info me-2"></i>{{ ext_team.team_name }} – Squad</h3>
-            <small class="text-muted">{{ tournament.name }} | {{ squad.count }}/{{ tournament.max_squad_size }} players</small>
-        </div>
-        <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-1"></i>Back
-        </a>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <section class="panel" aria-labelledby="squad-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="squad-title"><i class="fas fa-list" aria-hidden="true"></i>Registered players</h2>
+                <span class="small text-muted">{{ squad.count }} player{{ squad.count|pluralize }}</span>
+            </div>
+            {% if squad %}
+            <div class="data-table-wrap">
+                <table class="table data-table">
+                    <caption class="visually-hidden">Registered players</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="col-min num">#</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Position</th>
+                            <th scope="col" class="hide-sm">DOB</th>
+                            <th scope="col" class="hide-sm">ID No.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reg in squad %}
+                        <tr>
+                            <td class="num fw-bold">{{ reg.jersey_number }}</td>
+                            <td class="fw-semibold">{% if reg.external_player %}{{ reg.external_player.full_name }}{% elif reg.player %}{{ reg.player.full_name }}{% endif %}</td>
+                            <td>{% if reg.external_player %}{{ reg.external_player.get_position_display }}{% elif reg.player %}{{ reg.player.get_position_display }}{% endif %}</td>
+                            <td class="hide-sm">{% if reg.external_player %}{{ reg.external_player.date_of_birth|date:"d/m/Y"|default:"—" }}{% elif reg.player %}{{ reg.player.date_of_birth|date:"d/m/Y" }}{% endif %}</td>
+                            <td class="hide-sm">{% if reg.external_player %}{{ reg.external_player.id_number|default:"—" }}{% elif reg.player %}{{ reg.player.id_number }}{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            {% empty_state icon="users" title="No players registered yet." message="Add your first player with the form." %}
+            {% endif %}
+        </section>
     </div>
 
-
-    <div class="row">
-        <!-- Current Squad -->
-        <div class="col-lg-7 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-list me-1"></i>Registered Players</h6>
-                    <span class="badge bg-light text-dark">{{ squad.count }} players</span>
+    <div class="col-lg-5">
+        <section class="panel" aria-labelledby="add-title">
+            <div class="panel-header"><h2 class="panel-title" id="add-title"><i class="fas fa-user-plus" aria-hidden="true"></i>Add player</h2></div>
+            <div class="panel-body">
+                {% if squad.count >= tournament.max_squad_size %}
+                <div class="alert alert-warning mb-0" role="status">
+                    <i class="fas fa-exclamation-triangle me-1" aria-hidden="true"></i>Squad is full ({{ tournament.max_squad_size }} players max).
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Name</th>
-                                <th>Position</th>
-                                <th>DOB</th>
-                                <th>ID No.</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for reg in squad %}
-                            <tr>
-                                <td class="fw-bold">{{ reg.jersey_number }}</td>
-                                <td>
-                                    {% if reg.external_player %}
-                                    {{ reg.external_player.full_name }}
-                                    {% elif reg.player %}
-                                    {{ reg.player.full_name }}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if reg.external_player %}{{ reg.external_player.get_position_display }}
-                                    {% elif reg.player %}{{ reg.player.get_position_display }}{% endif %}
-                                </td>
-                                <td>
-                                    {% if reg.external_player %}{{ reg.external_player.date_of_birth|date:"d/m/Y"|default:"—" }}
-                                    {% elif reg.player %}{{ reg.player.date_of_birth|date:"d/m/Y" }}{% endif %}
-                                </td>
-                                <td>
-                                    {% if reg.external_player %}{{ reg.external_player.id_number|default:"—" }}
-                                    {% elif reg.player %}{{ reg.player.id_number }}{% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="5" class="text-center text-muted py-3">No players registered yet.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                {% else %}
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    {% include 'tournaments/includes/form_errors.html' %}
+                    {% for field in form %}{% include 'tournaments/includes/form_field.html' %}{% endfor %}
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus me-1" aria-hidden="true"></i>Add player</button>
+                </form>
+                {% endif %}
             </div>
-        </div>
-
-        <!-- Add Player Form -->
-        <div class="col-lg-5 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-                    <h6 class="mb-0"><i class="fas fa-user-plus me-1"></i>Add Player</h6>
-                </div>
-                <div class="card-body">
-                    {% if squad.count >= tournament.max_squad_size %}
-                    <div class="alert alert-warning mb-0">
-                        <i class="fas fa-exclamation-triangle me-1"></i>
-                        Squad is full ({{ tournament.max_squad_size }} players max).
-                    </div>
-                    {% else %}
-                    <form method="post" enctype="multipart/form-data" novalidate>
-                        {% csrf_token %}
-                        {% include 'tournaments/includes/form_errors.html' %}
-                        {% for field in form %}{% include 'tournaments/includes/form_field.html' %}{% endfor %}
-                        <button type="submit" class="btn btn-info w-100">
-                            <i class="fas fa-plus me-1"></i>Add Player
-                        </button>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+        </section>
     </div>
 </div>
 {% endblock %}
-

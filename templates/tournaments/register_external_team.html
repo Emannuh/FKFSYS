@@ -1,70 +1,80 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block title %}Register External Team – {{ tournament.name }}{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/public.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3><i class="fas fa-plus-circle text-info me-2"></i>Register External Team</h3>
-                <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-arrow-left me-1"></i>Back
-                </a>
-            </div>
-
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-1"></i>
-                <strong>External Team Registration</strong> – This form is for teams that are <strong>not</strong>
-                currently part of the FKF County League. A portal account will be created for you so you can
-                manage your team, register players, and track fixtures.
-                {% if not request.user.is_authenticated %}
-                <br><small>If your team is already registered in the league,
-                <a href="{% url 'login' %}?next={% url 'tournaments:register_team' tournament.slug %}">login here</a> to register instead.</small>
-                {% endif %}
-            </div>
-
-            <div class="card shadow-sm">
-                <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-                    <h6 class="mb-0">{{ tournament.name }} – New Team Registration</h6>
-                </div>
-                <div class="card-body">
-
-                    <form method="post" enctype="multipart/form-data" novalidate>
-                        {% csrf_token %}
-                        {% include 'tournaments/includes/form_errors.html' %}
-
-                        <h6 class="text-muted mb-3 mt-2"><i class="fas fa-shield-alt me-1"></i>Team Information</h6>
-                        {% for field in form %}
-                            {% if field.name == 'manager_password' %}
-                        <hr class="my-3">
-                        <h6 class="text-muted mb-3"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Portal Account</h6>
-                        <div class="alert alert-light border small">
-                            A portal account will be created with the email above. You will be signed in
-                            straight away and shown your username. If you already have an account,
-                            <a href="{% url 'login' %}?next={{ request.path|urlencode }}">log in first</a>.
-                        </div>
-                            {% endif %}
-                            {% include 'tournaments/includes/form_field.html' %}
-                        {% endfor %}
-
-                        {% if tournament.entry_fee > 0 %}
-                        <div class="alert alert-warning mt-3">
-                            <i class="fas fa-exclamation-triangle me-1"></i>
-                            Entry fee: <strong>KSh {{ tournament.entry_fee }}</strong>. Payment confirmation will be done by admin.
-                        </div>
-                        {% endif %}
-
-                        <div class="d-flex justify-content-end gap-2 mt-4">
-                            <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-info">
-                                <i class="fas fa-paper-plane me-1"></i>Submit Registration
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+{% block page_header %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'tournaments:tournament_list' %}">Tournaments</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'tournaments:tournament_detail' tournament.slug %}">{{ tournament.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Register external team</li>
+    </ol>
+</nav>
+<header class="page-header">
+    <div>
+        <span class="page-eyebrow">{{ tournament.name }}</span>
+        <h1 class="page-title">Register external team</h1>
+        <p class="page-subtitle">For teams that are not currently part of the FKF County League.</p>
     </div>
-</div>
+    <div class="page-actions">
+        <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back</a>
+    </div>
+</header>
 {% endblock %}
 
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" enctype="multipart/form-data" novalidate class="panel">
+            {% csrf_token %}
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-shield-alt" aria-hidden="true"></i>Team information</h2></div>
+            <div class="panel-body">
+                {% include 'tournaments/includes/form_errors.html' %}
+                {% for field in form %}
+                    {% if field.name == 'manager_password' %}
+            </div>
+            <div class="panel-header border-top"><h2 class="panel-title"><i class="fas fa-user-plus" aria-hidden="true"></i>Portal account</h2></div>
+            <div class="panel-body">
+                <p class="form-text mt-0 mb-3">
+                    A portal account will be created with the email above. You will be signed in
+                    straight away and shown your username. If you already have an account,
+                    <a href="{% url 'login' %}?next={{ request.path|urlencode }}">log in first</a>.
+                </p>
+                    {% endif %}
+                    {% include 'tournaments/includes/form_field.html' %}
+                {% endfor %}
+
+                {% if tournament.entry_fee > 0 %}
+                <div class="alert alert-warning mt-3 mb-0" role="status">
+                    <i class="fas fa-exclamation-triangle me-1" aria-hidden="true"></i>
+                    Entry fee: <strong>KSh {{ tournament.entry_fee }}</strong>. Payment confirmation will be done by admin.
+                </div>
+                {% endif %}
+            </div>
+            <div class="panel-footer form-actions justify-content-end">
+                <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-1" aria-hidden="true"></i>Submit registration</button>
+            </div>
+        </form>
+    </div>
+    <aside class="col-lg-4" aria-label="About external registration">
+        <section class="panel">
+            <div class="panel-header"><h2 class="panel-title"><i class="fas fa-info-circle" aria-hidden="true"></i>How it works</h2></div>
+            <div class="panel-body">
+                <ol class="steps">
+                    <li><span><strong>Register your team</strong>Fill in your team and manager details.</span></li>
+                    <li><span><strong>Get a portal account</strong>Manage your team, register players and track fixtures.</span></li>
+                    <li><span><strong>Await approval</strong>The organisers review every registration.</span></li>
+                </ol>
+                {% if not request.user.is_authenticated %}
+                <p class="small text-muted mt-3 mb-0">If your team is already registered in the league,
+                <a href="{% url 'login' %}?next={% url 'tournaments:register_team' tournament.slug %}">log in here</a> to register instead.</p>
+                {% endif %}
+            </div>
+        </section>
+    </aside>
+</div>
+{% endblock %}

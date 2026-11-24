@@ -1,300 +1,153 @@
-<!-- templates/referees/admin/all_referees.html -->
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags %}
 
 {% block title %}All Referees{% endblock %}
+{% block page_title %}All referees{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/referees.css' %}">{% endblock %}
 
-{% block content %}
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Dashboard</a></li>
-        <li class="breadcrumb-item active" aria-current="page">All Referees</li>
-    </ol>
-</nav>
-
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h1 class="h3 mb-0">
-                        <i class="fas fa-users me-2"></i>
-                        All Referees
-                    </h1>
-                    <p class="text-muted mb-0">Manage all referee accounts</p>
-                </div>
-                <div>
-                    <a href="{% url 'referees:pending_referees' %}" class="btn btn-warning">
-                        <i class="fas fa-clock me-2"></i>Pending Approvals
-                    </a>
-                </div>
-            </div>
-
-            <!-- Stats -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-uppercase text-muted mb-0">Total</h6>
-                                    <h2 class="mb-0">{{ total_count }}</h2>
-                                </div>
-                                <div class="icon icon-shape bg-primary text-white rounded-circle">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-success">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-uppercase text-muted mb-0">Approved</h6>
-                                    <h2 class="mb-0">{{ approved_count }}</h2>
-                                </div>
-                                <div class="icon icon-shape bg-success text-white rounded-circle">
-                                    <i class="fas fa-check-circle"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-warning">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-uppercase text-muted mb-0">Pending</h6>
-                                    <h2 class="mb-0">{{ pending_count }}</h2>
-                                </div>
-                                <div class="icon icon-shape bg-warning text-white rounded-circle">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-danger">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-uppercase text-muted mb-0">Rejected</h6>
-                                    <h2 class="mb-0">{{ rejected_count }}</h2>
-                                </div>
-                                <div class="icon icon-shape bg-danger text-white rounded-circle">
-                                    <i class="fas fa-times-circle"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <form method="get" class="row g-3">
-                        <div class="col-md-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select class="form-select" id="status" name="status">
-                                <option value="">All Status</option>
-                                {% for value, label in status_choices %}
-                                <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="level" class="form-label">Level</label>
-                            <select class="form-select" id="level" name="level">
-                                <option value="">All Levels</option>
-                                {% for value, label in level_choices %}
-                                <option value="{{ value }}" {% if request.GET.level == value %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="specialization" class="form-label">Specialization</label>
-                            <select class="form-select" id="specialization" name="specialization">
-                                <option value="">All Specializations</option>
-                                <option value="REFEREE" {% if request.GET.specialization == 'REFEREE' %}selected{% endif %}>Referee</option>
-                                <option value="ASSISTANT_REFEREE" {% if request.GET.specialization == 'ASSISTANT_REFEREE' %}selected{% endif %}>Assistant Referee</option>
-                                <option value="MATCH_COMMISSIONER" {% if request.GET.specialization == 'MATCH_COMMISSIONER' %}selected{% endif %}>Match Commissioner</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="county" class="form-label">County</label>
-                            <input type="text" class="form-control" id="county" name="county" 
-                                   value="{{ request.GET.county }}" placeholder="Enter county">
-                        </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-filter me-2"></i>Filter
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Referees Table -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-list me-2"></i>
-                        Referees List ({{ referees|length }})
-                    </h5>
-                </div>
-                
-                {% if referees %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>ID</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Specialization</th>
-                                <th>Grade</th>
-                                <th>County</th>
-                                <th>Status</th>
-                                <th>Active</th>
-                                <th>Registered</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for referee in referees %}
-                            <tr>
-                                <td>
-                                    <strong>{{ referee.full_name }}</strong>
-                                    {% if referee.photo %}
-                                    <img src="{{ referee.photo.url }}" alt="{{ referee.full_name }}" 
-                                         class="rounded-circle ms-2" width="30" height="30">
-                                    {% endif %}
-                                </td>
-                                <td>{{ referee.id_number }}</td>
-                                <td>
-                                    <a href="mailto:{{ referee.email }}">{{ referee.email }}</a>
-                                </td>
-                                <td>{{ referee.phone_number }}</td>
-                                <td>
-                                    {% if referee.specialization %}
-                                        <span class="badge bg-info">{{ referee.get_specialization_display }}</span>
-                                    {% else %}
-                                        <span class="text-muted">Not set</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge bg-info">{{ referee.get_level_display|default:"-" }}</span>
-                                </td>
-                                <td>{{ referee.county|default:"-" }}</td>
-                                <td>
-                                    {% if referee.status == 'approved' %}
-                                    <span class="badge bg-success">Approved</span>
-                                    {% elif referee.status == 'pending' %}
-                                    <span class="badge bg-warning">Pending</span>
-                                    {% elif referee.status == 'suspended' %}
-                                    <span class="badge bg-dark">Suspended</span>
-                                    {% else %}
-                                    <span class="badge bg-danger">Rejected</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if referee.is_active %}
-                                    <span class="badge bg-success">Active</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Inactive</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ referee.date_joined|date:"M d, Y" }}</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{% url 'admin:referees_referee_change' referee.id %}" 
-                                           class="btn btn-outline-primary" 
-                                           title="Edit" target="_blank">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        {% if referee.status == 'pending' or referee.status == 'rejected' %}
-                                        <a href="{% url 'referees:approve_referee' referee.id %}" 
-                                           class="btn btn-outline-success" 
-                                           title="Approve">
-                                            <i class="fas fa-check"></i>
-                                        </a>
-                                        {% endif %}
-                                        {% if referee.status == 'pending' %}
-                                        <a href="{% url 'referees:reject_referee' referee.id %}" 
-                                           class="btn btn-outline-danger" 
-                                           title="Reject">
-                                            <i class="fas fa-times"></i>
-                                        </a>
-                                        {% endif %}
-                                    </div>
-                                    {% if referee.status == 'approved' %}
-                                    <form method="post" action="{% url 'referees:suspend_referee' referee.id %}" class="d-flex gap-1 mt-1">
-                                        {% csrf_token %}
-                                        <label for="suspend-reason-{{ referee.id }}" class="visually-hidden">Suspension reason for {{ referee.full_name }}</label>
-                                        <input type="text" id="suspend-reason-{{ referee.id }}" name="suspension_reason" class="form-control form-control-sm" placeholder="Reason" required maxlength="500">
-                                        <button type="submit" class="btn btn-sm btn-outline-dark" title="Suspend">
-                                            <i class="fas fa-ban" aria-hidden="true"></i><span class="visually-hidden">Suspend</span>
-                                        </button>
-                                    </form>
-                                    {% elif referee.status == 'suspended' %}
-                                    <form method="post" action="{% url 'referees:reactivate_referee' referee.id %}" class="mt-1">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivate">
-                                            <i class="fas fa-undo" aria-hidden="true"></i> Reactivate
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                {% else %}
-                <div class="card-body text-center py-5">
-                    <div class="mb-3">
-                        <i class="fas fa-search fa-3x text-muted"></i>
-                    </div>
-                    <h4 class="text-muted">No Referees Found</h4>
-                    <p class="text-muted">Try adjusting your filters or register new referees.</p>
-                    <a href="{% url 'referees:referee_registration' %}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Register New Referee
-                    </a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Referee administration</span>
+        <h1 class="page-title h2">All referees</h1>
+        <p class="page-subtitle">Manage all referee accounts.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'referees:pending_referees' %}" class="btn btn-primary"><i class="fas fa-clock me-1" aria-hidden="true"></i>Pending approvals{% if pending_count %} ({{ pending_count }}){% endif %}</a>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    .icon-shape {
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .table th {
-        font-weight: 600;
-        color: #495057;
-        border-top: none;
-    }
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-    }
-    .card {
-        border-radius: 10px;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-</style>
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-users" aria-hidden="true"></i>Total</span><span class="stat-tile__value">{{ total_count }}</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-circle-check" aria-hidden="true"></i>Approved</span><span class="stat-tile__value">{{ approved_count }}</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-clock" aria-hidden="true"></i>Pending</span><span class="stat-tile__value">{{ pending_count }}</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-circle-xmark" aria-hidden="true"></i>Rejected</span><span class="stat-tile__value">{{ rejected_count }}</span></div></div>
+</div>
+
+<section class="panel mb-4" aria-labelledby="filter-title">
+    <div class="panel-header"><h2 class="panel-title" id="filter-title"><i class="fas fa-filter" aria-hidden="true"></i>Filter</h2></div>
+    <div class="panel-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-sm-6 col-lg-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-2">
+                <label for="level" class="form-label">Level</label>
+                <select class="form-select" id="level" name="level">
+                    <option value="">All levels</option>
+                    {% for value, label in level_choices %}
+                    <option value="{{ value }}" {% if request.GET.level == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <label for="specialization" class="form-label">Specialization</label>
+                <select class="form-select" id="specialization" name="specialization">
+                    <option value="">All specializations</option>
+                    <option value="REFEREE" {% if request.GET.specialization == 'REFEREE' %}selected{% endif %}>Referee</option>
+                    <option value="ASSISTANT_REFEREE" {% if request.GET.specialization == 'ASSISTANT_REFEREE' %}selected{% endif %}>Assistant Referee</option>
+                    <option value="MATCH_COMMISSIONER" {% if request.GET.specialization == 'MATCH_COMMISSIONER' %}selected{% endif %}>Match Commissioner</option>
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-2">
+                <label for="county" class="form-label">County</label>
+                <input type="text" class="form-control" id="county" name="county" value="{{ request.GET.county }}" placeholder="Enter county">
+            </div>
+            <div class="col-12 col-lg-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill"><i class="fas fa-filter me-1" aria-hidden="true"></i>Filter</button>
+                {% if request.GET %}<a href="{% url 'referees:all_referees' %}" class="btn btn-outline-secondary" aria-label="Clear filters"><i class="fas fa-xmark" aria-hidden="true"></i></a>{% endif %}
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="panel" aria-labelledby="list-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="list-title"><i class="fas fa-list" aria-hidden="true"></i>Referees list ({{ referees|length }})</h2>
+    </div>
+    {% if referees %}
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col" class="hide-sm">ID</th>
+                    <th scope="col">Contact</th>
+                    <th scope="col" class="hide-sm">Specialization</th>
+                    <th scope="col" class="hide-sm">Grade</th>
+                    <th scope="col" class="hide-sm">County</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="hide-sm">Registered</th>
+                    <th scope="col" class="ref-adm-actions-col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for referee in referees %}
+                <tr>
+                    <td>
+                        <span class="d-flex align-items-center gap-2">
+                            {% if referee.photo %}<img src="{{ referee.photo.url }}" alt="" class="team-crest">{% else %}<span class="team-crest" aria-hidden="true">{{ referee.first_name|slice:":1" }}{{ referee.last_name|slice:":1" }}</span>{% endif %}
+                            <strong>{{ referee.full_name }}</strong>
+                        </span>
+                    </td>
+                    <td class="hide-sm ref-num">{{ referee.id_number }}</td>
+                    <td class="small">
+                        <a href="mailto:{{ referee.email }}">{{ referee.email }}</a>
+                        <div class="text-body-secondary ref-num">{{ referee.phone_number }}</div>
+                    </td>
+                    <td class="hide-sm">{% if referee.specialization %}{{ referee.get_specialization_display }}{% else %}<span class="text-body-secondary">Not set</span>{% endif %}</td>
+                    <td class="hide-sm">{{ referee.get_level_display|default:"-" }}</td>
+                    <td class="hide-sm">{{ referee.county|default:"-" }}</td>
+                    <td class="text-nowrap">
+                        {% referee_badge referee.status %}
+                        {% if referee.is_active %}<span class="status-badge status-neutral">Active</span>{% else %}<span class="status-badge status-neutral">Inactive</span>{% endif %}
+                    </td>
+                    <td class="hide-sm small ref-num text-nowrap">{{ referee.date_joined|date:"M d, Y" }}</td>
+                    <td class="ref-adm-actions-col">
+                        <div class="ref-actions ref-actions--wrap">
+                            <a href="{% url 'admin:referees_referee_change' referee.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Edit" aria-label="Edit {{ referee.full_name }} (opens Django admin)" target="_blank" rel="noopener"><i class="fas fa-pen" aria-hidden="true"></i></a>
+                            {% if referee.status == 'pending' or referee.status == 'rejected' %}
+                            <a href="{% url 'referees:approve_referee' referee.id %}" class="btn btn-sm btn-success" title="Approve"><i class="fas fa-check me-1" aria-hidden="true"></i>Approve</a>
+                            {% endif %}
+                            {% if referee.status == 'pending' %}
+                            <a href="{% url 'referees:reject_referee' referee.id %}" class="btn btn-sm btn-outline-danger" title="Reject">Reject</a>
+                            {% endif %}
+                        </div>
+                        {% if referee.status == 'approved' %}
+                        <form method="post" action="{% url 'referees:suspend_referee' referee.id %}" class="ref-adm-inline-form mt-1">
+                            {% csrf_token %}
+                            <label for="suspend-reason-{{ referee.id }}" class="visually-hidden">Suspension reason for {{ referee.full_name }}</label>
+                            <input type="text" id="suspend-reason-{{ referee.id }}" name="suspension_reason" class="form-control form-control-sm" placeholder="Reason" required maxlength="500">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Suspend"><i class="fas fa-ban" aria-hidden="true"></i><span class="visually-hidden">Suspend</span></button>
+                        </form>
+                        {% elif referee.status == 'suspended' %}
+                        <form method="post" action="{% url 'referees:reactivate_referee' referee.id %}" class="mt-1">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivate"><i class="fas fa-rotate-left me-1" aria-hidden="true"></i>Reactivate</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state__icon"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></div>
+        <p class="empty-state__title">No referees found</p>
+        <p class="empty-state__text">Try adjusting your filters or register new referees.</p>
+        <a href="{% url 'referees:referee_registration' %}" class="btn btn-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i>Register new referee</a>
+    </div>
+    {% endif %}
+</section>
 {% endblock %}
