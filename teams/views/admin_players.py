@@ -40,7 +40,8 @@ def admin_manage_players(request):
         players = players.filter(is_suspended=False)
 
     totals = Player.objects.aggregate(
-        total_players=Count('id'), suspended_players=Count('id', filter=Q(is_suspended=True))
+        total_players=Count('id'), suspended_players=Count('id', filter=Q(is_suspended=True)),
+        active_players=Count('id', filter=Q(is_suspended=False)),
     )
     return render(request, 'teams/admin_manage_players.html', {
         'players': players.order_by('team__team_name', 'jersey_number'),

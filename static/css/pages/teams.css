@@ -1,0 +1,143 @@
+/* ==========================================================================
+   Teams area (templates/teams/**, tournament team pages). Tokens only.
+   ========================================================================== */
+
+/* --- Kit editor (select_kit.html, includes/_kit_card.html) ---------------- */
+.kit-card__body { display: grid; gap: var(--fkf-space-4); }
+.kit-card__colours { border: 0; margin: 0; padding: 0; min-width: 0; }
+.kit-card__legend,
+.kit-card__label { font-size: var(--fkf-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fkf-text-muted); margin-bottom: var(--fkf-space-1); }
+.kit-card__legend { float: none; width: auto; padding: 0; margin-bottom: var(--fkf-space-2); }
+.kit-color-input.form-control-color { width: 100%; height: 44px; padding: 4px; cursor: pointer; border-radius: var(--fkf-radius-sm); }
+.kit-color-input.form-control-color:hover { border-color: var(--fkf-border-strong); }
+
+/* Stylised kit: jersey, shorts, socks stacked like a strip on a hanger */
+.kit-figure {
+  display: grid; justify-items: center; gap: 4px; padding: var(--fkf-space-4) var(--fkf-space-3);
+  background: var(--fkf-surface-2); border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius);
+}
+.kit-figure > div {
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--fkf-text-xs); font-weight: 700; letter-spacing: 0.04em;
+  color: var(--fkf-white); text-shadow: 0 0 2px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--fkf-border-strong);
+}
+.kit-figure__jersey { width: 116px; height: 64px; border-radius: 18px 18px 6px 6px; }
+.kit-figure__shorts { width: 88px; height: 32px; border-radius: 4px 4px 10px 10px; }
+.kit-figure__socks { width: 64px; height: 22px; border-radius: 4px; }
+
+.kit-thumb {
+  display: flex; gap: var(--fkf-space-3); align-items: flex-start; margin-top: var(--fkf-space-3);
+  padding: var(--fkf-space-2); border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius-sm); background: var(--fkf-surface-2);
+}
+.kit-thumb[hidden] { display: none; }
+.kit-thumb__img { width: 72px; height: 72px; object-fit: contain; border-radius: 4px; background: var(--fkf-surface); border: 1px solid var(--fkf-border); flex-shrink: 0; }
+.kit-thumb__meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: var(--fkf-text-sm); }
+.kit-thumb__title { font-weight: 700; }
+.kit-thumb__note { font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+
+.kit-actions { position: sticky; bottom: var(--fkf-space-3); z-index: 5; box-shadow: var(--fkf-shadow-lg); }
+.kit-requirements { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--fkf-space-1) var(--fkf-space-4); font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+.kit-requirements i { margin-right: 0.35rem; color: var(--fkf-green-text); }
+.kit-requirements li:nth-child(2) i { color: var(--fkf-text-muted); }
+@media (max-width: 575.98px) {
+  .kit-actions { position: static; }
+  .kit-actions .btn { flex: 1 1 auto; }
+}
+
+/* --- Shared bits for teams pages (candidates for app.css) ----------------- */
+.team-hero { display: flex; align-items: center; gap: var(--fkf-space-4); min-width: 0; }
+.team-hero .team-crest--lg { --crest-size: 64px; }
+.stat-tile__value--text { font-size: var(--fkf-text-lg); line-height: 1.3; overflow-wrap: anywhere; }
+.stat-tile__value--dash:empty::before { content: "\2014"; color: var(--fkf-text-muted); }
+.person { display: inline-flex; align-items: center; gap: var(--fkf-space-2); min-width: 0; font-weight: 600; }
+.person .team-crest { --crest-size: 32px; font-size: var(--fkf-text-xs); }
+.eyebrow-label { font-size: var(--fkf-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fkf-text-muted); margin-bottom: var(--fkf-space-2); }
+.rules-list { margin: var(--fkf-space-2) 0 0; padding-left: 1.1rem; color: var(--fkf-text-muted); }
+.rules-list li + li { margin-top: 2px; }
+
+/* Definition list inside a panel: label / value rows */
+.detail-list { margin: 0; }
+.detail-list > div { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: var(--fkf-space-3); padding: var(--fkf-space-2) var(--fkf-space-4); border-bottom: 1px solid var(--fkf-border); font-size: var(--fkf-text-sm); }
+.detail-list > div:last-child { border-bottom: 0; }
+.detail-list dt { font-weight: 600; color: var(--fkf-text-muted); }
+.detail-list dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Item list: rows with a title, meta line, badge and actions */
+.item-list { list-style: none; margin: 0; padding: 0; }
+.item-list > li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fkf-space-2) var(--fkf-space-3); padding: var(--fkf-space-3) var(--fkf-space-4); border-bottom: 1px solid var(--fkf-border); }
+.item-list > li:last-child { border-bottom: 0; }
+.item-list--flush > li { padding-inline: 0; }
+.item-list__main { flex: 1 1 12rem; min-width: 0; display: flex; flex-direction: column; }
+.item-list__main strong { font-size: var(--fkf-text-sm); }
+.item-list__main span { font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+.item-list__actions { display: flex; flex-wrap: wrap; gap: var(--fkf-space-2); }
+
+/* Matchday squad rows (team dashboard) */
+.squad-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--fkf-space-2); }
+.squad-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--fkf-space-3); padding: var(--fkf-space-3) var(--fkf-space-4); border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius); background: var(--fkf-surface); }
+.squad-row.is-active { border-color: color-mix(in srgb, var(--fkf-green) 45%, transparent); box-shadow: inset 3px 0 0 var(--fkf-green); }
+.squad-row__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 16rem; }
+.squad-row__round { font-size: var(--fkf-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fkf-text-muted); }
+.squad-row__teams { font-weight: 700; }
+.squad-row__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fkf-space-1) var(--fkf-space-3); font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); font-variant-numeric: tabular-nums; }
+.squad-row__action { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fkf-space-2); }
+.captain-list { font-size: var(--fkf-text-base); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.captain-list > span + span::before { content: ", "; }
+
+/* Long forms: sections with a small uppercase heading and a hairline between */
+.form-section { border: 0; margin: 0; padding: 0; min-width: 0; }
+.form-section + .form-section { margin-top: var(--fkf-space-5); padding-top: var(--fkf-space-5); border-top: 1px solid var(--fkf-border); }
+.form-section__title { float: left; width: 100%; padding: 0; margin-bottom: var(--fkf-space-3); font-size: var(--fkf-text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fkf-text-muted); }
+.progress--thin { height: 8px; }
+.data-table-wrap--scroll { --data-table-max-height: 26rem; }
+.captain-mark { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: var(--fkf-black); color: var(--fkf-white); font-size: 0.65rem; font-weight: 800; text-decoration: none; cursor: help; }
+[data-bs-theme="dark"] .captain-mark { background: var(--fkf-white); color: var(--fkf-black); }
+.form-section__title + * { clear: both; }
+
+/* --- Confirm page (reject transfer, admin suspend / unsuspend / delete) ----
+   One pattern: panel with a toned top rule, icon, title, summary, details,
+   optional form fields, then actions (cancel left, decision right). */
+.confirm-page { max-width: 44rem; }
+.confirm-card { border-top: 3px solid var(--fkf-border-strong); }
+.confirm-card--danger { border-top-color: var(--fkf-red); }
+.confirm-card--warning { border-top-color: var(--fkf-warning-solid); }
+.confirm-card--success { border-top-color: var(--fkf-green); }
+.confirm-card__head { display: flex; gap: var(--fkf-space-3); align-items: flex-start; margin-bottom: var(--fkf-space-4); }
+.confirm-card__icon { width: 44px; height: 44px; flex-shrink: 0; border-radius: var(--fkf-radius); display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; background: var(--fkf-surface-2); color: var(--fkf-text-muted); }
+.confirm-card--danger .confirm-card__icon { background: var(--fkf-danger-subtle); color: var(--fkf-danger); }
+.confirm-card--warning .confirm-card__icon { background: var(--fkf-warning-subtle); color: var(--fkf-warning); }
+.confirm-card--success .confirm-card__icon { background: var(--fkf-green-subtle); color: var(--fkf-green-text); }
+.confirm-card__title { font-size: var(--fkf-text-lg); font-weight: 800; margin: 0 0 var(--fkf-space-1); }
+.confirm-card__text { margin: 0; color: var(--fkf-text-muted); }
+.confirm-card__text strong { color: var(--fkf-text); }
+.confirm-card .detail-list { border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius-sm); margin-bottom: var(--fkf-space-4); }
+.confirm-card__actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--fkf-space-2); background: var(--fkf-surface); }
+.detail-list--flush > div { padding-inline: 0; }
+
+/* Lineup list (approved squad, tournament squads) */
+.lineup-list { list-style: none; margin: 0; padding: 0; }
+.lineup-list > li { display: flex; align-items: center; gap: var(--fkf-space-3); padding: var(--fkf-space-2) var(--fkf-space-4); border-bottom: 1px solid var(--fkf-border); }
+.lineup-list > li:last-child { border-bottom: 0; }
+.lineup-list__num { width: 2rem; height: 2rem; flex-shrink: 0; border-radius: var(--fkf-radius-sm); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: var(--fkf-text-sm); font-variant-numeric: tabular-nums; background: var(--fkf-black); color: var(--fkf-white); }
+[data-bs-theme="dark"] .lineup-list__num { background: var(--fkf-white); color: var(--fkf-black); }
+.lineup-list--compact .lineup-list__num { background: var(--fkf-surface-2); color: var(--fkf-text); border: 1px solid var(--fkf-border); }
+.lineup-list .team-crest { --crest-size: 32px; font-size: var(--fkf-text-xs); }
+.lineup-list__who { display: flex; flex-direction: column; min-width: 0; }
+.lineup-list__who strong { font-size: var(--fkf-text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lineup-list__who span { font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+.form-page { max-width: 64rem; }
+.data-table-wrap--tall { --data-table-max-height: 70vh; }
+.data-table tr.is-flagged > * { box-shadow: none; }
+.data-table tr.is-flagged > td:first-child { box-shadow: inset 3px 0 0 var(--fkf-red); }
+
+/* Player summary card (admin edit player) */
+.player-card { display: flex; align-items: center; gap: var(--fkf-space-3); }
+.player-card__photo { --crest-size: 64px; font-size: 1.4rem; }
+.player-card__name { font-weight: 800; font-size: var(--fkf-text-lg); margin: 0; }
+.player-card__meta { margin: 0; font-size: var(--fkf-text-sm); color: var(--fkf-text-muted); }
+.stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--fkf-border); }
+.stat-strip > div { padding: var(--fkf-space-3) var(--fkf-space-2); text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.stat-strip > div + div { border-left: 1px solid var(--fkf-border); }
+.stat-strip span { font-size: var(--fkf-text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fkf-text-muted); }
+.stat-strip strong { font-size: var(--fkf-text-xl); font-weight: 800; font-variant-numeric: tabular-nums; }

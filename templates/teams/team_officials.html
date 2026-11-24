@@ -1,156 +1,137 @@
-{% extends "base.html" %}
+{% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
+
 {% block title %}Team Officials - {{ team.team_name }}{% endblock %}
+{% block page_title %}Team officials{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block chart_js %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/teams.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 mx-auto">
-            <div class="card">
-                <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-                    <h4 class="mb-0"><i class="fas fa-user-tie"></i> Team Officials Management</h4>
-                    <p class="mb-0 small">{{ team.team_name }}</p>
-                </div>
-                <div class="card-body">
-
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Required:</strong> Head Coach, Assistant Coach, Goalkeeper Coach, Team Doctor, and Team Patron.
-                        <br><strong>Note:</strong> All coaches must have a valid CAF License.
-                    </div>
-
-                    <!-- Progress -->
-                    <div class="mb-4">
-                        <div class="progress" style="height: 25px;">
-                            <div class="progress-bar bg-success" role="progressbar"
-                                 style="width: {% widthratio filled_count total_required 100 %}%"
-                                 aria-valuenow="{{ filled_count }}" aria-valuemin="0" aria-valuemax="{{ total_required }}">
-                                {{ filled_count }} of {{ total_required }} Complete
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Add Official Form -->
-                    <form method="POST" enctype="multipart/form-data" class="mb-4">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="add_official">
-
-                        <h5 class="text-primary mb-3"><i class="fas fa-user-plus"></i> Add Official</h5>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Position/Role *</label>
-                                {{ form.position }}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Full Name *</label>
-                                {{ form.full_name }}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">ID Number *</label>
-                                {{ form.id_number }}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone Number *</label>
-                                <div class="input-group">
-                                    <span class="input-group-text fw-bold bg-primary text-white">+254</span>
-                                    {{ form.phone_digits }}
-                                </div>
-                                <small class="form-text text-muted">Enter 9 digits only (e.g., 712345678)</small>
-                                {% if form.phone_digits.errors %}
-                                    <div class="text-danger small mt-2">{{ form.phone_digits.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">CAF License Number (Coaches only)</label>
-                                {{ form.caf_license_number }}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">License Expiry Date</label>
-                                {{ form.license_expiry_date }}
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Photo (Optional)</label>
-                            {{ form.photo }}
-                        </div>
-
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Add Official
-                        </button>
-                    </form>
-
-                    <hr>
-
-                    <!-- Officials List -->
-                    <h5 class="text-primary mb-3"><i class="fas fa-list"></i> Registered Officials</h5>
-
-                    {% if officials %}
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Position</th>
-                                    <th>Name</th>
-                                    <th>Phone</th>
-                                    <th>CAF License</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for official in officials %}
-                                <tr>
-                                    <td><strong>{{ official.get_position_display }}</strong></td>
-                                    <td>{{ official.full_name }}</td>
-                                    <td>{{ official.phone_number }}</td>
-                                    <td>{{ official.caf_license_number|default:"N/A" }}</td>
-                                    <td>
-                                        <form method="post" action="{% url 'teams:delete_official' official.id %}" class="d-inline"
-                                              onsubmit="return confirm('Remove this official?');">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-danger" aria-label="Remove {{ official.full_name }}">
-                                                <i class="fas fa-trash" aria-hidden="true"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i> No officials added yet. Please add all required positions above.
-                    </div>
-                    {% endif %}
-
-                    <!-- Navigation Buttons -->
-                    <div class="mt-4">
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Back to Dashboard
-                            </a>
-                            {% if missing_positions %}
-                            <button type="button" class="btn btn-warning" disabled>
-                                <i class="fas fa-exclamation-triangle"></i> Complete All Positions First
-                            </button>
-                            {% else %}
-                            <a href="{% url 'teams:add_players_approved' %}" class="btn btn-primary btn-lg">
-                                <i class="fas fa-users"></i> Go to Add Players
-                            </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Team setup &middot; {{ team.team_name }}</span>
+        <h1 class="page-title">Team Officials Management</h1>
+        <p class="page-subtitle">Register your technical bench. Every position is required before you can add players.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'teams:team_manager_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Dashboard</a>
+        {% if missing_positions %}
+        <button type="button" class="btn btn-outline-secondary" disabled><i class="fas fa-lock me-1" aria-hidden="true"></i>Complete All Positions First</button>
+        {% else %}
+        <a href="{% url 'teams:add_players_approved' %}" class="btn btn-primary"><i class="fas fa-users me-1" aria-hidden="true"></i>Go to Add Players</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 
+{% block content %}
+<div class="panel mb-4">
+    <div class="panel-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+            <span class="fw-bold">{{ filled_count }} of {{ total_required }} Complete</span>
+            <span class="small text-body-secondary"><strong>Required:</strong> Head Coach, Assistant Coach, Goalkeeper Coach, Team Doctor, and Team Patron. All coaches must have a valid CAF License.</span>
+        </div>
+        <div class="progress progress--thin" role="progressbar" aria-label="Officials registered" aria-valuenow="{{ filled_count }}" aria-valuemin="0" aria-valuemax="{{ total_required }}">
+            <div class="progress-bar" style="width: {% widthratio filled_count total_required 100 %}%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="panel" aria-labelledby="add-official-title">
+            <div class="panel-header"><h2 class="panel-title" id="add-official-title"><i class="fas fa-user-plus" aria-hidden="true"></i>Add Official</h2></div>
+            <form method="POST" enctype="multipart/form-data" class="panel-body">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_official">
+                {{ form.non_field_errors }}
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label" for="{{ form.position.id_for_label }}">Position/Role *</label>
+                        {{ form.position }}
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="{{ form.full_name.id_for_label }}">Full Name *</label>
+                        {{ form.full_name }}
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="{{ form.id_number.id_for_label }}">ID Number *</label>
+                        {{ form.id_number }}
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="{{ form.phone_digits.id_for_label }}">Phone Number *</label>
+                        <div class="input-group">
+                            <span class="input-group-text fw-bold">+254</span>
+                            {{ form.phone_digits }}
+                        </div>
+                        <div class="form-text">Enter 9 digits only (e.g., 712345678)</div>
+                        {% if form.phone_digits.errors %}<div class="text-danger small mt-1">{{ form.phone_digits.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="{{ form.caf_license_number.id_for_label }}">CAF License Number</label>
+                        {{ form.caf_license_number }}
+                        <div class="form-text">Coaches only</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="{{ form.license_expiry_date.id_for_label }}">License Expiry Date</label>
+                        {{ form.license_expiry_date }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="{{ form.photo.id_for_label }}">Photo (Optional)</label>
+                        {{ form.photo }}
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-success"><i class="fas fa-plus me-1" aria-hidden="true"></i>Add Official</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <div class="col-lg-7">
+        <section class="panel" aria-labelledby="officials-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="officials-title"><i class="fas fa-user-tie" aria-hidden="true"></i>Registered Officials</h2>
+                <span class="small text-body-secondary">{{ filled_count }}/{{ total_required }}</span>
+            </div>
+            {% if officials %}
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Position</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Phone</th>
+                            <th scope="col" class="hide-sm">CAF License</th>
+                            <th scope="col" class="col-min"><span class="visually-hidden">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for official in officials %}
+                        <tr>
+                            <td class="fw-bold">{{ official.get_position_display }}</td>
+                            <td>{{ official.full_name }}</td>
+                            <td class="text-nowrap">{{ official.phone_number }}</td>
+                            <td class="hide-sm">{{ official.caf_license_number|default:"N/A" }}</td>
+                            <td class="col-min">
+                                <form method="post" action="{% url 'teams:delete_official' official.id %}" class="d-inline"
+                                      onsubmit="return confirm('Remove this official?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" aria-label="Remove {{ official.full_name }}">
+                                        <i class="fas fa-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            {% empty_state icon="user-tie" title="No officials added yet" message="Please add all required positions using the form." %}
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
