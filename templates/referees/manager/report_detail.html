@@ -1,210 +1,136 @@
-{% extends 'base.html' %}
-{% load crispy_forms_tags crispy_forms_filters %}
+{% extends 'base_dashboard.html' %}
+{% load static %}
 
 {% block title %}Match Report Details - FKF Meru League{% endblock %}
+{% block page_title %}Match report{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/referees.css' %}"><link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2><i class="fas fa-file-check"></i> Match Report Details</h2>
-                <a href="{% url 'referees:pending_reports' %}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back
-                </a>
-            </div>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Match reports</span>
+        <h1 class="page-title h2">Match Report Details</h1>
+        <p class="page-subtitle d-flex flex-wrap align-items-center gap-2">
+            {% if report.status == 'submitted' %}
+                <span class="status-badge status-warning">Pending approval</span>
+            {% elif report.status == 'approved' %}
+                <span class="status-badge status-success">Approved</span>
+                <span class="small">by {{ report.approved_by.get_full_name|default:report.approved_by.username }} on {{ report.approved_at|date:"M d, Y" }}</span>
+            {% elif report.status == 'rejected' %}
+                <span class="status-badge status-danger">Rejected</span>
+                <span class="small">by {{ report.approved_by.get_full_name|default:report.approved_by.username }} on {{ report.approved_at|date:"M d, Y" }}</span>
+            {% endif %}
+        </p>
     </div>
-
-    <div class="row">
-        <div class="col-lg-10 mx-auto">
-            <!-- Status Badge -->
-            <div class="mb-3">
-                {% if report.status == 'submitted' %}
-                    <span class="badge bg-warning text-dark fs-6">PENDING APPROVAL</span>
-                {% elif report.status == 'approved' %}
-                    <span class="badge bg-success fs-6">APPROVED</span>
-                    <small class="text-muted">by {{ report.approved_by.get_full_name|default:report.approved_by.username }} on {{ report.approved_at|date:"M d, Y" }}</small>
-                {% elif report.status == 'rejected' %}
-                    <span class="badge bg-danger fs-6">REJECTED</span>
-                    <small class="text-muted">by {{ report.approved_by.get_full_name|default:report.approved_by.username }} on {{ report.approved_at|date:"M d, Y" }}</small>
-                {% endif %}
-            </div>
-
-            <!-- Match Info Header -->
-            <div class="card shadow mb-4">
-                <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-                    <h4 class="mb-0"><i class="fas fa-futbol"></i> Match Information</h4>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-5 text-center">
-                            <h5>{{ match.home_team }}</h5>
-                            {% if match.home_team.logo %}
-                                <img src="{{ match.home_team.logo.url }}" alt="{{ match.home_team }}" style="height: 80px;" class="mb-2">
-                            {% endif %}
-                            <h3 class="text-primary">{{ match.home_score|default:"-" }}</h3>
-                        </div>
-                        <div class="col-md-2 text-center">
-                            <p class="text-muted">vs</p>
-                            <p class="small">{{ match.match_date|date:"M d, Y" }}</p>
-                        </div>
-                        <div class="col-md-5 text-center">
-                            <h5>{{ match.away_team }}</h5>
-                            {% if match.away_team.logo %}
-                                <img src="{{ match.away_team.logo.url }}" alt="{{ match.away_team }}" style="height: 80px;" class="mb-2">
-                            {% endif %}
-                            <h3 class="text-primary">{{ match.away_score|default:"-" }}</h3>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <strong>Referee:</strong><br>
-                            {{ report.referee.full_name }}
-                        </div>
-                        <div class="col-md-3">
-                            <strong>Match Number:</strong><br>
-                            {{ report.match_number|default:"-" }}
-                        </div>
-                        <div class="col-md-3">
-                            <strong>Round:</strong><br>
-                            {{ report.round_number|default:"-" }}
-                        </div>
-                        <div class="col-md-3">
-                            <strong>League Level:</strong><br>
-                            {{ report.league_level }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Goals Section -->
-            {% if goals %}
-            <div class="card shadow mb-4">
-                <div class="card-header" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;">
-                    <h5 class="mb-0"><i class="fas fa-star"></i> Goals ({{ goals.count }})</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Team</th>
-                                    <th>Player</th>
-                                    <th>Minute</th>
-                                    <th>Type</th>
-                                    <th>Assist By</th>
-                                    <th>Jersey</th>
-                                    <th>Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for goal in goals %}
-                                <tr>
-                                    <td><strong>{{ goal.team }}</strong></td>
-                                    <td>{{ goal.player }}</td>
-                                    <td>{{ goal.minute }}'</td>
-                                    <td>
-                                        <span class="badge bg-info">
-                                            {{ goal.get_goal_type_display }}
-                                        </span>
-                                    </td>
-                                    <td>{{ goal.assist_by|default:"-" }}</td>
-                                    <td>{{ goal.jersey_number|default:"-" }}</td>
-                                    <td>{{ goal.notes|default:"-" }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Cautions Section -->
-            {% if cautions %}
-            <div class="card shadow mb-4">
-                <div class="card-header" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;">
-                    <h5 class="mb-0"><i class="fas fa-flag"></i> Cautions ({{ cautions.count }})</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Team</th>
-                                    <th>Player</th>
-                                    <th>Minute</th>
-                                    <th>Reason</th>
-                                    <th>Jersey</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for caution in cautions %}
-                                <tr>
-                                    <td><strong>{{ caution.team }}</strong></td>
-                                    <td>{{ caution.player }}</td>
-                                    <td>{{ caution.minute }}'</td>
-                                    <td>{{ caution.reason }}</td>
-                                    <td>{{ caution.jersey_number|default:"-" }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Incidents & Comments -->
-            <div class="card shadow mb-4">
-                <div class="card-header" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;">
-                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Incidents & Comments</h5>
-                </div>
-                <div class="card-body">
-                    {% if report.serious_incidents %}
-                    <div class="mb-3">
-                        <strong class="text-danger">Serious Incidents:</strong>
-                        <p>{{ report.serious_incidents|linebreaks }}</p>
-                    </div>
-                    {% endif %}
-
-                    {% if report.penalties_not_converted %}
-                    <div class="mb-3">
-                        <strong class="text-warning">Penalties Not Converted:</strong>
-                        <p>{{ report.penalties_not_converted|linebreaks }}</p>
-                    </div>
-                    {% endif %}
-
-                    {% if report.referee_comments %}
-                    <div class="mb-3">
-                        <strong>Referee Comments:</strong>
-                        <p>{{ report.referee_comments|linebreaks }}</p>
-                    </div>
-                    {% else %}
-                    <p class="text-muted"><em>No additional comments provided.</em></p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Action Buttons (for managers) -->
-            {% if is_manager and report.status == 'submitted' %}
-            <div class="card shadow">
-                <div class="card-body">
-                    <div class="d-flex gap-2">
-                        <a href="{% url 'referees:approve_report' report.id %}" class="btn btn-success btn-lg">
-                            <i class="fas fa-check"></i> Approve Report
-                        </a>
-                        <a href="{% url 'referees:reject_report' report.id %}" class="btn btn-danger btn-lg">
-                            <i class="fas fa-times"></i> Reject Report
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-        </div>
+    <div class="page-actions">
+        <a href="{% url 'referees:pending_reports' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back</a>
     </div>
 </div>
 {% endblock %}
 
+{% block content %}
+<section class="panel mb-4" aria-labelledby="match-title">
+    <div class="panel-header"><h2 class="panel-title" id="match-title"><i class="fas fa-futbol" aria-hidden="true"></i>Match Information</h2></div>
+    <div class="ref-scoreline">
+        <div class="ref-scoreline__team d-flex align-items-center justify-content-end gap-2">
+            {% if match.home_team.logo %}<img src="{{ match.home_team.logo.url }}" alt="" class="team-crest">{% endif %}
+            <span>{{ match.home_team }}</span>
+        </div>
+        <span class="ref-scoreline__score">{{ match.home_score|default:"-" }} - {{ match.away_score|default:"-" }}</span>
+        <div class="ref-scoreline__team ref-scoreline__team--away d-flex align-items-center gap-2">
+            {% if match.away_team.logo %}<img src="{{ match.away_team.logo.url }}" alt="" class="team-crest">{% endif %}
+            <span>{{ match.away_team }}</span>
+        </div>
+    </div>
+    <div class="panel-body border-top">
+        <dl class="kv-list mb-0">
+            <dt>Date</dt><dd class="ref-num">{{ match.match_date|date:"M d, Y" }}</dd>
+            <dt>Referee</dt><dd>{{ report.referee.full_name }}</dd>
+            <dt>Match Number</dt><dd>{{ report.match_number|default:"-" }}</dd>
+            <dt>Round</dt><dd>{{ report.round_number|default:"-" }}</dd>
+            <dt>League Level</dt><dd>{{ report.league_level }}</dd>
+        </dl>
+    </div>
+</section>
+
+{% if goals %}
+<section class="panel mb-4" aria-labelledby="goals-title">
+    <div class="panel-header"><h2 class="panel-title" id="goals-title"><i class="fas fa-futbol" aria-hidden="true"></i>Goals ({{ goals.count }})</h2></div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Team</th><th scope="col">Player</th><th scope="col" class="num">Minute</th><th scope="col">Type</th>
+                    <th scope="col">Assist By</th><th scope="col" class="num hide-sm">Jersey</th><th scope="col" class="hide-sm">Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for goal in goals %}
+                <tr>
+                    <td><strong>{{ goal.team }}</strong></td>
+                    <td>{{ goal.player }}</td>
+                    <td class="num">{{ goal.minute }}'</td>
+                    <td><span class="status-badge status-neutral">{{ goal.get_goal_type_display }}</span></td>
+                    <td>{{ goal.assist_by|default:"-" }}</td>
+                    <td class="num hide-sm">{{ goal.jersey_number|default:"-" }}</td>
+                    <td class="hide-sm">{{ goal.notes|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% if cautions %}
+<section class="panel mb-4" aria-labelledby="cautions-title">
+    <div class="panel-header"><h2 class="panel-title" id="cautions-title"><i class="fas fa-flag" aria-hidden="true"></i>Cautions ({{ cautions.count }})</h2></div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr><th scope="col">Team</th><th scope="col">Player</th><th scope="col" class="num">Minute</th><th scope="col">Reason</th><th scope="col" class="num hide-sm">Jersey</th></tr>
+            </thead>
+            <tbody>
+                {% for caution in cautions %}
+                <tr>
+                    <td><strong>{{ caution.team }}</strong></td>
+                    <td>{{ caution.player }}</td>
+                    <td class="num">{{ caution.minute }}'</td>
+                    <td>{{ caution.reason }}</td>
+                    <td class="num hide-sm">{{ caution.jersey_number|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<section class="panel mb-4" aria-labelledby="incidents-title">
+    <div class="panel-header"><h2 class="panel-title" id="incidents-title"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i>Incidents &amp; Comments</h2></div>
+    <div class="panel-body ref-gap-list">
+        {% if report.serious_incidents %}
+        <div><h3 class="ref-subhead">Serious Incidents</h3><div class="ref-detail-text">{{ report.serious_incidents|linebreaks }}</div></div>
+        {% endif %}
+        {% if report.penalties_not_converted %}
+        <div><h3 class="ref-subhead">Penalties Not Converted</h3><div class="ref-detail-text">{{ report.penalties_not_converted|linebreaks }}</div></div>
+        {% endif %}
+        {% if report.referee_comments %}
+        <div><h3 class="ref-subhead">Referee Comments</h3><div class="ref-detail-text">{{ report.referee_comments|linebreaks }}</div></div>
+        {% else %}
+        <p class="text-body-secondary mb-0"><em>No additional comments provided.</em></p>
+        {% endif %}
+    </div>
+</section>
+
+{% if is_manager and report.status == 'submitted' %}
+<div class="ref-sticky-actions">
+    <span class="ref-sticky-actions__hint">This report is waiting for your decision.</span>
+    <div class="ref-sticky-actions__buttons">
+        <a href="{% url 'referees:reject_report' report.id %}" class="btn btn-outline-danger"><i class="fas fa-xmark me-1" aria-hidden="true"></i>Reject Report</a>
+        <a href="{% url 'referees:approve_report' report.id %}" class="btn btn-success"><i class="fas fa-check me-1" aria-hidden="true"></i>Approve Report</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

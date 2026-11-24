@@ -1,0 +1,23 @@
+{# Rows for referee_approve_squads.html. Params: players, squad_status, show_captain, empty_text #}
+<ul class="ref-pick-list list-unstyled mb-0">
+    {% for squad_player in players %}
+    <li class="ref-pick{% if squad_player.is_approved %} is-approved{% endif %}">
+        {% if squad_status == 'submitted' %}
+        <input class="form-check-input m-0 player-checkbox" type="checkbox"
+               name="approve_players" value="{{ squad_player.id }}"
+               aria-label="Approve {{ squad_player.player.full_name }}"
+               {% if squad_player.is_approved %}checked disabled{% endif %}>
+        {% endif %}
+        <span class="ref-jersey">#{{ squad_player.player.jersey_number|default:squad_player.jersey_number }}</span>
+        <span class="flex-grow-1">
+            <strong>{{ squad_player.player.full_name }}</strong>
+            {% if squad_player.player.position == 'GK' %}<span class="status-badge status-neutral ms-1">GK</span>{% endif %}
+            {% if show_captain and squad_player.is_captain %}<span class="status-badge status-warning ms-1">C</span>{% endif %}
+            <small class="d-block text-body-secondary"><i class="fas fa-id-card me-1" aria-hidden="true"></i>FKF: {{ squad_player.player.fkf_license_number|default:"Not provided" }}</small>
+        </span>
+        {% if squad_player.is_approved %}<span class="status-badge status-success"><i class="fas fa-check" aria-hidden="true"></i>Approved</span>{% endif %}
+    </li>
+    {% empty %}
+    <li class="text-body-secondary small"><i class="fas fa-circle-info me-1" aria-hidden="true"></i>{{ empty_text }}</li>
+    {% endfor %}
+</ul>

@@ -1,211 +1,192 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 {% load static %}
 
 {% block title %}Request Substitution - {{ team.name }}{% endblock %}
+{% block page_title %}Request substitution{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/referees.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">{{ team.name }}</span>
+        <h1 class="page-title h2">Request Substitution</h1>
+        <p class="page-subtitle">{{ match.home_team }} vs {{ match.away_team }} &middot; {{ match.match_date|date:"d/m/Y" }} {{ match.kickoff_time }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'referees:team_matchday_squad_list' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-2">
-                <i class="fas fa-exchange-alt"></i> Request Substitution
-            </h1>
-            <p class="text-muted">{{ match.home_team }} vs {{ match.away_team }} - {{ match.match_date|date:"d/m/Y" }} {{ match.kickoff_time }}</p>
-        </div>
-        <a href="{% url 'referees:team_matchday_squad_list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back
-        </a>
-    </div>
+<div class="alert alert-info mb-4">
+    <i class="fas fa-circle-info me-2" aria-hidden="true"></i>
+    <strong>Substitutions Remaining:</strong> <span class="ref-num">{{ remaining_subs }}/5</span> &middot;
+    <strong>Team:</strong> {{ team.name }}
+</div>
 
-    <!-- Substitution Info -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                <strong>Substitutions Remaining:</strong> {{ remaining_subs }}/5 | 
-                <strong>Team:</strong> {{ team.name }}
-            </div>
-        </div>
-    </div>
-
-    <!-- Request Substitution Form -->
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card shadow mb-4">
-                <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>New Substitution Request</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div id="subs-container">
-                            <div class="row sub-row mb-2">
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Player Coming Off <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="player_out[]" required>
-                                        <option value="">-- Select Player --</option>
-                                        {% for squad_player in starting_players %}
-                                            <option value="{{ squad_player.player.id }}">
-                                                #{{ squad_player.player.jersey_number }} {{ squad_player.player.full_name }} 
-                                                ({{ squad_player.player.get_position_display }})
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Substitute Coming On <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="player_in[]" required>
-                                        <option value="">-- Select Substitute --</option>
-                                        {% for squad_player in substitute_players %}
-                                            <option value="{{ squad_player.player.id }}">
-                                                #{{ squad_player.player.jersey_number }} {{ squad_player.player.full_name }} 
-                                                ({{ squad_player.player.get_position_display }})
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Substitution Time <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="sub_minute[]" required>
-                                        <option value="">-- Select Time --</option>
-                                        <option value="HT">HT (Halftime)</option>
-                                        {% for min in min_range %}
-                                            <option value="{{ min }}">{{ min }}'</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-12 mb-2 d-flex justify-content-end">
-                                    <button type="button" class="btn btn-danger btn-sm remove-sub-row" style="display:none;">
-                                        <i class="fas fa-minus-circle"></i> Remove
-                                    </button>
-                                </div>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="panel" aria-labelledby="new-sub-title">
+            <div class="panel-header"><h2 class="panel-title" id="new-sub-title"><i class="fas fa-circle-plus" aria-hidden="true"></i>New Substitution Request</h2></div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="panel-body">
+                    <div id="subs-container">
+                        <div class="row g-3 sub-row ref-formset-row">
+                            <div class="col-md-4">
+                                <span class="form-label d-block">Player Coming Off <span class="text-danger" aria-hidden="true">*</span></span>
+                                <select class="form-select" name="player_out[]" aria-label="Player coming off" required>
+                                    <option value="">-- Select Player --</option>
+                                    {% for squad_player in starting_players %}
+                                        <option value="{{ squad_player.player.id }}">
+                                            #{{ squad_player.player.jersey_number }} {{ squad_player.player.full_name }}
+                                            ({{ squad_player.player.get_position_display }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="form-label d-block">Substitute Coming On <span class="text-danger" aria-hidden="true">*</span></span>
+                                <select class="form-select" name="player_in[]" aria-label="Substitute coming on" required>
+                                    <option value="">-- Select Substitute --</option>
+                                    {% for squad_player in substitute_players %}
+                                        <option value="{{ squad_player.player.id }}">
+                                            #{{ squad_player.player.jersey_number }} {{ squad_player.player.full_name }}
+                                            ({{ squad_player.player.get_position_display }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="form-label d-block">Substitution Time <span class="text-danger" aria-hidden="true">*</span></span>
+                                <select class="form-select" name="sub_minute[]" aria-label="Substitution time" required>
+                                    <option value="">-- Select Time --</option>
+                                    <option value="HT">HT (Halftime)</option>
+                                    {% for min in min_range %}
+                                        <option value="{{ min }}">{{ min }}'</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 d-flex justify-content-end">
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-sub-row" hidden>
+                                    <i class="fas fa-circle-minus me-1" aria-hidden="true"></i>Remove
+                                </button>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <button type="button" class="btn btn-secondary btn-sm" id="add-sub-row">
-                                <i class="fas fa-plus-circle"></i> Add Another Substitution
-                            </button>
-                        </div>
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const maxSubs = {{ remaining_subs|default:5 }};
-                            const subsContainer = document.getElementById('subs-container');
-                            const addBtn = document.getElementById('add-sub-row');
-                            function updateRemoveButtons() {
-                                const rows = subsContainer.querySelectorAll('.sub-row');
-                                rows.forEach((row, idx) => {
-                                    const btn = row.querySelector('.remove-sub-row');
-                                    btn.style.display = rows.length > 1 ? '' : 'none';
-                                });
-                            }
-                            addBtn.addEventListener('click', function() {
-                                const rows = subsContainer.querySelectorAll('.sub-row');
-                                if (rows.length >= maxSubs) return;
-                                const newRow = rows[0].cloneNode(true);
-                                newRow.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
-                                newRow.querySelector('.remove-sub-row').addEventListener('click', function() {
-                                    newRow.remove();
-                                    updateRemoveButtons();
-                                });
-                                subsContainer.appendChild(newRow);
-                                updateRemoveButtons();
-                            });
-                            subsContainer.querySelector('.remove-sub-row').addEventListener('click', function() {
-                                if (subsContainer.querySelectorAll('.sub-row').length > 1) {
-                                    this.closest('.sub-row').remove();
-                                    updateRemoveButtons();
-                                }
-                            });
-                            updateRemoveButtons();
-                        });
-                        </script>
-
-                        <div class="mb-3">
-                            <label for="sub_type" class="form-label">Substitution Type</label>
-                            <select class="form-select" id="sub_type" name="sub_type">
-                                <option value="normal">Normal Substitution</option>
-                                <option value="injury">Injury Substitution</option>
-                                <option value="tactical">Tactical Substitution</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">Notes (Optional)</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="e.g., Player injury, tactical change..."></textarea>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-lg w-100" {% if remaining_subs <= 0 %}disabled{% endif %}>
-                            <i class="fas fa-paper-plane me-2"></i>Submit Substitution Request
-                        </button>
-                        
-                        {% if remaining_subs <= 0 %}
-                            <div class="alert alert-warning mt-3 mb-0">
-                                <i class="fas fa-exclamation-triangle me-2"></i>All 5 substitutions have been used.
-                            </div>
-                        {% endif %}
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pending & Completed Substitutions -->
-        <div class="col-md-4">
-            <!-- Pending Requests -->
-            {% if pending_requests %}
-            <div class="card shadow mb-4">
-                <div class="card-header" style="background:linear-gradient(90deg,#6e6e73,#4a4a4f);color:white;">
-                    <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Pending Requests ({{ pending_requests.count }})</h6>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        {% for request in pending_requests %}
-                        <div class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <strong class="text-danger">OUT:</strong> {{ request.player_out.full_name }}<br>
-                                    <strong class="text-success">IN:</strong> {{ request.player_in.full_name }}<br>
-                                    <small class="text-muted">
-                                        <i class="fas fa-tag me-1"></i>{{ request.get_sub_type_display }}
-                                    </small>
-                                </div>
-                                <span class="badge bg-warning">Pending</span>
-                            </div>
-                        </div>
-                        {% endfor %}
                     </div>
+                    <div class="mb-4">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="add-sub-row">
+                            <i class="fas fa-circle-plus me-1" aria-hidden="true"></i>Add Another Substitution
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="sub_type" class="form-label">Substitution Type</label>
+                        <select class="form-select" id="sub_type" name="sub_type">
+                            <option value="normal">Normal Substitution</option>
+                            <option value="injury">Injury Substitution</option>
+                            <option value="tactical">Tactical Substitution</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-0">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="e.g., Player injury, tactical change..."></textarea>
+                    </div>
+
+                    {% if remaining_subs <= 0 %}
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="fas fa-triangle-exclamation me-2" aria-hidden="true"></i>All 5 substitutions have been used.
+                    </div>
+                    {% endif %}
                 </div>
-            </div>
+                <div class="panel-footer form-actions">
+                    <button type="submit" class="btn btn-primary" {% if remaining_subs <= 0 %}disabled{% endif %}>
+                        <i class="fas fa-paper-plane me-1" aria-hidden="true"></i>Submit Substitution Request
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="dash-stack">
+            {% if pending_requests %}
+            <section class="panel" aria-labelledby="pending-title">
+                <div class="panel-header"><h2 class="panel-title" id="pending-title"><i class="fas fa-clock" aria-hidden="true"></i>Pending Requests ({{ pending_requests.count }})</h2></div>
+                <ul class="action-list">
+                    {% for request in pending_requests %}
+                    <li class="d-flex justify-content-between align-items-start gap-2 p-3">
+                        <div>
+                            <div><strong class="text-danger">OUT:</strong> {{ request.player_out.full_name }}</div>
+                            <div><strong class="text-success">IN:</strong> {{ request.player_in.full_name }}</div>
+                            <small class="text-body-secondary"><i class="fas fa-tag me-1" aria-hidden="true"></i>{{ request.get_sub_type_display }}</small>
+                        </div>
+                        <span class="status-badge status-warning">Pending</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
             {% endif %}
 
-            <!-- Completed Substitutions -->
             {% if completed_subs %}
-            <div class="card shadow">
-                <div class="card-header" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;">
-                    <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Completed ({{ completed_subs.count }})</h6>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        {% for sub in completed_subs %}
-                        <div class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <strong>{{ sub.minute }}'</strong><br>
-                                    <small>
-                                        <span class="text-danger">{{ sub.player_out.full_name }}</span> â†’ 
-                                        <span class="text-success">{{ sub.player_in.full_name }}</span>
-                                    </small>
-                                </div>
-                                <span class="badge bg-success">âœ“</span>
-                            </div>
+            <section class="panel" aria-labelledby="completed-title">
+                <div class="panel-header"><h2 class="panel-title" id="completed-title"><i class="fas fa-circle-check" aria-hidden="true"></i>Completed ({{ completed_subs.count }})</h2></div>
+                <ul class="action-list">
+                    {% for sub in completed_subs %}
+                    <li class="d-flex justify-content-between align-items-start gap-2 p-3">
+                        <div>
+                            <strong class="ref-num">{{ sub.minute }}'</strong><br>
+                            <small>
+                                <span class="text-danger">{{ sub.player_out.full_name }}</span> &rarr;
+                                <span class="text-success">{{ sub.player_in.full_name }}</span>
+                            </small>
                         </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+                        <span class="status-badge status-success"><i class="fas fa-check" aria-hidden="true"></i><span class="visually-hidden">Completed</span></span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
             {% endif %}
         </div>
     </div>
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const maxSubs = {{ remaining_subs|default:5 }};
+    const subsContainer = document.getElementById('subs-container');
+    const addBtn = document.getElementById('add-sub-row');
+    function updateRemoveButtons() {
+        const rows = subsContainer.querySelectorAll('.sub-row');
+        rows.forEach((row, idx) => {
+            const btn = row.querySelector('.remove-sub-row');
+            btn.hidden = rows.length <= 1;
+        });
+    }
+    addBtn.addEventListener('click', function() {
+        const rows = subsContainer.querySelectorAll('.sub-row');
+        if (rows.length >= maxSubs) return;
+        const newRow = rows[0].cloneNode(true);
+        newRow.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
+        newRow.querySelector('.remove-sub-row').addEventListener('click', function() {
+            newRow.remove();
+            updateRemoveButtons();
+        });
+        subsContainer.appendChild(newRow);
+        updateRemoveButtons();
+    });
+    subsContainer.querySelector('.remove-sub-row').addEventListener('click', function() {
+        if (subsContainer.querySelectorAll('.sub-row').length > 1) {
+            this.closest('.sub-row').remove();
+            updateRemoveButtons();
+        }
+    });
+    updateRemoveButtons();
+});
+</script>
+{% endblock %}

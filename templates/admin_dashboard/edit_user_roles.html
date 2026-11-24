@@ -1,98 +1,75 @@
-{% extends "base.html" %}
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
 {% block title %}Edit User Roles{% endblock %}
+{% block page_title %}Edit user roles{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}"><link rel="stylesheet" href="{% static 'css/pages/referees.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">User management</span>
+        <h1 class="page-title h2">Edit User Roles</h1>
+        <p class="page-subtitle">Manage role assignments for {{ edit_user.username }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Users</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1><i class="fas fa-user-tag"></i> Edit User Roles</h1>
-            <p class="text-muted">Manage role assignments for {{ edit_user.username }}</p>
-        </div>
-        <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Users
-        </a>
-    </div>
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="dash-stack">
+            <section class="panel" aria-labelledby="user-info-title">
+                <div class="panel-header"><h2 class="panel-title" id="user-info-title"><i class="fas fa-user" aria-hidden="true"></i>User Information</h2></div>
+                <div class="panel-body">
+                    <dl class="kv-list mb-0">
+                        <dt>Username</dt><dd><strong>{{ edit_user.username }}</strong></dd>
+                        <dt>Full Name</dt><dd>{{ edit_user.first_name }} {{ edit_user.last_name }}</dd>
+                        <dt>Email</dt><dd>{{ edit_user.email }}</dd>
+                        <dt>Status</dt>
+                        <dd>{% if edit_user.is_active %}<span class="status-badge status-success">Active</span>{% else %}<span class="status-badge status-danger">Inactive</span>{% endif %}</dd>
+                        <dt>Joined</dt><dd class="ref-num">{{ edit_user.date_joined|date:"M d, Y" }}</dd>
+                    </dl>
+                </div>
+            </section>
 
-    <div class="row">
-        <div class="col-md-6">
-            <!-- User Info Card -->
-            <div class="card mb-4">
-                <div class="card-header ch-blue">
-                    <h5 class="mb-0"><i class="fas fa-user"></i> User Information</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-borderless mb-0">
-                        <tr>
-                            <th width="120">Username:</th>
-                            <td><strong>{{ edit_user.username }}</strong></td>
-                        </tr>
-                        <tr>
-                            <th>Full Name:</th>
-                            <td>{{ edit_user.first_name }} {{ edit_user.last_name }}</td>
-                        </tr>
-                        <tr>
-                            <th>Email:</th>
-                            <td>{{ edit_user.email }}</td>
-                        </tr>
-                        <tr>
-                            <th>Status:</th>
-                            <td>
-                                {% if edit_user.is_active %}
-                                <span class="badge bg-success">Active</span>
-                                {% else %}
-                                <span class="badge bg-danger">Inactive</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Joined:</th>
-                            <td>{{ edit_user.date_joined|date:"M d, Y" }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Current Roles -->
-            <div class="card">
-                <div class="card-header ch-blue">
-                    <h6 class="mb-0"><i class="fas fa-list"></i> Current Roles</h6>
-                </div>
-                <div class="card-body">
+            <section class="panel" aria-labelledby="current-roles-title">
+                <div class="panel-header"><h2 class="panel-title" id="current-roles-title"><i class="fas fa-list" aria-hidden="true"></i>Current Roles</h2></div>
+                <div class="panel-body">
                     {% if user_groups %}
-                    <ul class="list-group">
+                    <ul class="list-unstyled d-grid gap-2 mb-0">
                         {% for group in user_groups %}
-                        <li class="list-group-item">
-                            <i class="fas fa-check-circle text-success"></i> {{ group.name }}
-                        </li>
+                        <li><span class="status-badge status-success"><i class="fas fa-circle-check" aria-hidden="true"></i>{{ group.name }}</span></li>
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="text-muted mb-0">No roles assigned yet</p>
+                    <p class="text-body-secondary mb-0">No roles assigned yet</p>
                     {% endif %}
                 </div>
-            </div>
+            </section>
         </div>
+    </div>
 
-        <div class="col-md-6">
-            <!-- Edit Roles Form -->
-            <div class="card">
-                <div class="card-header ch-orange">
-                    <h5 class="mb-0"><i class="fas fa-edit"></i> Update Roles</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        <p class="text-muted">Select the roles you want to assign to this user:</p>
-                        
-                        <div class="list-group mb-3">
-                            {% for group in all_groups %}
-                            <label class="list-group-item">
-                                <input type="checkbox" name="groups" value="{{ group.name }}" 
-                                       class="form-check-input me-2"
-                                       {% if group in user_groups %}checked{% endif %}>
+    <div class="col-lg-7">
+        <section class="panel" aria-labelledby="update-roles-title">
+            <div class="panel-header"><h2 class="panel-title" id="update-roles-title"><i class="fas fa-user-tag" aria-hidden="true"></i>Update Roles</h2></div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="panel-body">
+                    <p class="text-body-secondary">Select the roles you want to assign to this user:</p>
+
+                    <div class="ref-pick-list mb-3">
+                        {% for group in all_groups %}
+                        <label class="ref-pick align-items-start">
+                            <input type="checkbox" name="groups" value="{{ group.name }}" class="form-check-input mt-1"
+                                   {% if group in user_groups %}checked{% endif %}>
+                            <span>
                                 <strong>{{ group.name }}</strong>
-                                <br>
-                                <small class="text-muted">
+                                <span class="d-block small text-body-secondary">
                                     {% if group.name == 'League Admin' %}
                                     Full system control, manage all teams/players/matches
                                     {% elif group.name == 'Team Managers' %}
@@ -104,29 +81,23 @@
                                     {% else %}
                                     {{ group.name }} role
                                     {% endif %}
-                                </small>
-                            </label>
-                            {% endfor %}
-                        </div>
+                                </span>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
 
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i> 
-                            <strong>Warning:</strong> Changing roles will immediately affect what this user can access.
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-save"></i> Save Role Changes
-                            </button>
-                            <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancel
-                            </a>
-                        </div>
-                    </form>
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-triangle-exclamation me-1" aria-hidden="true"></i>
+                        <strong>Warning:</strong> Changing roles will immediately affect what this user can access.
+                    </div>
                 </div>
-            </div>
-        </div>
+                <div class="panel-footer form-actions">
+                    <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk me-1" aria-hidden="true"></i>Save Role Changes</button>
+                </div>
+            </form>
+        </section>
     </div>
 </div>
 {% endblock %}
-

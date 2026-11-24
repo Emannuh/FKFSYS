@@ -1,185 +1,128 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags %}
 
 {% block title %}Pending Match Reports - FKF Meru League{% endblock %}
+{% block page_title %}Match reports{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/referees.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2><i class="fas fa-file-check"></i> Match Report Management</h2>
-                <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back
-                </a>
-            </div>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Referee administration</span>
+        <h1 class="page-title h2">Match Report Management</h1>
+        <p class="page-subtitle">Review, approve or reject referee match reports.</p>
     </div>
-
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-center border-primary">
-                <div class="card-body">
-                    <h3 class="text-primary">{{ pending_count }}</h3>
-                    <p class="text-muted mb-0">Pending Approval</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center border-success">
-                <div class="card-body">
-                    <h3 class="text-success">{{ approved_count }}</h3>
-                    <p class="text-muted mb-0">Approved</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center border-danger">
-                <div class="card-body">
-                    <h3 class="text-danger">{{ rejected_count }}</h3>
-                    <p class="text-muted mb-0">Rejected</p>
-                </div>
-            </div>
-        </div>
+    <div class="page-actions">
+        <a href="{% url 'referees:referee_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back</a>
     </div>
-
-    {% if pending_reports %}
-    <!-- Pending Reports -->
-    <div class="card shadow mb-4">
-        <div class="card-header bg-warning text-white">
-            <h5 class="mb-0"><i class="fas fa-hourglass-half"></i> Pending Reports ({{ pending_count }})</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Match</th>
-                            <th>Referee</th>
-                            <th>Submitted</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for report in pending_reports %}
-                        <tr>
-                            <td>
-                                <strong>{{ report.match.home_team }} vs {{ report.match.away_team }}</strong><br>
-                                <small class="text-muted">{{ report.match.match_date|date:"M d, Y" }}</small>
-                            </td>
-                            <td>{{ report.referee.full_name }}</td>
-                            <td>{{ report.submitted_at|date:"M d, Y H:i" }}</td>
-                            <td><span class="badge bg-warning">{{ report.get_status_display }}</span></td>
-                            <td>
-                                <a href="{% url 'referees:report_detail_view' report.id %}" class="btn btn-sm btn-info" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'referees:approve_report' report.id %}" class="btn btn-sm btn-success" title="Approve">
-                                    <i class="fas fa-check"></i>
-                                </a>
-                                <a href="{% url 'referees:reject_report' report.id %}" class="btn btn-sm btn-danger" title="Reject">
-                                    <i class="fas fa-times"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle"></i> No pending reports! All submissions are up to date.
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    {% endif %}
-
-    {% if approved_reports %}
-    <!-- Approved Reports -->
-    <div class="card shadow mb-4">
-        <div class="card-header" style="background:linear-gradient(90deg,#00a04a,#00843d);color:white;">
-            <h5 class="mb-0"><i class="fas fa-check-circle"></i> Approved Reports ({{ approved_count }})</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Match</th>
-                            <th>Referee</th>
-                            <th>Approved By</th>
-                            <th>Approved Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for report in approved_reports %}
-                        <tr>
-                            <td>
-                                <strong>{{ report.match.home_team }} vs {{ report.match.away_team }}</strong><br>
-                                <small class="text-muted">{{ report.match.match_date|date:"M d, Y" }}</small>
-                            </td>
-                            <td>{{ report.referee.full_name }}</td>
-                            <td>{{ report.approved_by.get_full_name|default:report.approved_by.username }}</td>
-                            <td>{{ report.approved_at|date:"M d, Y H:i" }}</td>
-                            <td>
-                                <a href="{% url 'referees:report_detail_view' report.id %}" class="btn btn-sm btn-info" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if rejected_reports %}
-    <!-- Rejected Reports -->
-    <div class="card shadow mb-4">
-        <div class="card-header" style="background:linear-gradient(90deg,#e0213f,#c8102e);color:white;">
-            <h5 class="mb-0"><i class="fas fa-times-circle"></i> Rejected Reports ({{ rejected_count }})</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Match</th>
-                            <th>Referee</th>
-                            <th>Rejected By</th>
-                            <th>Rejected Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for report in rejected_reports %}
-                        <tr>
-                            <td>
-                                <strong>{{ report.match.home_team }} vs {{ report.match.away_team }}</strong><br>
-                                <small class="text-muted">{{ report.match.match_date|date:"M d, Y" }}</small>
-                            </td>
-                            <td>{{ report.referee.full_name }}</td>
-                            <td>{{ report.approved_by.get_full_name|default:report.approved_by.username }}</td>
-                            <td>{{ report.approved_at|date:"M d, Y H:i" }}</td>
-                            <td>
-                                <a href="{% url 'referees:report_detail_view' report.id %}" class="btn btn-sm btn-info" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
 
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-4"><div class="stat-tile stat-tile--dark"><span class="stat-tile__label"><i class="fas fa-hourglass-half" aria-hidden="true"></i>Pending Approval</span><span class="stat-tile__value">{{ pending_count }}</span></div></div>
+    <div class="col-6 col-md-4"><div class="stat-tile stat-tile--green"><span class="stat-tile__label"><i class="fas fa-circle-check" aria-hidden="true"></i>Approved</span><span class="stat-tile__value">{{ approved_count }}</span></div></div>
+    <div class="col-6 col-md-4"><div class="stat-tile stat-tile--accent"><span class="stat-tile__label"><i class="fas fa-circle-xmark" aria-hidden="true"></i>Rejected</span><span class="stat-tile__value">{{ rejected_count }}</span></div></div>
+</div>
+
+{% if pending_reports %}
+<section class="panel mb-4" aria-labelledby="pending-title">
+    <div class="panel-header"><h2 class="panel-title" id="pending-title"><i class="fas fa-hourglass-half" aria-hidden="true"></i>Pending Reports ({{ pending_count }})</h2></div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Match</th>
+                    <th scope="col">Referee</th>
+                    <th scope="col" class="hide-sm">Submitted</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in pending_reports %}
+                <tr>
+                    <td class="match-cell">{{ report.match.home_team }} <span class="vs">vs</span> {{ report.match.away_team }}<span class="cell-sub ref-num">{{ report.match.match_date|date:"M d, Y" }}</span></td>
+                    <td>{{ report.referee.full_name }}</td>
+                    <td class="hide-sm small ref-num text-nowrap">{{ report.submitted_at|date:"M d, Y H:i" }}</td>
+                    <td><span class="status-badge status-warning">{{ report.get_status_display }}</span></td>
+                    <td>
+                        <div class="ref-actions ref-actions--wrap">
+                            <a href="{% url 'referees:report_detail_view' report.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="View Details" aria-label="View details"><i class="fas fa-eye" aria-hidden="true"></i></a>
+                            <a href="{% url 'referees:approve_report' report.id %}" class="btn btn-sm btn-success btn-icon" title="Approve" aria-label="Approve"><i class="fas fa-check" aria-hidden="true"></i></a>
+                            <a href="{% url 'referees:reject_report' report.id %}" class="btn btn-sm btn-outline-danger btn-icon" title="Reject" aria-label="Reject"><i class="fas fa-xmark" aria-hidden="true"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% else %}
+<div class="alert alert-success mb-4" role="alert">
+    <i class="fas fa-circle-check me-1" aria-hidden="true"></i>No pending reports! All submissions are up to date.
+</div>
+{% endif %}
+
+{% if approved_reports %}
+<section class="panel mb-4" aria-labelledby="approved-title">
+    <div class="panel-header"><h2 class="panel-title" id="approved-title"><i class="fas fa-circle-check" aria-hidden="true"></i>Approved Reports ({{ approved_count }})</h2></div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Match</th>
+                    <th scope="col">Referee</th>
+                    <th scope="col" class="hide-sm">Approved By</th>
+                    <th scope="col" class="hide-sm">Approved Date</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in approved_reports %}
+                <tr>
+                    <td class="match-cell">{{ report.match.home_team }} <span class="vs">vs</span> {{ report.match.away_team }}<span class="cell-sub ref-num">{{ report.match.match_date|date:"M d, Y" }}</span></td>
+                    <td>{{ report.referee.full_name }}</td>
+                    <td class="hide-sm">{{ report.approved_by.get_full_name|default:report.approved_by.username }}</td>
+                    <td class="hide-sm small ref-num text-nowrap">{{ report.approved_at|date:"M d, Y H:i" }}</td>
+                    <td><a href="{% url 'referees:report_detail_view' report.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="View Details" aria-label="View details"><i class="fas fa-eye" aria-hidden="true"></i></a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% if rejected_reports %}
+<section class="panel mb-4" aria-labelledby="rejected-title">
+    <div class="panel-header"><h2 class="panel-title" id="rejected-title"><i class="fas fa-circle-xmark" aria-hidden="true"></i>Rejected Reports ({{ rejected_count }})</h2></div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Match</th>
+                    <th scope="col">Referee</th>
+                    <th scope="col" class="hide-sm">Rejected By</th>
+                    <th scope="col" class="hide-sm">Rejected Date</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in rejected_reports %}
+                <tr>
+                    <td class="match-cell">{{ report.match.home_team }} <span class="vs">vs</span> {{ report.match.away_team }}<span class="cell-sub ref-num">{{ report.match.match_date|date:"M d, Y" }}</span></td>
+                    <td>{{ report.referee.full_name }}</td>
+                    <td class="hide-sm">{{ report.approved_by.get_full_name|default:report.approved_by.username }}</td>
+                    <td class="hide-sm small ref-num text-nowrap">{{ report.approved_at|date:"M d, Y H:i" }}</td>
+                    <td><a href="{% url 'referees:report_detail_view' report.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="View Details" aria-label="View details"><i class="fas fa-eye" aria-hidden="true"></i></a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

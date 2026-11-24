@@ -1,867 +1,583 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags %}
 
 {% block title %}Matches Needing Officials{% endblock %}
+{% block page_title %}Matches needing officials{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/referees.css' %}"><link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Referee administration</span>
+        <h1 class="page-title h2">Matches Needing Officials</h1>
+        <p class="page-subtitle">Matches within 4 days that need officials appointed or confirmed</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-2 text-gray-800">📋 Matches Needing Officials</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Matches Needing Officials</li>
-                </ol>
-            </nav>
-            <p class="text-muted mb-0">Matches within 4 days that need officials appointed or confirmed</p>
-        </div>
-        <div class="btn-group">
-            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-            </a>
-        </div>
-    </div>
-
-    <!-- Date Range Info -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card border-info">
-                <div class="card-body">
-                    <h6 class="card-title text-info">
-                        <i class="fas fa-calendar-alt me-2"></i>Appointment Window
-                    </h6>
-                    <p class="mb-1"><strong>Today:</strong> {{ today|date:"l, F j, Y" }}</p>
-                    <p class="mb-1"><strong>4-Day Window:</strong> Today to {{ four_days_later|date:"F j, Y" }}</p>
-                    <p class="mb-0"><small class="text-muted">Officials must be appointed within 4 days of match date</small></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card border-primary">
-                <div class="card-body">
-                    <h6 class="card-title text-primary">
-                        <i class="fas fa-list-check me-2"></i>Quick Stats
-                    </h6>
-                    <div class="row text-center">
-                        <div class="col-3">
-                            <h2 class="text-warning">{{ needs_officials|length }}</h2>
-                            <small class="text-muted">Need Officials</small>
-                        </div>
-                        <div class="col-3">
-                            <h2 class="text-danger">{{ declined_count }}</h2>
-                            <small class="text-muted">Declined</small>
-                        </div>
-                        <div class="col-3">
-                            <h2 class="text-info">{{ pending_confirmation|length }}</h2>
-                            <small class="text-muted">Pending</small>
-                        </div>
-                        <div class="col-3">
-                            <h2 class="text-success">{{ confirmed_matches|length }}</h2>
-                            <small class="text-muted">Confirmed</small>
-                        </div>
-                    </div>
-                    {% if t_needs_officials or t_appointed %}
-                    <hr class="my-2">
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <h4 class="text-warning"><i class="fas fa-trophy me-1"></i>{{ t_needs_officials|length }}</h4>
-                            <small class="text-muted">Tournament - Need Officials</small>
-                        </div>
-                        <div class="col-4">
-                            <h4 class="text-success"><i class="fas fa-trophy me-1"></i>{{ t_appointed|length }}</h4>
-                            <small class="text-muted">Tournament - Appointed</small>
-                        </div>
-                        <div class="col-4">
-                            <h4 class="text-primary"><i class="fas fa-trophy"></i></h4>
-                            <small class="text-muted"><a href="#tournament-section" class="text-decoration-underline">Jump to Tournaments ↓</a></small>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════ TOURNAMENT MATCHES ══════════════ -->
-    {% if t_needs_officials or t_appointed %}
-    <div class="card shadow mb-4" id="tournament-section">
-        <div class="card-header py-3 bg-success text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-trophy me-2"></i>Tournament Matches
-            </h5>
-            <span class="badge bg-white text-success fs-6">{{ t_needs_officials|length }} need officials</span>
-        </div>
-    </div>
-
-    {% if t_needs_officials %}
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 bg-warning text-dark">
-            <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Tournament Matches Needing Officials ({{ t_needs_officials|length }})</h6>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date</th>
-                            <th>Tournament</th>
-                            <th>Match</th>
-                            <th>Venue</th>
-                            <th>Duration</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for m in t_needs_officials %}
-                        <tr>
-                            <td>
-                                <div class="fw-bold">{{ m.match_date|date:"d/m/Y"|default:"TBD" }}</div>
-                                <small class="text-muted">{{ m.kickoff_time|default:"TBD" }}</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-success"><i class="fas fa-trophy me-1"></i>{{ m.tournament.name }}</span>
-                                <div class="small text-muted">{{ m.get_stage_display }}</div>
-                            </td>
-                            <td>
-                                <div class="fw-bold">
-                                    {% if m.home_team %}{{ m.home_team.display_name }}{% else %}TBD{% endif %}
-                                    vs
-                                    {% if m.away_team %}{{ m.away_team.display_name }}{% else %}TBD{% endif %}
-                                </div>
-                                <small class="text-muted">Match #{{ m.match_number }}</small>
-                            </td>
-                            <td>{{ m.venue|default:"TBA" }}</td>
-                            <td><span class="badge bg-secondary">{{ m.match_duration }} min</span></td>
-                            <td class="text-center">
-                                <a href="{% url 'tournaments:appoint_officials' m.pk %}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-user-plus me-1"></i>Appoint
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if t_appointed %}
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 bg-info text-white">
-            <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Tournament Matches – Officials Appointed ({{ t_appointed|length }})</h6>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date</th>
-                            <th>Tournament</th>
-                            <th>Match</th>
-                            <th>Referee</th>
-                            <th>AR1</th>
-                            <th>AR2</th>
-                            <th>Status</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for m in t_appointed %}
-                        <tr>
-                            <td>
-                                <div class="fw-bold">{{ m.match_date|date:"d/m/Y"|default:"TBD" }}</div>
-                                <small class="text-muted">{{ m.kickoff_time|default:"TBD" }}</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-success">{{ m.tournament.name }}</span>
-                            </td>
-                            <td>
-                                <div class="fw-bold">
-                                    {% if m.home_team %}{{ m.home_team.display_name }}{% else %}TBD{% endif %}
-                                    vs
-                                    {% if m.away_team %}{{ m.away_team.display_name }}{% else %}TBD{% endif %}
-                                </div>
-                            </td>
-                            <td>{{ m.officials.main_referee|default:"–" }}</td>
-                            <td>{{ m.officials.assistant_1|default:"–" }}</td>
-                            <td>{{ m.officials.assistant_2|default:"–" }}</td>
-                            <td>
-                                <span class="badge {% if m.officials.status == 'CONFIRMED' %}bg-success{% else %}bg-info{% endif %}">
-                                    {{ m.officials.get_status_display }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <a href="{% url 'tournaments:appoint_officials' m.pk %}" class="btn btn-sm btn-outline-info">
-                                    <i class="fas fa-edit me-1"></i>Edit
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    {% endif %}
-
-    <!-- Matches Needing Officials -->
-    {% if needs_officials %}
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center bg-warning">
-            <h6 class="m-0 font-weight-bold text-white">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Matches Needing Officials ({{ needs_officials|length }})
-            </h6>
-            <span class="badge bg-white text-warning">URGENT</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-warning">
-                        <tr>
-                            <th width="120">Match Date</th>
-                            <th>Match Details</th>
-                            <th>Venue</th>
-                            <th>Days To Match</th>
-                            <th>Appointment Deadline</th>
-                            <th width="150">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in needs_officials %}
-                        <tr {% if match.has_declined %}class="table-danger"{% endif %}>
-                            <td class="fw-bold">
-                                {{ match.match_date|date:"d/m/Y" }}<br>
-                                <small>{{ match.kickoff_time|default:"TBD" }}</small>
-                                {% if match.has_declined %}
-                                <br><span class="badge bg-danger mt-1">
-                                    <i class="fas fa-exclamation-triangle"></i> DECLINED
-                                </span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="fw-bold">{{ match.home_team }} vs {{ match.away_team }}</div>
-                                <div class="small text-muted">
-                                    <span class="badge bg-secondary">{{ match.zone.name }}</span>
-                                    <span class="badge bg-info ms-1">Round {{ match.round_number }}</span>
-                                </div>
-                                {% if match.has_declined %}
-                                <div class="mt-2">
-                                    {% for declined in match.declined_roles %}
-                                    <div class="text-danger small">
-                                        <i class="fas fa-user-times"></i> {{ declined.role }}: 
-                                        {% if declined.referee %}{{ declined.referee.full_name }}{% else %}Unknown{% endif %} declined
-                                        {% if declined.reason %}
-                                        <br><em class="text-muted">"{{ declined.reason|truncatewords:10 }}"</em>
-                                        {% endif %}
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td>{{ match.venue }}</td>
-                            <td>
-                                {% with days_to_match=match.match_date|timeuntil:today %}
-                                <span class="badge {% if days_to_match.days <= 2 %}bg-danger{% elif days_to_match.days <= 4 %}bg-warning{% else %}bg-info{% endif %}">
-                                    {{ days_to_match.days }} day{{ days_to_match.days|pluralize }}
-                                </span>
-                                {% endwith %}
-                            </td>
-                            <td>
-                                {% with deadline=match.match_date|add:"-4 days" %}
-                                <span class="badge {% if deadline <= today %}bg-danger{% else %}bg-secondary{% endif %}">
-                                    {{ deadline|date:"d/m" }}
-                                </span>
-                                {% endwith %}
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm w-100">
-                                    <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-warning flex-fill">
-                                        <i class="fas fa-user-plus me-1"></i>Appoint Officials
-                                    </a>
-                                    <a href="{% url 'matches:match_details' match.id %}" class="btn btn-outline-secondary">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <!-- No Matches Needing Officials -->
-    <div class="card shadow mb-4">
-        <div class="card-body text-center py-5">
-            <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
-            <h4 class="text-success">All Caught Up!</h4>
-            <p class="text-muted">No matches need officials at the moment.</p>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Declined Appointments - URGENT -->
-    {% if declined_appointments %}
-    <div class="card shadow mb-4 border-danger">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center bg-danger text-white">
-            <h6 class="m-0 font-weight-bold">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                Declined Appointments - Action Required ({{ declined_count }})
-            </h6>
-            <span class="badge bg-white text-danger">URGENT - NEEDS REPLACEMENT</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="alert alert-danger m-3 mb-2">
-                <i class="fas fa-info-circle me-2"></i>
-                <strong>These matches have officials who declined their appointments.</strong> 
-                You must reassign replacements as soon as possible.
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-danger">
-                        <tr>
-                            <th width="120">Match Date</th>
-                            <th>Match Details</th>
-                            <th>Declined Official(s)</th>
-                            <th>Reason for Declining</th>
-                            <th width="180">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in declined_appointments %}
-                        <tr class="table-warning">
-                            <td class="fw-bold">
-                                {{ match.match_date|date:"d/m/Y" }}<br>
-                                <small>{{ match.kickoff_time|default:"TBD" }}</small>
-                            </td>
-                            <td>
-                                <div class="fw-bold">{{ match.home_team }} vs {{ match.away_team }}</div>
-                                <div class="small text-muted">
-                                    <span class="badge bg-secondary">{{ match.zone.name }}</span>
-                                    <span class="badge bg-info ms-1">Round {{ match.round_number }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                {% for declined in match.declined_roles %}
-                                <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
-                                    <div class="fw-bold text-danger">
-                                        <i class="fas fa-user-times me-1"></i>{{ declined.role }}
-                                    </div>
-                                    <small class="text-muted">
-                                        {% if declined.referee %}
-                                            {{ declined.referee.full_name }}
-                                        {% else %}
-                                            Unknown referee
-                                        {% endif %}
-                                    </small>
-                                    {% if declined.declined_at %}
-                                    <br><small class="text-muted">
-                                        <i class="fas fa-clock"></i> {{ declined.declined_at|timesince }} ago
-                                    </small>
-                                    {% endif %}
-                                </div>
-                                {% endfor %}
-                            </td>
-                            <td>
-                                {% for declined in match.declined_roles %}
-                                <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
-                                    <small class="text-dark">
-                                        {% if declined.reason %}
-                                            {{ declined.reason|truncatewords:15 }}
-                                        {% else %}
-                                            No reason provided
-                                        {% endif %}
-                                    </small>
-                                </div>
-                                {% endfor %}
-                            </td>
-                            <td>
-                                <div class="d-grid gap-2">
-                                    <a href="{% url 'referees:appoint_match_officials' match.id %}" 
-                                       class="btn btn-danger btn-sm">
-                                        <i class="fas fa-user-plus me-1"></i>Reassign Officials
-                                    </a>
-                                    <a href="{% url 'matches:match_details' match.id %}" 
-                                       class="btn btn-outline-secondary btn-sm">
-                                        <i class="fas fa-eye me-1"></i>View Match
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- All Appointed Matches -->
-    {% if appointed_matches %}
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center bg-primary">
-            <h6 class="m-0 font-weight-bold text-white">
-                <i class="fas fa-users-cog me-2"></i>
-                All Appointments ({{ appointed_matches|length }})
-            </h6>
-            <span class="badge bg-white text-primary">OFFICIALS ASSIGNED</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="alert alert-info m-3 mb-2">
-                <i class="fas fa-info-circle me-2"></i>
-                These matches have officials appointed. Use <strong>View</strong> to see details, <strong>Replace</strong> to change specific officials, or <strong>Cancel</strong> to remove all appointments.
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-primary">
-                        <tr>
-                            <th width="120">Match Date</th>
-                            <th>Match Details</th>
-                            <th>All Appointed Officials</th>
-                            <th>Status</th>
-                            <th width="200">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in appointed_matches %}
-                        <tr>
-                            <td class="fw-bold">
-                                {{ match.match_date|date:"d/m/Y" }}<br>
-                                <small class="text-muted">{{ match.kickoff_time|default:"TBD" }}</small>
-                            </td>
-                            <td>
-                                <div class="fw-bold">{{ match.home_team }} vs {{ match.away_team }}</div>
-                                <div class="small text-muted">
-                                    <span class="badge bg-secondary">{{ match.zone.name }}</span>
-                                    <span class="badge bg-info ms-1">Round {{ match.round_number }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                {% if match.officials %}
-                                <div class="small">
-                                    {% if match.officials.main_referee %}
-                                    <div class="mb-1">
-                                        <strong>Referee:</strong> 
-                                        <i class="fas fa-user-check text-success me-1"></i>
-                                        {{ match.officials.main_referee.full_name }}
-                                        {% if match.officials.main_confirmed %}
-                                        <span class="badge bg-success ms-1" title="Confirmed">✓</span>
-                                        {% elif match.officials.main_rejected %}
-                                        <span class="badge bg-danger ms-1" title="Declined">✗</span>
-                                        {% else %}
-                                        <span class="badge bg-warning ms-1" title="Pending">⏳</span>
-                                        {% endif %}
-                                    </div>
-                                    {% endif %}
-                                    
-                                    {% if match.officials.assistant_1 %}
-                                    <div class="mb-1">
-                                        <strong>AR1:</strong> 
-                                        <i class="fas fa-flag text-info me-1"></i>
-                                        {{ match.officials.assistant_1.full_name }}
-                                        {% if match.officials.ar1_confirmed %}
-                                        <span class="badge bg-success ms-1" title="Confirmed">✓</span>
-                                        {% elif match.officials.ar1_rejected %}
-                                        <span class="badge bg-danger ms-1" title="Declined">✗</span>
-                                        {% else %}
-                                        <span class="badge bg-warning ms-1" title="Pending">⏳</span>
-                                        {% endif %}
-                                    </div>
-                                    {% endif %}
-                                    
-                                    {% if match.officials.assistant_2 %}
-                                    <div class="mb-1">
-                                        <strong>AR2:</strong> 
-                                        <i class="fas fa-flag text-info me-1"></i>
-                                        {{ match.officials.assistant_2.full_name }}
-                                        {% if match.officials.ar2_confirmed %}
-                                        <span class="badge bg-success ms-1" title="Confirmed">✓</span>
-                                        {% elif match.officials.ar2_rejected %}
-                                        <span class="badge bg-danger ms-1" title="Declined">✗</span>
-                                        {% else %}
-                                        <span class="badge bg-warning ms-1" title="Pending">⏳</span>
-                                        {% endif %}
-                                    </div>
-                                    {% endif %}
-                                    
-                                    {% if match.officials.fourth_official %}
-                                    <div class="mb-1"><strong>4th:</strong> {{ match.officials.fourth_official.full_name }}</div>
-                                    {% endif %}
-                                    
-                                    {% if match.officials.var %}
-                                    <div class="mb-1"><strong>VAR:</strong> {{ match.officials.var.full_name }}</div>
-                                    {% endif %}
-                                    
-                                    {% if match.officials.match_commissioner %}
-                                    <div class="mb-1"><strong>Commissioner:</strong> {{ match.officials.match_commissioner.full_name }}</div>
-                                    {% endif %}
-                                </div>
-                                {% else %}
-                                <span class="text-muted">No officials</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if match.officials.status == 'CONFIRMED' %}
-                                    <span class="badge bg-success"><i class="fas fa-check-circle"></i> Confirmed</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pending Confirmation</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="d-grid gap-1">
-                                    <!-- First Row: Appoint (Disabled) and View -->
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary" disabled title="Already appointed - Cannot appoint again">
-                                            <i class="fas fa-ban me-1"></i>Appoint
-                                        </button>
-                                        <a href="{% url 'matches:view_match_officials' match.id %}" class="btn btn-info" title="View Match Officials">
-                                            <i class="fas fa-eye me-1"></i>View
-                                        </a>
-                                    </div>
-                                    <!-- Second Row: Replace and Cancel -->
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'referees:replace_referee' match.id 'REFEREE' %}" 
-                                           class="btn btn-warning"
-                                           title="Replace specific officials">
-                                            <i class="fas fa-exchange-alt me-1"></i>Replace
-                                        </a>
-                                        <a href="{% url 'referees:cancel_appointment' match.id %}" 
-                                           class="btn btn-danger"
-                                           onclick="return confirm('Are you sure you want to cancel ALL appointments for this match?')"
-                                           title="Cancel all appointments">
-                                            <i class="fas fa-times-circle me-1"></i>Cancel
-                                        </a>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <!-- No Appointed Matches -->
-    <div class="card shadow mb-4">
-        <div class="card-body text-center py-5">
-            <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
-            <h4 class="text-muted">No Appointments Yet</h4>
-            <p class="text-muted">No matches have officials appointed yet. Start by appointing officials to matches above.</p>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Matches Pending Confirmation -->
-    {% if pending_confirmation %}
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center bg-info">
-            <h6 class="m-0 font-weight-bold text-white">
-                <i class="fas fa-clock me-2"></i>
-                Matches Pending Confirmation ({{ pending_confirmation|length }})
-            </h6>
-            <span class="badge bg-white text-info">AWAITING RESPONSE</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-info">
-                        <tr>
-                            <th width="120">Match Date</th>
-                            <th>Match Details</th>
-                            <th>Appointed Officials</th>
-                            <th>Confirmation Status</th>
-                            <th>Confirmation Deadline</th>
-                            <th width="150">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in pending_confirmation %}
-                        <tr>
-                            <td class="fw-bold">
-                                {{ match.match_date|date:"d/m/Y" }}<br>
-                                <small>{{ match.kickoff_time|default:"TBD" }}</small>
-                            </td>
-                            <td>
-                                <div class="fw-bold">{{ match.home_team }} vs {{ match.away_team }}</div>
-                                <div class="small text-muted">
-                                    <span class="badge bg-secondary">{{ match.zone.name }}</span>
-                                    <span class="badge bg-info ms-1">Round {{ match.round_number }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                {% if match.officials %}
-                                <div class="small">
-                                    <div><strong>Referee:</strong> 
-                                        {% if match.officials.main_referee %}
-                                        {{ match.officials.main_referee.full_name }}
-                                        {% if match.officials.main_confirmed %}
-                                        <span class="badge bg-success ms-1">✓</span>
-                                        {% else %}
-                                        <span class="badge bg-warning ms-1">⏳</span>
-                                        {% endif %}
-                                        {% else %}
-                                        <em class="text-danger">Missing</em>
-                                        {% endif %}
-                                    </div>
-                                    <div><strong>AR1:</strong> 
-                                        {% if match.officials.assistant_1 %}
-                                        {{ match.officials.assistant_1.full_name }}
-                                        {% if match.officials.ar1_confirmed %}
-                                        <span class="badge bg-success ms-1">✓</span>
-                                        {% else %}
-                                        <span class="badge bg-warning ms-1">⏳</span>
-                                        {% endif %}
-                                        {% else %}
-                                        <em class="text-danger">Missing</em>
-                                        {% endif %}
-                                    </div>
-                                    <div><strong>AR2:</strong> 
-                                        {% if match.officials.assistant_2 %}
-                                        {{ match.officials.assistant_2.full_name }}
-                                        {% if match.officials.ar2_confirmed %}
-                                        <span class="badge bg-success ms-1">✓</span>
-                                        {% else %}
-                                        <span class="badge bg-warning ms-1">⏳</span>
-                                        {% endif %}
-                                        {% else %}
-                                        <em class="text-danger">Missing</em>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% else %}
-                                <em class="text-danger">No officials appointed</em>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if match.officials %}
-                                {% if match.officials.all_required_confirmed %}
-                                <span class="badge bg-success">All Confirmed</span>
-                                {% else %}
-                                <span class="badge bg-warning">Pending</span>
-                                <div class="small text-muted mt-1">
-                                    {{ match.officials.get_confirmed_count }}/3 confirmed
-                                </div>
-                                {% endif %}
-                                {% else %}
-                                <span class="badge bg-danger">Not Appointed</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if match.officials %}
-                                {% with deadline=match.match_date|add:"-2 days" %}
-                                <span class="badge {% if deadline <= today %}bg-danger{% else %}bg-secondary{% endif %}">
-                                    {{ deadline|date:"d/m" }}
-                                </span>
-                                {% endwith %}
-                                {% else %}
-                                -
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm w-100">
-                                    <a href="{% url 'referees:appoint_match_officials' match.id %}" 
-                                       class="btn btn-info flex-fill">
-                                        <i class="fas fa-edit me-1"></i>Edit
-                                    </a>
-                                    <a href="{% url 'matches:match_details' match.id %}" 
-                                       class="btn btn-outline-secondary">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    {% if match.officials %}
-                                    <a href="{% url 'referees:cancel_appointment' match.id %}" class="btn btn-danger flex-fill">
-                                        <i class="fas fa-ban me-1"></i>Cancel Appointment
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Confirmed Matches -->
-    {% if confirmed_matches %}
-    <div class="card shadow">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center bg-success">
-            <h6 class="m-0 font-weight-bold text-white">
-                <i class="fas fa-check-circle me-2"></i>
-                Confirmed Matches ({{ confirmed_matches|length }})
-            </h6>
-            <span class="badge bg-white text-success">READY</span>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-success">
-                        <tr>
-                            <th width="120">Match Date</th>
-                            <th>Match Details</th>
-                            <th>Appointed Officials</th>
-                            <th>Status</th>
-                            <th>Match Status</th>
-                            <th width="120">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in confirmed_matches %}
-                        <tr>
-                            <td class="fw-bold">
-                                {{ match.match_date|date:"d/m/Y" }}<br>
-                                <small>{{ match.kickoff_time|default:"TBD" }}</small>
-                            </td>
-                            <td>
-                                <div class="fw-bold">{{ match.home_team }} vs {{ match.away_team }}</div>
-                                <div class="small text-muted">
-                                    <span class="badge bg-secondary">{{ match.zone.name }}</span>
-                                    <span class="badge bg-info ms-1">Round {{ match.round_number }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                {% if match.officials %}
-                                <div class="small">
-                                    <div><strong>Referee:</strong> {{ match.officials.main_referee.full_name }}</div>
-                                    <div><strong>AR1:</strong> {{ match.officials.assistant_1.full_name }}</div>
-                                    <div><strong>AR2:</strong> {{ match.officials.assistant_2.full_name }}</div>
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-success">✅ All Confirmed</span>
-                                {% if match.officials %}
-                                <div class="small text-muted mt-1">
-                                    Confirmed: {{ match.officials.main_confirmed_at|date:"d/m H:i" }}
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% load fkf_tags %}{% match_badge match.status %}
-                            </td>
-                                {% if match.status == 'live' %}
-                                <span class="badge bg-danger blink-live ms-1">● LIVE</span>
-                                {% if match.start_time %}
-                                <br><span class="badge bg-danger live-timer" data-start="{{ match.start_time|date:'c' }}"></span>
-                                {% endif %}
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm w-100">
-                                    <a href="{% url 'referees:appoint_match_officials' match.id %}" 
-                                       class="btn btn-outline-success">
-                                        <i class="fas fa-eye me-1"></i>View
-                                    </a>
-                                    <a href="{% url 'matches:match_details' match.id %}" 
-                                       class="btn btn-outline-primary">
-                                        <i class="fas fa-external-link-alt"></i>
-                                    </a>
-                                    {% if match.officials %}
-                                    <a href="{% url 'referees:cancel_appointment' match.id %}" 
-                                       class="btn btn-danger"
-                                       title="Cancel all appointments">
-                                        <i class="fas fa-ban"></i>
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Legend -->
-    <div class="card shadow mt-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-info-circle me-2"></i>Legend & Instructions
-            </h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <h6>Status Colors:</h6>
-                    <div class="d-flex align-items-center mb-2">
-                        <span class="badge bg-warning me-2" style="width: 20px; height: 20px;"></span>
-                        <span>Needs Officials (Urgent)</span>
-                    </div>
-                    <div class="d-flex align-items-center mb-2">
-                        <span class="badge bg-info me-2" style="width: 20px; height: 20px;"></span>
-                        <span>Pending Confirmation</span>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <span class="badge bg-success me-2" style="width: 20px; height: 20px;"></span>
-                        <span>Confirmed & Ready</span>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <h6>Timeline:</h6>
-                    <ul class="mb-0">
-                        <li><strong>4+ days before:</strong> Cannot appoint yet</li>
-                        <li><strong>Within 4 days:</strong> Can appoint officials</li>
-                        <li><strong>Within 2 days:</strong> Confirmation deadline</li>
-                        <li><strong>Match day:</strong> All must be confirmed</li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h6>Required Officials:</h6>
-                    <ol class="mb-0">
-                        <li>Referee (Main)</li>
-                        <li>Assistant Referee 1</li>
-                        <li>Assistant Referee 2</li>
-                        <li><em>Optional: Fourth Official, VAR, etc.</em></li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </div>
-
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="stat-tile stat-tile--accent"><span class="stat-tile__label"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i>Need Officials</span><span class="stat-tile__value">{{ needs_officials|length }}</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-tile stat-tile--dark"><span class="stat-tile__label"><i class="fas fa-user-xmark" aria-hidden="true"></i>Declined</span><span class="stat-tile__value">{{ declined_count }}</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-tile"><span class="stat-tile__label"><i class="fas fa-clock" aria-hidden="true"></i>Pending</span><span class="stat-tile__value">{{ pending_confirmation|length }}</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-tile stat-tile--green"><span class="stat-tile__label"><i class="fas fa-circle-check" aria-hidden="true"></i>Confirmed</span><span class="stat-tile__value">{{ confirmed_matches|length }}</span></div></div>
 </div>
 
-<style>
-.card {
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-.table th {
-    font-weight: 600;
-    border-top: none;
-}
-.breadcrumb {
-    background: none;
-    padding: 0;
-    margin-bottom: 0;
-}
-.btn-group-sm > .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-}
-.badge {
-    font-weight: 500;
-}
-.table-success, .table-info, .table-warning {
-    --bs-table-bg-state: transparent;
-}
-.blink-live {
-    animation: blink 1s steps(2, start) infinite;
-}
-@keyframes blink {
-    to { visibility: hidden; }
-}
-</style>
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <section class="panel h-100" aria-labelledby="window-title">
+            <div class="panel-header"><h2 class="panel-title" id="window-title"><i class="fas fa-calendar-days" aria-hidden="true"></i>Appointment Window</h2></div>
+            <div class="panel-body">
+                <dl class="kv-list mb-2">
+                    <dt>Today</dt><dd class="ref-num">{{ today|date:"l, F j, Y" }}</dd>
+                    <dt>4-Day Window</dt><dd class="ref-num">Today to {{ four_days_later|date:"F j, Y" }}</dd>
+                </dl>
+                <p class="small text-body-secondary mb-0">Officials must be appointed within 4 days of match date</p>
+            </div>
+        </section>
+    </div>
+    {% if t_needs_officials or t_appointed %}
+    <div class="col-lg-6">
+        <section class="panel h-100" aria-labelledby="tstats-title">
+            <div class="panel-header"><h2 class="panel-title" id="tstats-title"><i class="fas fa-trophy" aria-hidden="true"></i>Tournaments</h2></div>
+            <div class="panel-body">
+                <dl class="kv-list mb-2">
+                    <dt>Need Officials</dt><dd class="ref-num">{{ t_needs_officials|length }}</dd>
+                    <dt>Appointed</dt><dd class="ref-num">{{ t_appointed|length }}</dd>
+                </dl>
+                <a href="#tournament-section" class="small fw-semibold">Jump to Tournaments <i class="fas fa-arrow-down ms-1" aria-hidden="true"></i></a>
+            </div>
+        </section>
+    </div>
+    {% endif %}
+</div>
 
+{% if t_needs_officials or t_appointed %}
+<div class="section-title" id="tournament-section">
+    <h2><i class="fas fa-trophy me-2" aria-hidden="true"></i>Tournament Matches</h2>
+    <span class="count-pill">{{ t_needs_officials|length }} need officials</span>
+</div>
+
+{% if t_needs_officials %}
+<section class="panel mb-4" aria-labelledby="tneeds-title">
+    <div class="panel-header"><h2 class="panel-title" id="tneeds-title"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i>Tournament Matches Needing Officials ({{ t_needs_officials|length }})</h2></div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Tournament</th>
+                    <th scope="col">Match</th>
+                    <th scope="col" class="hide-sm">Venue</th>
+                    <th scope="col" class="hide-sm">Duration</th>
+                    <th scope="col"><span class="visually-hidden">Action</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in t_needs_officials %}
+                <tr>
+                    <td class="text-nowrap"><strong class="ref-num">{{ m.match_date|date:"d/m/Y"|default:"TBD" }}</strong><span class="cell-sub ref-num">{{ m.kickoff_time|default:"TBD" }}</span></td>
+                    <td><span class="status-badge status-neutral"><i class="fas fa-trophy" aria-hidden="true"></i>{{ m.tournament.name }}</span><span class="cell-sub">{{ m.get_stage_display }}</span></td>
+                    <td class="match-cell">
+                        {% if m.home_team %}{{ m.home_team.display_name }}{% else %}TBD{% endif %}
+                        <span class="vs">vs</span>
+                        {% if m.away_team %}{{ m.away_team.display_name }}{% else %}TBD{% endif %}
+                        <span class="cell-sub">Match #{{ m.match_number }}</span>
+                    </td>
+                    <td class="hide-sm">{{ m.venue|default:"TBA" }}</td>
+                    <td class="hide-sm"><span class="status-badge status-neutral">{{ m.match_duration }} min</span></td>
+                    <td class="actions">
+                        <a href="{% url 'tournaments:appoint_officials' m.pk %}" class="btn btn-sm btn-primary"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Appoint</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% if t_appointed %}
+<section class="panel mb-4" aria-labelledby="tappointed-title">
+    <div class="panel-header"><h2 class="panel-title" id="tappointed-title"><i class="fas fa-circle-check" aria-hidden="true"></i>Tournament Matches &ndash; Officials Appointed ({{ t_appointed|length }})</h2></div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Tournament</th>
+                    <th scope="col">Match</th>
+                    <th scope="col" class="hide-sm">Referee</th>
+                    <th scope="col" class="hide-sm">AR1</th>
+                    <th scope="col" class="hide-sm">AR2</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"><span class="visually-hidden">Action</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in t_appointed %}
+                <tr>
+                    <td class="text-nowrap"><strong class="ref-num">{{ m.match_date|date:"d/m/Y"|default:"TBD" }}</strong><span class="cell-sub ref-num">{{ m.kickoff_time|default:"TBD" }}</span></td>
+                    <td><span class="status-badge status-neutral">{{ m.tournament.name }}</span></td>
+                    <td class="match-cell">
+                        {% if m.home_team %}{{ m.home_team.display_name }}{% else %}TBD{% endif %}
+                        <span class="vs">vs</span>
+                        {% if m.away_team %}{{ m.away_team.display_name }}{% else %}TBD{% endif %}
+                    </td>
+                    <td class="hide-sm">{{ m.officials.main_referee|default:"–" }}</td>
+                    <td class="hide-sm">{{ m.officials.assistant_1|default:"–" }}</td>
+                    <td class="hide-sm">{{ m.officials.assistant_2|default:"–" }}</td>
+                    <td><span class="status-badge {% if m.officials.status == 'CONFIRMED' %}status-success{% else %}status-warning{% endif %}">{{ m.officials.get_status_display }}</span></td>
+                    <td class="actions">
+                        <a href="{% url 'tournaments:appoint_officials' m.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-pen me-1" aria-hidden="true"></i>Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endif %}
+
+{% if needs_officials %}
+<section class="panel mb-4" aria-labelledby="needs-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="needs-title"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i>Matches Needing Officials ({{ needs_officials|length }})</h2>
+        <span class="status-badge status-accent">Urgent</span>
+    </div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Match Date</th>
+                    <th scope="col">Match Details</th>
+                    <th scope="col" class="hide-sm">Venue</th>
+                    <th scope="col" class="hide-sm">Days To Match</th>
+                    <th scope="col" class="hide-sm">Appointment Deadline</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in needs_officials %}
+                <tr{% if match.has_declined %} class="ref-urgent"{% endif %}>
+                    <td class="text-nowrap">
+                        <strong class="ref-num">{{ match.match_date|date:"d/m/Y" }}</strong>
+                        <span class="cell-sub ref-num">{{ match.kickoff_time|default:"TBD" }}</span>
+                        {% if match.has_declined %}<span class="status-badge status-danger mt-1"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i>Declined</span>{% endif %}
+                    </td>
+                    <td class="ref-match-cell">
+                        <strong>{{ match.home_team }} vs {{ match.away_team }}</strong>
+                        <div class="mt-1"><span class="status-badge status-neutral">{{ match.zone.name }}</span> <span class="status-badge status-neutral">Round {{ match.round_number }}</span></div>
+                        {% if match.has_declined %}
+                        <div class="mt-2">
+                            {% for declined in match.declined_roles %}
+                            <div class="text-danger small">
+                                <i class="fas fa-user-xmark" aria-hidden="true"></i> {{ declined.role }}:
+                                {% if declined.referee %}{{ declined.referee.full_name }}{% else %}Unknown{% endif %} declined
+                                {% if declined.reason %}<br><em class="text-body-secondary">"{{ declined.reason|truncatewords:10 }}"</em>{% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="hide-sm">{{ match.venue }}</td>
+                    <td class="hide-sm">
+                        {% with days_to_match=match.match_date|timeuntil:today %}
+                        <span class="status-badge js-days {% if days_to_match.days <= 2 %}status-danger{% elif days_to_match.days <= 4 %}status-warning{% else %}status-neutral{% endif %}">{{ days_to_match.days }} day{{ days_to_match.days|pluralize }}</span>
+                        {% endwith %}
+                    </td>
+                    <td class="hide-sm">
+                        {% with deadline=match.match_date|add:"-4 days" %}
+                        <span class="status-badge {% if deadline <= today %}status-danger{% else %}status-neutral{% endif %} ref-num">{{ deadline|date:"d/m" }}</span>
+                        {% endwith %}
+                    </td>
+                    <td>
+                        <div class="ref-actions ref-actions--wrap">
+                            <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-sm btn-primary"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Appoint Officials</a>
+                            <a href="{% url 'matches:match_details' match.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="View match" aria-label="View match"><i class="fas fa-eye" aria-hidden="true"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% else %}
+<section class="panel mb-4">
+    <div class="empty-state">
+        <div class="empty-state__icon"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
+        <p class="empty-state__title">All Caught Up!</p>
+        <p class="empty-state__text">No matches need officials at the moment.</p>
+    </div>
+</section>
+{% endif %}
+
+{% if declined_appointments %}
+<section class="panel danger-panel mb-4" aria-labelledby="declined-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="declined-title"><i class="fas fa-circle-exclamation" aria-hidden="true"></i>Declined Appointments - Action Required ({{ declined_count }})</h2>
+        <span class="status-badge status-accent">Needs replacement</span>
+    </div>
+    <div class="panel-body pb-0">
+        <div class="alert alert-danger">
+            <i class="fas fa-circle-info me-2" aria-hidden="true"></i>
+            <strong>These matches have officials who declined their appointments.</strong>
+            You must reassign replacements as soon as possible.
+        </div>
+    </div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Match Date</th>
+                    <th scope="col">Match Details</th>
+                    <th scope="col">Declined Official(s)</th>
+                    <th scope="col" class="hide-sm">Reason for Declining</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in declined_appointments %}
+                <tr class="ref-soon">
+                    <td class="text-nowrap"><strong class="ref-num">{{ match.match_date|date:"d/m/Y" }}</strong><span class="cell-sub ref-num">{{ match.kickoff_time|default:"TBD" }}</span></td>
+                    <td class="ref-match-cell">
+                        <strong>{{ match.home_team }} vs {{ match.away_team }}</strong>
+                        <div class="mt-1"><span class="status-badge status-neutral">{{ match.zone.name }}</span> <span class="status-badge status-neutral">Round {{ match.round_number }}</span></div>
+                    </td>
+                    <td>
+                        {% for declined in match.declined_roles %}
+                        <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                            <div class="fw-bold text-danger"><i class="fas fa-user-xmark me-1" aria-hidden="true"></i>{{ declined.role }}</div>
+                            <small class="text-body-secondary">{% if declined.referee %}{{ declined.referee.full_name }}{% else %}Unknown referee{% endif %}</small>
+                            {% if declined.declined_at %}<br><small class="text-body-secondary"><i class="fas fa-clock" aria-hidden="true"></i> {{ declined.declined_at|timesince }} ago</small>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </td>
+                    <td class="hide-sm">
+                        {% for declined in match.declined_roles %}
+                        <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                            <small>{% if declined.reason %}{{ declined.reason|truncatewords:15 }}{% else %}No reason provided{% endif %}</small>
+                        </div>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-primary btn-sm"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Reassign Officials</a>
+                            <a href="{% url 'matches:match_details' match.id %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-eye me-1" aria-hidden="true"></i>View Match</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% if appointed_matches %}
+<section class="panel mb-4" aria-labelledby="appointed-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="appointed-title"><i class="fas fa-users-gear" aria-hidden="true"></i>All Appointments ({{ appointed_matches|length }})</h2>
+        <span class="status-badge status-neutral">Officials assigned</span>
+    </div>
+    <div class="panel-body pb-0">
+        <div class="alert alert-info">
+            <i class="fas fa-circle-info me-2" aria-hidden="true"></i>
+            These matches have officials appointed. Use <strong>View</strong> to see details, <strong>Replace</strong> to change specific officials, or <strong>Cancel</strong> to remove all appointments.
+        </div>
+    </div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Match Date</th>
+                    <th scope="col">Match Details</th>
+                    <th scope="col">All Appointed Officials</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in appointed_matches %}
+                <tr>
+                    <td class="text-nowrap"><strong class="ref-num">{{ match.match_date|date:"d/m/Y" }}</strong><span class="cell-sub ref-num">{{ match.kickoff_time|default:"TBD" }}</span></td>
+                    <td class="ref-match-cell">
+                        <strong>{{ match.home_team }} vs {{ match.away_team }}</strong>
+                        <div class="mt-1"><span class="status-badge status-neutral">{{ match.zone.name }}</span> <span class="status-badge status-neutral">Round {{ match.round_number }}</span></div>
+                    </td>
+                    <td>
+                        {% if match.officials %}
+                        <div class="small">
+                            {% if match.officials.main_referee %}
+                            <div class="mb-1">
+                                <strong>Referee:</strong>
+                                {{ match.officials.main_referee.full_name }}
+                                {% if match.officials.main_confirmed %}<span class="status-badge status-success ms-1" title="Confirmed"><i class="fas fa-check" aria-hidden="true"></i><span class="visually-hidden">Confirmed</span></span>
+                                {% elif match.officials.main_rejected %}<span class="status-badge status-danger ms-1" title="Declined"><i class="fas fa-xmark" aria-hidden="true"></i><span class="visually-hidden">Declined</span></span>
+                                {% else %}<span class="status-badge status-warning ms-1" title="Pending"><i class="fas fa-clock" aria-hidden="true"></i><span class="visually-hidden">Pending</span></span>{% endif %}
+                            </div>
+                            {% endif %}
+
+                            {% if match.officials.assistant_1 %}
+                            <div class="mb-1">
+                                <strong>AR1:</strong>
+                                {{ match.officials.assistant_1.full_name }}
+                                {% if match.officials.ar1_confirmed %}<span class="status-badge status-success ms-1" title="Confirmed"><i class="fas fa-check" aria-hidden="true"></i><span class="visually-hidden">Confirmed</span></span>
+                                {% elif match.officials.ar1_rejected %}<span class="status-badge status-danger ms-1" title="Declined"><i class="fas fa-xmark" aria-hidden="true"></i><span class="visually-hidden">Declined</span></span>
+                                {% else %}<span class="status-badge status-warning ms-1" title="Pending"><i class="fas fa-clock" aria-hidden="true"></i><span class="visually-hidden">Pending</span></span>{% endif %}
+                            </div>
+                            {% endif %}
+
+                            {% if match.officials.assistant_2 %}
+                            <div class="mb-1">
+                                <strong>AR2:</strong>
+                                {{ match.officials.assistant_2.full_name }}
+                                {% if match.officials.ar2_confirmed %}<span class="status-badge status-success ms-1" title="Confirmed"><i class="fas fa-check" aria-hidden="true"></i><span class="visually-hidden">Confirmed</span></span>
+                                {% elif match.officials.ar2_rejected %}<span class="status-badge status-danger ms-1" title="Declined"><i class="fas fa-xmark" aria-hidden="true"></i><span class="visually-hidden">Declined</span></span>
+                                {% else %}<span class="status-badge status-warning ms-1" title="Pending"><i class="fas fa-clock" aria-hidden="true"></i><span class="visually-hidden">Pending</span></span>{% endif %}
+                            </div>
+                            {% endif %}
+
+                            {% if match.officials.fourth_official %}<div class="mb-1"><strong>4th:</strong> {{ match.officials.fourth_official.full_name }}</div>{% endif %}
+                            {% if match.officials.var %}<div class="mb-1"><strong>VAR:</strong> {{ match.officials.var.full_name }}</div>{% endif %}
+                            {% if match.officials.match_commissioner %}<div class="mb-1"><strong>Commissioner:</strong> {{ match.officials.match_commissioner.full_name }}</div>{% endif %}
+                        </div>
+                        {% else %}
+                        <span class="text-body-secondary">No officials</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if match.officials.status == 'CONFIRMED' %}
+                        <span class="status-badge status-success"><i class="fas fa-circle-check" aria-hidden="true"></i>Confirmed</span>
+                        {% else %}
+                        <span class="status-badge status-warning"><i class="fas fa-clock" aria-hidden="true"></i>Pending Confirmation</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="ref-actions ref-actions--wrap">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Already appointed - Cannot appoint again"><i class="fas fa-ban me-1" aria-hidden="true"></i>Appoint</button>
+                            <a href="{% url 'matches:view_match_officials' match.id %}" class="btn btn-sm btn-outline-secondary" title="View Match Officials"><i class="fas fa-eye me-1" aria-hidden="true"></i>View</a>
+                            <a href="{% url 'referees:replace_referee' match.id 'REFEREE' %}" class="btn btn-sm btn-outline-secondary" title="Replace specific officials"><i class="fas fa-right-left me-1" aria-hidden="true"></i>Replace</a>
+                            <a href="{% url 'referees:cancel_appointment' match.id %}" class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('Are you sure you want to cancel ALL appointments for this match?')"
+                               title="Cancel all appointments"><i class="fas fa-circle-xmark me-1" aria-hidden="true"></i>Cancel</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% else %}
+<section class="panel mb-4">
+    <div class="empty-state">
+        <div class="empty-state__icon"><i class="fas fa-clipboard-list" aria-hidden="true"></i></div>
+        <p class="empty-state__title">No Appointments Yet</p>
+        <p class="empty-state__text">No matches have officials appointed yet. Start by appointing officials to matches above.</p>
+    </div>
+</section>
+{% endif %}
+
+{% if pending_confirmation %}
+<section class="panel mb-4" aria-labelledby="pendingconf-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="pendingconf-title"><i class="fas fa-clock" aria-hidden="true"></i>Matches Pending Confirmation ({{ pending_confirmation|length }})</h2>
+        <span class="status-badge status-warning">Awaiting response</span>
+    </div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Match Date</th>
+                    <th scope="col">Match Details</th>
+                    <th scope="col">Appointed Officials</th>
+                    <th scope="col">Confirmation Status</th>
+                    <th scope="col" class="hide-sm">Confirmation Deadline</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in pending_confirmation %}
+                <tr>
+                    <td class="text-nowrap"><strong class="ref-num">{{ match.match_date|date:"d/m/Y" }}</strong><span class="cell-sub ref-num">{{ match.kickoff_time|default:"TBD" }}</span></td>
+                    <td class="ref-match-cell">
+                        <strong>{{ match.home_team }} vs {{ match.away_team }}</strong>
+                        <div class="mt-1"><span class="status-badge status-neutral">{{ match.zone.name }}</span> <span class="status-badge status-neutral">Round {{ match.round_number }}</span></div>
+                    </td>
+                    <td>
+                        {% if match.officials %}
+                        <div class="small">
+                            <div><strong>Referee:</strong>
+                                {% if match.officials.main_referee %}
+                                {{ match.officials.main_referee.full_name }}
+                                {% if match.officials.main_confirmed %}<span class="status-badge status-success ms-1"><i class="fas fa-check" aria-hidden="true"></i><span class="visually-hidden">Confirmed</span></span>{% else %}<span class="status-badge status-warning ms-1"><i class="fas fa-clock" aria-hidden="true"></i><span class="visually-hidden">Pending</span></span>{% endif %}
+                                {% else %}<em class="text-danger">Missing</em>{% endif %}
+                            </div>
+                            <div><strong>AR1:</strong>
+                                {% if match.officials.assistant_1 %}
+                                {{ match.officials.assistant_1.full_name }}
+                                {% if match.officials.ar1_confirmed %}<span class="status-badge status-success ms-1"><i class="fas fa-check" aria-hidden="true"></i><span class="visually-hidden">Confirmed</span></span>{% else %}<span class="status-badge status-warning ms-1"><i class="fas fa-clock" aria-hidden="true"></i><span class="visually-hidden">Pending</span></span>{% endif %}
+                                {% else %}<em class="text-danger">Missing</em>{% endif %}
+                            </div>
+                            <div><strong>AR2:</strong>
+                                {% if match.officials.assistant_2 %}
+                                {{ match.officials.assistant_2.full_name }}
+                                {% if match.officials.ar2_confirmed %}<span class="status-badge status-success ms-1"><i class="fas fa-check" aria-hidden="true"></i><span class="visually-hidden">Confirmed</span></span>{% else %}<span class="status-badge status-warning ms-1"><i class="fas fa-clock" aria-hidden="true"></i><span class="visually-hidden">Pending</span></span>{% endif %}
+                                {% else %}<em class="text-danger">Missing</em>{% endif %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <em class="text-danger">No officials appointed</em>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if match.officials %}
+                        {% if match.officials.all_required_confirmed %}
+                        <span class="status-badge status-success">All Confirmed</span>
+                        {% else %}
+                        <span class="status-badge status-warning">Pending</span>
+                        <div class="small text-body-secondary mt-1 ref-num">{{ match.officials.get_confirmed_count }}/3 confirmed</div>
+                        {% endif %}
+                        {% else %}
+                        <span class="status-badge status-danger">Not Appointed</span>
+                        {% endif %}
+                    </td>
+                    <td class="hide-sm">
+                        {% if match.officials %}
+                        {% with deadline=match.match_date|add:"-2 days" %}
+                        <span class="status-badge {% if deadline <= today %}status-danger{% else %}status-neutral{% endif %} ref-num">{{ deadline|date:"d/m" }}</span>
+                        {% endwith %}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="ref-actions ref-actions--wrap">
+                            <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-pen me-1" aria-hidden="true"></i>Edit</a>
+                            <a href="{% url 'matches:match_details' match.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="View match" aria-label="View match"><i class="fas fa-eye" aria-hidden="true"></i></a>
+                            {% if match.officials %}
+                            <a href="{% url 'referees:cancel_appointment' match.id %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-ban me-1" aria-hidden="true"></i>Cancel Appointment</a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% if confirmed_matches %}
+<section class="panel mb-4" aria-labelledby="confirmed-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="confirmed-title"><i class="fas fa-circle-check" aria-hidden="true"></i>Confirmed Matches ({{ confirmed_matches|length }})</h2>
+        <span class="status-badge status-success">Ready</span>
+    </div>
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Match Date</th>
+                    <th scope="col">Match Details</th>
+                    <th scope="col" class="hide-sm">Appointed Officials</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Match Status</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in confirmed_matches %}
+                <tr class="ref-done">
+                    <td class="text-nowrap"><strong class="ref-num">{{ match.match_date|date:"d/m/Y" }}</strong><span class="cell-sub ref-num">{{ match.kickoff_time|default:"TBD" }}</span></td>
+                    <td class="ref-match-cell">
+                        <strong>{{ match.home_team }} vs {{ match.away_team }}</strong>
+                        <div class="mt-1"><span class="status-badge status-neutral">{{ match.zone.name }}</span> <span class="status-badge status-neutral">Round {{ match.round_number }}</span></div>
+                    </td>
+                    <td class="hide-sm">
+                        {% if match.officials %}
+                        <div class="small">
+                            <div><strong>Referee:</strong> {{ match.officials.main_referee.full_name }}</div>
+                            <div><strong>AR1:</strong> {{ match.officials.assistant_1.full_name }}</div>
+                            <div><strong>AR2:</strong> {{ match.officials.assistant_2.full_name }}</div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge status-success"><i class="fas fa-circle-check" aria-hidden="true"></i>All Confirmed</span>
+                        {% if match.officials %}
+                        <div class="small text-body-secondary mt-1 ref-num">Confirmed: {{ match.officials.main_confirmed_at|date:"d/m H:i" }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% match_badge match.status %}
+                        {% if match.status == 'live' %}
+                        <span class="status-badge status-accent status-live ms-1">LIVE</span>
+                        {% if match.start_time %}
+                        <span class="status-badge status-accent live-timer" data-start="{{ match.start_time|date:'c' }}"></span>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="ref-actions ref-actions--wrap">
+                            <a href="{% url 'referees:appoint_match_officials' match.id %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-eye me-1" aria-hidden="true"></i>View</a>
+                            <a href="{% url 'matches:match_details' match.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Match details" aria-label="Match details"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+                            {% if match.officials %}
+                            <a href="{% url 'referees:cancel_appointment' match.id %}" class="btn btn-sm btn-outline-danger btn-icon" title="Cancel all appointments" aria-label="Cancel all appointments"><i class="fas fa-ban" aria-hidden="true"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<section class="panel" aria-labelledby="legend-title">
+    <div class="panel-header"><h2 class="panel-title" id="legend-title"><i class="fas fa-circle-info" aria-hidden="true"></i>Legend &amp; Instructions</h2></div>
+    <div class="panel-body">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <h3 class="ref-subhead">Status colours</h3>
+                <ul class="ref-legend flex-column align-items-start">
+                    <li><span class="ref-legend__swatch is-unavailable"></span>Needs Officials (Urgent)</li>
+                    <li><span class="ref-legend__swatch"></span>Pending Confirmation</li>
+                    <li><span class="ref-legend__swatch is-available"></span>Confirmed &amp; Ready</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h3 class="ref-subhead">Timeline</h3>
+                <ul class="note-list">
+                    <li><strong>4+ days before:</strong> Cannot appoint yet</li>
+                    <li><strong>Within 4 days:</strong> Can appoint officials</li>
+                    <li><strong>Within 2 days:</strong> Confirmation deadline</li>
+                    <li><strong>Match day:</strong> All must be confirmed</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h3 class="ref-subhead">Required officials</h3>
+                <ol class="note-list">
+                    <li>Referee (Main)</li>
+                    <li>Assistant Referee 1</li>
+                    <li>Assistant Referee 2</li>
+                    <li><em>Optional: Fourth Official, VAR, etc.</em></li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
 <script>
 // Live timer updater
 function updateLiveTimers() {
@@ -882,32 +598,18 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         window.location.reload();
     }, 300000); // 5 minutes
-    
-    // Add click handlers to all appoint buttons
-    const appointButtons = document.querySelectorAll('.btn-warning, .btn-info');
-    appointButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            const matchDate = this.closest('tr').querySelector('td:first-child').textContent.trim();
-            const matchTeams = this.closest('tr').querySelector('td:nth-child(2) .fw-bold').textContent;
-            
-            // You could add confirmation dialog here
-            console.log(`Appointing officials for: ${matchTeams} on ${matchDate}`);
-        });
-    });
-    
+
     // Highlight rows based on urgency
-    const rows = document.querySelectorAll('tbody tr');
-    rows.forEach(row => {
-        const daysBadge = row.querySelector('.badge.bg-danger, .badge.bg-warning');
+    document.querySelectorAll('tbody tr').forEach(row => {
+        const daysBadge = row.querySelector('.js-days');
         if (daysBadge) {
-            const daysText = daysBadge.textContent;
-            const daysMatch = daysText.match(/(\d+)/);
+            const daysMatch = daysBadge.textContent.match(/(\d+)/);
             if (daysMatch) {
                 const days = parseInt(daysMatch[1]);
                 if (days <= 1) {
-                    row.classList.add('table-danger');
+                    row.classList.add('ref-urgent');
                 } else if (days <= 2) {
-                    row.classList.add('table-warning');
+                    row.classList.add('ref-soon');
                 }
             }
         }

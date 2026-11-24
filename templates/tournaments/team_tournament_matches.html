@@ -1,98 +1,73 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
+{% load static fkf_tags %}
+
 {% block title %}My Tournament Matches{% endblock %}
+{% block page_title %}Tournament matches{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/referees.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Tournaments</span>
+        <h1 class="page-title h2">My Tournament Matches</h1>
+        <p class="page-subtitle">Manage matchday squads for your tournament fixtures</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'tournaments:tournament_list' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>All Tournaments</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-trophy text-success me-2"></i>My Tournament Matches</h2>
-            <p class="text-muted mb-0">Manage matchday squads for your tournament fixtures</p>
-        </div>
-        <a href="{% url 'tournaments:tournament_list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i>All Tournaments
-        </a>
-    </div>
-
-
-    {% if matches_data %}
-    <div class="row">
-        {% for item in matches_data %}
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm h-100">
-                <!-- Tournament header -->
-                <div class="card-header bg-dark text-white py-2">
-                    <small><i class="fas fa-trophy me-1"></i>{{ item.match.tournament.name }} – {{ item.match.get_stage_display }}</small>
+{% if matches_data %}
+<div class="row g-4">
+    {% for item in matches_data %}
+    <div class="col-lg-6">
+        <section class="panel h-100 d-flex flex-column">
+            <div class="panel-header">
+                <h2 class="panel-title"><i class="fas fa-trophy" aria-hidden="true"></i>{{ item.match.tournament.name }} &ndash; {{ item.match.get_stage_display }}</h2>
+            </div>
+            <div class="panel-body flex-grow-1">
+                <div class="ref-versus mb-3">
+                    <span class="ref-versus__team{% if item.reg == item.match.home_team %} is-mine{% endif %}">{% if item.match.home_team %}{{ item.match.home_team.display_name }}{% else %}TBD{% endif %}</span>
+                    <span class="ref-versus__vs">vs</span>
+                    <span class="ref-versus__team{% if item.reg == item.match.away_team %} is-mine{% endif %}">{% if item.match.away_team %}{{ item.match.away_team.display_name }}{% else %}TBD{% endif %}</span>
                 </div>
-                <div class="card-body">
-                    <!-- Teams -->
-                    <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
-                        <div class="text-end" style="min-width:120px;">
-                            <h6 class="mb-0 {% if item.reg == item.match.home_team %}fw-bold text-primary{% endif %}">
-                                {% if item.match.home_team %}{{ item.match.home_team.display_name }}{% else %}TBD{% endif %}
-                            </h6>
-                        </div>
-                        <span class="badge bg-secondary fs-6 px-3">vs</span>
-                        <div class="text-start" style="min-width:120px;">
-                            <h6 class="mb-0 {% if item.reg == item.match.away_team %}fw-bold text-primary{% endif %}">
-                                {% if item.match.away_team %}{{ item.match.away_team.display_name }}{% else %}TBD{% endif %}
-                            </h6>
-                        </div>
-                    </div>
-
-                    <!-- Match details -->
-                    <div class="text-center text-muted small mb-3">
-                        <i class="fas fa-calendar me-1"></i>{{ item.match.match_date|date:"l, d M Y"|default:"TBD" }}
-                        {% if item.match.kickoff_time %}<span class="mx-1">|</span><i class="fas fa-clock me-1"></i>{{ item.match.kickoff_time }}{% endif %}
-                        {% if item.match.venue %}<br><i class="fas fa-map-marker-alt me-1"></i>{{ item.match.venue }}{% endif %}
-                        <br><i class="fas fa-stopwatch me-1"></i>{{ item.match.match_duration }} min
-                            ({{ item.match.half_duration }}+{{ item.match.half_duration }})
-                    </div>
-
-                    <!-- Squad status -->
+                <div class="ref-match-meta mb-3">
+                    <span class="ref-num"><i class="fas fa-calendar" aria-hidden="true"></i>{{ item.match.match_date|date:"l, d M Y"|default:"TBD" }}</span>
+                    {% if item.match.kickoff_time %}<span class="ref-num"><i class="fas fa-clock" aria-hidden="true"></i>{{ item.match.kickoff_time }}</span>{% endif %}
+                    {% if item.match.venue %}<span><i class="fas fa-location-dot" aria-hidden="true"></i>{{ item.match.venue }}</span>{% endif %}
+                    <span class="ref-num"><i class="fas fa-stopwatch" aria-hidden="true"></i>{{ item.match.match_duration }} min ({{ item.match.half_duration }}+{{ item.match.half_duration }})</span>
+                </div>
+                <div class="text-center">
                     {% if item.squad %}
-                    <div class="text-center mb-3">
-                        {% load fkf_tags %}{% squad_badge item.squad.status %}
-                        <div class="small text-muted mt-1">
-                            <i class="fas fa-running me-1"></i>{{ item.starting_count }}/11 starting
-                            &bull;
-                            <i class="fas fa-users me-1"></i>{{ item.subs_count }}/14 subs
-                        </div>
-                    </div>
+                    {% squad_badge item.squad.status %}
+                    <div class="small text-body-secondary mt-1 ref-num">{{ item.starting_count }}/11 starting &middot; {{ item.subs_count }}/14 subs</div>
                     {% else %}
-                    <div class="text-center mb-3">
-                        <span class="badge bg-secondary"><i class="fas fa-exclamation-circle me-1"></i>No Squad Yet</span>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Action button -->
-                <div class="card-footer bg-white text-center">
-                    {% if item.squad and item.squad.status == 'approved' or item.squad and item.squad.status == 'locked' %}
-                    <a href="{% url 'tournaments:tournament_submit_squad' item.match.pk %}" class="btn btn-info btn-sm">
-                        <i class="fas fa-eye me-1"></i>View Squad
-                    </a>
-                    {% else %}
-                    <a href="{% url 'tournaments:tournament_submit_squad' item.match.pk %}" class="btn btn-success btn-sm">
-                        <i class="fas fa-edit me-1"></i>{% if item.squad and item.squad.status == 'submitted' %}Edit{% else %}Submit{% endif %} Squad
-                    </a>
+                    <span class="status-badge status-neutral">No squad yet</span>
                     {% endif %}
                 </div>
             </div>
-        </div>
-        {% endfor %}
+            <div class="panel-footer text-center">
+                {% if item.squad and item.squad.status == 'approved' or item.squad and item.squad.status == 'locked' %}
+                <a href="{% url 'tournaments:tournament_submit_squad' item.match.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-eye me-1" aria-hidden="true"></i>View Squad</a>
+                {% else %}
+                <a href="{% url 'tournaments:tournament_submit_squad' item.match.pk %}" class="btn btn-sm btn-success"><i class="fas fa-pen me-1" aria-hidden="true"></i>{% if item.squad and item.squad.status == 'submitted' %}Edit{% else %}Submit{% endif %} Squad</a>
+                {% endif %}
+            </div>
+        </section>
     </div>
-
-    {% else %}
-    <div class="card shadow-sm">
-        <div class="card-body text-center py-5">
-            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">No upcoming tournament matches</h5>
-            <p class="text-muted">Your team doesn't have any scheduled tournament matches at the moment.</p>
-            <a href="{% url 'tournaments:tournament_list' %}" class="btn btn-outline-success">
-                <i class="fas fa-trophy me-1"></i>Browse Tournaments
-            </a>
-        </div>
-    </div>
-    {% endif %}
+    {% endfor %}
 </div>
+{% else %}
+<section class="panel">
+    <div class="empty-state">
+        <div class="empty-state__icon"><i class="fas fa-calendar-xmark" aria-hidden="true"></i></div>
+        <p class="empty-state__title">No upcoming tournament matches</p>
+        <p class="empty-state__text">Your team doesn't have any scheduled tournament matches at the moment.</p>
+        <a href="{% url 'tournaments:tournament_list' %}" class="btn btn-outline-secondary"><i class="fas fa-trophy me-1" aria-hidden="true"></i>Browse Tournaments</a>
+    </div>
+</section>
+{% endif %}
 {% endblock %}

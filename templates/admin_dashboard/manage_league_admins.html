@@ -1,299 +1,226 @@
-{% extends "base.html" %}
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
 {% block title %}User Management{% endblock %}
+{% block page_title %}User management{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}"><link rel="stylesheet" href="{% static 'css/pages/referees.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1><i class="fas fa-users-cog"></i> Complete User Management</h1>
-            <p class="text-muted">Manage all system users and their roles</p>
-        </div>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">League administration</span>
+        <h1 class="page-title h2">Complete User Management</h1>
+        <p class="page-subtitle">Manage all system users and their roles</p>
     </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <h3>{{ user_stats.total }}</h3>
-                    <small>Total Users</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h3>{{ user_stats.active }}</h3>
-                    <small>Active</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card bg-danger text-white">
-                <div class="card-body text-center">
-                    <h3>{{ user_stats.inactive }}</h3>
-                    <small>Inactive</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h3>{{ user_stats.team_managers }}</h3>
-                    <small>Team Managers</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card bg-warning text-dark">
-                <div class="card-body text-center">
-                    <h3>{{ user_stats.referees }}</h3>
-                    <small>Referees</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card bg-dark text-white">
-                <div class="card-body text-center">
-                    <h3>{{ user_stats.league_admins }}</h3>
-                    <small>League Admins</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create New User Form -->
-    <div class="card mb-4">
-        <div class="card-header ch-blue">
-            <h5 class="mb-0"><i class="fas fa-plus-circle"></i> Create New User</h5>
-        </div>
-        <div class="card-body">
-            <form method="post" action="{% url 'admin_dashboard:create_league_admin' %}">
-                {% csrf_token %}
-                <div class="row g-3">
-                    <div class="col-md-2">
-                        <label class="form-label" for="new-username">Username <span class="text-danger">*</span></label>
-                        <input type="text" id="new-username" name="username" class="form-control" required placeholder="username">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label" for="new-email">Email <span class="text-danger">*</span></label>
-                        <input type="email" id="new-email" name="email" class="form-control" required placeholder="user@example.com">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label" for="new-first_name">First Name <span class="text-danger">*</span></label>
-                        <input type="text" id="new-first_name" name="first_name" class="form-control" required placeholder="John">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label" for="new-last_name">Last Name <span class="text-danger">*</span></label>
-                        <input type="text" id="new-last_name" name="last_name" class="form-control" required placeholder="Doe">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label" for="new-role">Role <span class="text-danger">*</span></label>
-                        <select name="role" id="new-role" class="form-select" required>
-                            <option value="">Select Role...</option>
-                            {% for group in all_groups %}
-                            <option value="{{ group.name }}">{{ group.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-user-plus"></i> Create
-                        </button>
-                    </div>
-                </div>
-                <div class="alert alert-info mt-3 mb-0">
-                    <i class="fas fa-info-circle"></i> The new user is emailed a single-use link to set their own password. No password is shown or sent.
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Filters and Search -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label" for="filter-role">Filter by Role</label>
-                    <select name="role" id="filter-role" class="form-select" onchange="this.form.submit()">
-                        <option value="all" {% if role_filter == 'all' %}selected{% endif %}>All Roles</option>
-                        <option value="League Admin" {% if role_filter == 'League Admin' %}selected{% endif %}>League Admin</option>
-                        <option value="Team Managers" {% if role_filter == 'Team Managers' %}selected{% endif %}>Team Managers</option>
-                        <option value="Referee" {% if role_filter == 'Referee' %}selected{% endif %}>Referees</option>
-                        <option value="Referees Manager" {% if role_filter == 'Referees Manager' %}selected{% endif %}>Referees Manager</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="filter-status">Filter by Status</label>
-                    <select name="status" id="filter-status" class="form-select" onchange="this.form.submit()">
-                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
-                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
-                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Only</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="filter-search">Search Users</label>
-                    <div class="input-group">
-                        <input type="search" id="filter-search" name="search" class="form-control" placeholder="Search by username, email, or name..." value="{{ search_query }}">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-search"></i> Search
-                        </button>
-                        <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-secondary">
-                            <i class="fas fa-times"></i> Clear
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Users Table -->
-    <div class="card">
-        <div class="card-header ch-dark">
-            <h5 class="mb-0"><i class="fas fa-list"></i> All Users ({{ page_obj.paginator.count }})</h5>
-        </div>
-        <div class="card-body">
-            {% if users %}
-            <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Roles</th>
-                            <th>Status</th>
-                            <th>Joined</th>
-                            <th>Last Login</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for u in users %}
-                        <tr>
-                            <td>
-                                <strong>{{ u.username }}</strong>
-                                {% if u.is_superuser %}
-                                <span class="badge bg-danger ms-1">Superuser</span>
-                                {% endif %}
-                                {% if u.is_staff %}
-                                <span class="badge bg-warning text-dark ms-1">Staff</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ u.first_name }} {{ u.last_name }}</td>
-                            <td>{{ u.email }}</td>
-                            <td>
-                                {% for group in u.groups.all %}
-                                <span class="badge bg-secondary">{{ group.name }}</span>
-                                {% empty %}
-                                <span class="text-muted">No role</span>
-                                {% endfor %}
-                            </td>
-                            <td>
-                                {% if u.is_active %}
-                                <span class="badge bg-success">Active</span>
-                                {% else %}
-                                <span class="badge bg-danger">Inactive</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ u.date_joined|date:"M d, Y" }}</td>
-                            <td>
-                                {% if u.last_login %}
-                                {{ u.last_login|date:"M d, Y H:i" }}
-                                {% else %}
-                                <span class="text-muted">Never</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group" role="group" aria-label="Actions for {{ u.username }}">
-                                    <a href="{% url 'admin_dashboard:edit_user_roles' u.id %}"
-                                       class="btn btn-sm btn-info" title="Edit Roles" aria-label="Edit roles">
-                                        <i class="fas fa-user-tag" aria-hidden="true"></i>
-                                    </a>
-                                    {% if not u.is_superuser and u != request.user %}
-                                    <form method="post" action="{% url 'admin_dashboard:toggle_league_admin_status' u.id %}" class="d-inline"
-                                          onsubmit="return confirm('{% if u.is_active %}Deactivate{% else %}Activate{% endif %} {{ u.username|escapejs }}?')">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-{% if u.is_active %}warning{% else %}success{% endif %}"
-                                                title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}"
-                                                aria-label="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}">
-                                            <i class="fas fa-{% if u.is_active %}ban{% else %}check{% endif %}" aria-hidden="true"></i>
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                    {% if u != request.user %}
-                                    <form method="post" action="{% url 'admin_dashboard:reset_league_admin_password' u.id %}" class="d-inline"
-                                          onsubmit="return confirm('Reset password for {{ u.username|escapejs }}? Their current password will stop working.')">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-primary" title="Reset Password" aria-label="Reset password">
-                                            <i class="fas fa-key" aria-hidden="true"></i>
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                    {% if not u.is_superuser and u != request.user %}
-                                    <form method="post" action="{% url 'admin_dashboard:delete_user' u.id %}" class="d-inline"
-                                          onsubmit="return confirm('DELETE {{ u.username|escapejs }}? This cannot be undone!')">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete User" aria-label="Delete user">
-                                            <i class="fas fa-trash" aria-hidden="true"></i>
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% if page_obj.has_other_pages %}
-            <nav aria-label="User pages">
-                <ul class="pagination justify-content-center mb-0">
-                    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&amp;role={{ role_filter|urlencode }}&amp;status={{ status_filter|urlencode }}&amp;search={{ search_query|urlencode }}">Previous</a></li>{% endif %}
-                    <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
-                    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&amp;role={{ role_filter|urlencode }}&amp;status={{ status_filter|urlencode }}&amp;search={{ search_query|urlencode }}">Next</a></li>{% endif %}
-                </ul>
-            </nav>
-            {% endif %}
-            {% else %}
-            <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle"></i> No users found matching your filters.
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Information Panel -->
-    <div class="card mt-4 border-info">
-        <div class="card-header ch-blue">
-            <h6 class="mb-0"><i class="fas fa-info-circle"></i> User Management Guide</h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h6><strong>Available Roles:</strong></h6>
-                    <ul>
-                        <li><strong>League Admin:</strong> Full system control (like this dashboard)</li>
-                        <li><strong>Team Manager:</strong> Manage own team, players, transfers</li>
-                        <li><strong>Referee:</strong> Submit match reports</li>
-                        <li><strong>Referees Manager:</strong> Assign referees to matches</li>
-                    </ul>
-                </div>
-                <div class="col-md-6">
-                    <h6><strong>Actions:</strong></h6>
-                    <ul>
-                        <li><i class="fas fa-user-tag text-info"></i> <strong>Edit Roles:</strong> Change user's role assignments</li>
-                        <li><i class="fas fa-ban text-warning"></i> <strong>Deactivate:</strong> User cannot login (reversible)</li>
-                        <li><i class="fas fa-key text-primary"></i> <strong>Reset Password:</strong> Email a set-password link</li>
-                        <li><i class="fas fa-trash text-danger"></i> <strong>Delete:</strong> Permanently remove user</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+    <div class="page-actions">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Dashboard</a>
     </div>
 </div>
 {% endblock %}
 
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2"><div class="stat-tile stat-tile--dark"><span class="stat-tile__label">Total Users</span><span class="stat-tile__value">{{ user_stats.total }}</span></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="stat-tile stat-tile--green"><span class="stat-tile__label">Active</span><span class="stat-tile__value">{{ user_stats.active }}</span></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="stat-tile stat-tile--accent"><span class="stat-tile__label">Inactive</span><span class="stat-tile__value">{{ user_stats.inactive }}</span></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="stat-tile"><span class="stat-tile__label">Team Managers</span><span class="stat-tile__value">{{ user_stats.team_managers }}</span></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="stat-tile"><span class="stat-tile__label">Referees</span><span class="stat-tile__value">{{ user_stats.referees }}</span></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="stat-tile"><span class="stat-tile__label">League Admins</span><span class="stat-tile__value">{{ user_stats.league_admins }}</span></div></div>
+</div>
+
+<section class="panel mb-4" aria-labelledby="create-title">
+    <div class="panel-header"><h2 class="panel-title" id="create-title"><i class="fas fa-user-plus" aria-hidden="true"></i>Create New User</h2></div>
+    <form method="post" action="{% url 'admin_dashboard:create_league_admin' %}">
+        {% csrf_token %}
+        <div class="panel-body">
+            <div class="row g-3">
+                <div class="col-sm-6 col-lg-2">
+                    <label class="form-label" for="new-username">Username <span class="text-danger" aria-hidden="true">*</span></label>
+                    <input type="text" id="new-username" name="username" class="form-control" required placeholder="username">
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label" for="new-email">Email <span class="text-danger" aria-hidden="true">*</span></label>
+                    <input type="email" id="new-email" name="email" class="form-control" required placeholder="user@example.com">
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <label class="form-label" for="new-first_name">First Name <span class="text-danger" aria-hidden="true">*</span></label>
+                    <input type="text" id="new-first_name" name="first_name" class="form-control" required placeholder="John">
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <label class="form-label" for="new-last_name">Last Name <span class="text-danger" aria-hidden="true">*</span></label>
+                    <input type="text" id="new-last_name" name="last_name" class="form-control" required placeholder="Doe">
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label" for="new-role">Role <span class="text-danger" aria-hidden="true">*</span></label>
+                    <select name="role" id="new-role" class="form-select" required>
+                        <option value="">Select Role...</option>
+                        {% for group in all_groups %}
+                        <option value="{{ group.name }}">{{ group.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="fas fa-circle-info me-1" aria-hidden="true"></i>The new user is emailed a single-use link to set their own password. No password is shown or sent.
+            </div>
+        </div>
+        <div class="panel-footer form-actions">
+            <button type="submit" class="btn btn-success"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Create</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel mb-4" aria-labelledby="filters-title">
+    <div class="panel-header"><h2 class="panel-title" id="filters-title"><i class="fas fa-filter" aria-hidden="true"></i>Filter users</h2></div>
+    <div class="panel-body">
+        <form method="get" class="row g-3">
+            <div class="col-sm-6 col-lg-3">
+                <label class="form-label" for="filter-role">Filter by Role</label>
+                <select name="role" id="filter-role" class="form-select" onchange="this.form.submit()">
+                    <option value="all" {% if role_filter == 'all' %}selected{% endif %}>All Roles</option>
+                    <option value="League Admin" {% if role_filter == 'League Admin' %}selected{% endif %}>League Admin</option>
+                    <option value="Team Managers" {% if role_filter == 'Team Managers' %}selected{% endif %}>Team Managers</option>
+                    <option value="Referee" {% if role_filter == 'Referee' %}selected{% endif %}>Referees</option>
+                    <option value="Referees Manager" {% if role_filter == 'Referees Manager' %}selected{% endif %}>Referees Manager</option>
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <label class="form-label" for="filter-status">Filter by Status</label>
+                <select name="status" id="filter-status" class="form-select" onchange="this.form.submit()">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                </select>
+            </div>
+            <div class="col-12 col-lg-6">
+                <label class="form-label" for="filter-search">Search Users</label>
+                <div class="input-group">
+                    <input type="search" id="filter-search" name="search" class="form-control" placeholder="Search by username, email, or name..." value="{{ search_query }}">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-magnifying-glass me-1" aria-hidden="true"></i>Search</button>
+                    <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-outline-secondary"><i class="fas fa-xmark me-1" aria-hidden="true"></i>Clear</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="panel mb-4" aria-labelledby="users-title">
+    <div class="panel-header"><h2 class="panel-title" id="users-title"><i class="fas fa-list" aria-hidden="true"></i>All Users ({{ page_obj.paginator.count }})</h2></div>
+    {% if users %}
+    <div class="data-table-wrap">
+        <table class="table data-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Username</th>
+                    <th scope="col" class="hide-sm">Name</th>
+                    <th scope="col" class="hide-sm">Email</th>
+                    <th scope="col">Roles</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="hide-sm">Joined</th>
+                    <th scope="col" class="hide-sm">Last Login</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <strong>{{ u.username }}</strong>
+                        {% if u.is_superuser %}<span class="status-badge status-danger ms-1">Superuser</span>{% endif %}
+                        {% if u.is_staff %}<span class="status-badge status-warning ms-1">Staff</span>{% endif %}
+                    </td>
+                    <td class="hide-sm">{{ u.first_name }} {{ u.last_name }}</td>
+                    <td class="hide-sm small">{{ u.email }}</td>
+                    <td>
+                        {% for group in u.groups.all %}<span class="status-badge status-neutral">{{ group.name }}</span> {% empty %}<span class="text-body-secondary">No role</span>{% endfor %}
+                    </td>
+                    <td>{% if u.is_active %}<span class="status-badge status-success">Active</span>{% else %}<span class="status-badge status-danger">Inactive</span>{% endif %}</td>
+                    <td class="hide-sm small ref-num text-nowrap">{{ u.date_joined|date:"M d, Y" }}</td>
+                    <td class="hide-sm small ref-num text-nowrap">{% if u.last_login %}{{ u.last_login|date:"M d, Y H:i" }}{% else %}<span class="text-body-secondary">Never</span>{% endif %}</td>
+                    <td>
+                        <div class="ref-actions ref-actions--wrap" role="group" aria-label="Actions for {{ u.username }}">
+                            <a href="{% url 'admin_dashboard:edit_user_roles' u.id %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Edit Roles" aria-label="Edit roles">
+                                <i class="fas fa-user-tag" aria-hidden="true"></i>
+                            </a>
+                            {% if not u.is_superuser and u != request.user %}
+                            <form method="post" action="{% url 'admin_dashboard:toggle_league_admin_status' u.id %}" class="d-inline"
+                                  onsubmit="return confirm('{% if u.is_active %}Deactivate{% else %}Activate{% endif %} {{ u.username|escapejs }}?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if u.is_active %}btn-outline-secondary{% else %}btn-outline-success{% endif %} btn-icon"
+                                        title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}"
+                                        aria-label="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                    <i class="fas fa-{% if u.is_active %}ban{% else %}check{% endif %}" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            {% if u != request.user %}
+                            <form method="post" action="{% url 'admin_dashboard:reset_league_admin_password' u.id %}" class="d-inline"
+                                  onsubmit="return confirm('Reset password for {{ u.username|escapejs }}? Their current password will stop working.')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-secondary btn-icon" title="Reset Password" aria-label="Reset password">
+                                    <i class="fas fa-key" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            {% if not u.is_superuser and u != request.user %}
+                            <form method="post" action="{% url 'admin_dashboard:delete_user' u.id %}" class="d-inline"
+                                  onsubmit="return confirm('DELETE {{ u.username|escapejs }}? This cannot be undone!')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Delete User" aria-label="Delete user">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="panel-footer">
+        <nav aria-label="User pages">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&amp;role={{ role_filter|urlencode }}&amp;status={{ status_filter|urlencode }}&amp;search={{ search_query|urlencode }}">Previous</a></li>{% endif %}
+                <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&amp;role={{ role_filter|urlencode }}&amp;status={{ status_filter|urlencode }}&amp;search={{ search_query|urlencode }}">Next</a></li>{% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state__icon"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></div>
+        <p class="empty-state__title">No users found matching your filters.</p>
+    </div>
+    {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="guide-title">
+    <div class="panel-header"><h2 class="panel-title" id="guide-title"><i class="fas fa-circle-info" aria-hidden="true"></i>User Management Guide</h2></div>
+    <div class="panel-body">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <h3 class="ref-subhead">Available roles</h3>
+                <ul class="note-list">
+                    <li><strong>League Admin:</strong> Full system control (like this dashboard)</li>
+                    <li><strong>Team Manager:</strong> Manage own team, players, transfers</li>
+                    <li><strong>Referee:</strong> Submit match reports</li>
+                    <li><strong>Referees Manager:</strong> Assign referees to matches</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h3 class="ref-subhead">Actions</h3>
+                <ul class="note-list">
+                    <li><strong>Edit Roles:</strong> Change user's role assignments</li>
+                    <li><strong>Deactivate:</strong> User cannot login (reversible)</li>
+                    <li><strong>Reset Password:</strong> Email a set-password link</li>
+                    <li><strong>Delete:</strong> Permanently remove user</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
