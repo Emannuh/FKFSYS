@@ -1,66 +1,58 @@
-{% extends "base.html" %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 {% block title %}Override Transfer{% endblock %}
+{% block page_title %}Override transfer{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header ch-green">
-                    <h4 class="mb-0"><i class="fas fa-unlock"></i> Admin Override: Force Approve Transfer</h4>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-warning">
-                        <h5><i class="fas fa-exclamation-triangle"></i> Super Admin Action</h5>
-                        <p class="mb-0">
-                            You are about to override a rejection and force approval of this transfer.
-                            This action will immediately transfer the player.
-                        </p>
-                    </div>
-                    
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5>Transfer Details</h5>
-                            <p><strong>Player:</strong> {{ transfer.player.full_name }}</p>
-                            <p><strong>From:</strong> {{ transfer.from_team.team_name }}</p>
-                            <p><strong>To:</strong> {{ transfer.to_team.team_name }}</p>
-                            <p><strong>Requested By:</strong> {{ transfer.requested_by.username }}</p>
-                            <p><strong>Rejected By:</strong> {{ transfer.parent_decision_by.username }}</p>
-                            <hr>
-                            <p><strong>Rejection Reason:</strong></p>
-                            <blockquote class="blockquote">
-                                {{ transfer.parent_decision_reason }}
-                            </blockquote>
-                        </div>
-                    </div>
-                    
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="reason" class="form-label">
-                                <strong>Admin Override Reason *</strong>
-                            </label>
-                            <textarea name="reason" id="reason" class="form-control" 
-                                      rows="4" required 
-                                      placeholder="Explain why you are overriding this rejection...">Admin override: Approved by super admin after review.</textarea>
-                            <small class="form-text text-muted">
-                                This reason will be logged in the transfer history.
-                            </small>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Cancel
-                            </a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-check"></i> Override & Approve Transfer
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Transfers</span>
+        <h1 class="page-title h2">Admin Override: Force Approve Transfer</h1>
+        <p class="page-subtitle">This action will immediately transfer the player.</p>
     </div>
 </div>
 {% endblock %}
 
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="alert alert-warning" role="status">
+            <strong><i class="fas fa-triangle-exclamation me-1" aria-hidden="true"></i>Super Admin Action.</strong>
+            You are about to override a rejection and force approval of this transfer. This action will immediately transfer the player.
+        </div>
+        <section class="panel" aria-labelledby="override-title">
+            <div class="panel-header"><h2 class="panel-title" id="override-title"><i class="fas fa-lock-open" aria-hidden="true"></i>Override reason</h2></div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="panel-body">
+                    <label for="reason" class="form-label">Admin Override Reason <span class="text-danger" aria-hidden="true">*</span></label>
+                    <textarea name="reason" id="reason" class="form-control" rows="4" required aria-describedby="reason-help"
+                              placeholder="Explain why you are overriding this rejection...">Admin override: Approved by super admin after review.</textarea>
+                    <div class="form-text" id="reason-help">This reason will be logged in the transfer history.</div>
+                </div>
+                <div class="panel-footer form-actions">
+                    <a href="{% url 'admin_dashboard:manage_transfers' %}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-check me-1" aria-hidden="true"></i>Override &amp; Approve Transfer</button>
+                </div>
+            </form>
+        </section>
+    </div>
+    <div class="col-lg-4">
+        <section class="panel" aria-labelledby="details-title">
+            <div class="panel-header"><h2 class="panel-title" id="details-title"><i class="fas fa-right-left" aria-hidden="true"></i>Transfer Details</h2></div>
+            <div class="panel-body">
+                <dl class="kv-list">
+                    <dt>Player</dt><dd class="fw-semibold">{{ transfer.player.full_name }}</dd>
+                    <dt>From</dt><dd>{{ transfer.from_team.team_name }}</dd>
+                    <dt>To</dt><dd>{{ transfer.to_team.team_name }}</dd>
+                    <dt>Requested By</dt><dd>{{ transfer.requested_by.username }}</dd>
+                    <dt>Rejected By</dt><dd>{{ transfer.parent_decision_by.username|default:"—" }}</dd>
+                    <dt>Rejection Reason</dt><dd>{{ transfer.parent_decision_reason|default:"—" }}</dd>
+                </dl>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

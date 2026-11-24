@@ -1,68 +1,49 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 {% block title %}Manage Registrations – {{ tournament.name }}{% endblock %}
+{% block page_title %}Registrations{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-clipboard-list text-warning me-2"></i>Registrations – {{ tournament.name }}</h2>
-        <div class="btn-group">
-            <a href="{% url 'tournaments:import_league_teams' tournament.slug %}" class="btn btn-primary btn-sm">
-                <i class="fas fa-download me-1"></i>Import League Teams
-            </a>
-            <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
-                <i class="fas fa-arrow-left me-1"></i>Back
-            </a>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">{{ tournament.name }}</span>
+        <h1 class="page-title h2">Registrations – {{ tournament.name }}</h1>
+        <p class="page-subtitle">Review team registrations, payments and seeding.</p>
     </div>
-
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Team</th>
-                        <th>Registered By</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Payment</th>
-                        <th>Seed</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for reg in registrations %}
-                    <tr>
-                        <td class="fw-bold">
-                            {{ reg.display_name }}
-                            {% if reg.team_type == 'external' %}<span class="badge bg-info ms-1">External</span>{% endif %}
-                        </td>
-                        <td>{% if reg.registered_by %}{{ reg.registered_by.get_full_name|default:reg.registered_by.username }}{% else %}—{% endif %}</td>
-                        <td>{{ reg.registered_at|date:"d/m/Y H:i" }}</td>
-                        <td>
-                            <span class="badge bg-{% if reg.status == 'approved' %}success{% elif reg.status == 'rejected' %}danger{% elif reg.status == 'withdrawn' %}secondary{% else %}warning{% endif %}">
-                                {{ reg.get_status_display }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if reg.payment_confirmed %}
-                            <span class="badge bg-success">Paid</span>
-                            {% else %}
-                            <span class="badge bg-danger">Unpaid</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ reg.seed|default:"-" }}</td>
-                        <td>
-                            <a href="{% url 'tournaments:review_registration' reg.pk %}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-edit"></i> Review
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="7" class="text-center text-muted py-4">No registrations yet.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="page-actions">
+        <a href="{% url 'tournaments:tournament_detail' tournament.slug %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back</a>
+        <a href="{% url 'tournaments:import_league_teams' tournament.slug %}" class="btn btn-primary"><i class="fas fa-download me-1" aria-hidden="true"></i>Import League Teams</a>
     </div>
 </div>
+{% endblock %}
+
+{% block content %}
+<section class="panel" aria-labelledby="regs-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="regs-title"><i class="fas fa-clipboard-list" aria-hidden="true"></i>Team registrations</h2>
+        <span class="count-pill count-pill--muted">{{ registrations|length }}</span>
+    </div>
+    <div class="data-table-wrap">
+        <table class="table data-table mb-0">
+            <thead><tr><th scope="col">Team</th><th scope="col" class="hide-sm">Registered By</th><th scope="col" class="hide-sm">Date</th><th scope="col">Status</th><th scope="col">Payment</th><th scope="col" class="num hide-sm">Seed</th><th scope="col" class="text-end">Actions</th></tr></thead>
+            <tbody>
+                {% for reg in registrations %}
+                <tr>
+                    <td class="fw-semibold">{{ reg.display_name }}{% if reg.team_type == 'external' %} <span class="badge status-badge status-neutral ms-1">External</span>{% endif %}</td>
+                    <td class="hide-sm">{% if reg.registered_by %}{{ reg.registered_by.get_full_name|default:reg.registered_by.username }}{% else %}—{% endif %}</td>
+                    <td class="hide-sm col-min">{{ reg.registered_at|date:"d/m/Y H:i" }}</td>
+                    <td><span class="badge status-badge status-{% if reg.status == 'approved' %}success{% elif reg.status == 'rejected' %}danger{% elif reg.status == 'withdrawn' %}neutral{% else %}warning{% endif %}">{{ reg.get_status_display }}</span></td>
+                    <td>{% if reg.payment_confirmed %}<span class="badge status-badge status-success">Paid</span>{% else %}<span class="badge status-badge status-danger">Unpaid</span>{% endif %}</td>
+                    <td class="num hide-sm">{{ reg.seed|default:"-" }}</td>
+                    <td class="actions"><a href="{% url 'tournaments:review_registration' reg.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-pen me-1" aria-hidden="true"></i>Review</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="table-loading">No registrations yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
 {% endblock %}

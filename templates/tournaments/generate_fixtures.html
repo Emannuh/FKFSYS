@@ -1,88 +1,64 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 {% block title %}Generate Fixtures – {{ tournament.name }}{% endblock %}
+{% block page_title %}Generate fixtures{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3><i class="fas fa-calendar-plus text-primary me-2"></i>Generate Fixtures</h3>
-                <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-arrow-left me-1"></i>Back to Fixtures
-                </a>
-            </div>
-
-
-            <!-- Tournament Info Card -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <div class="text-muted small">Format</div>
-                            <div class="fw-bold">{{ tournament.get_format_display }}</div>
-                        </div>
-                        <div class="col-4">
-                            <div class="text-muted small">Approved Teams</div>
-                            <div class="fw-bold">{{ team_count }}</div>
-                        </div>
-                        <div class="col-4">
-                            <div class="text-muted small">Existing Matches</div>
-                            <div class="fw-bold">{{ existing_match_count }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {% if existing_match_count > 0 %}
-            <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle me-1"></i>
-                <strong>Warning:</strong> This tournament already has <strong>{{ existing_match_count }}</strong> fixture(s).
-                Generating new fixtures will <strong>delete all existing matches</strong> (including any results) and create a fresh schedule.
-            </div>
-            {% endif %}
-
-            {% if team_count < 2 %}
-            <div class="alert alert-danger">
-                <i class="fas fa-times-circle me-1"></i>
-                You need at least <strong>2 approved teams</strong> to generate fixtures. Currently {{ team_count }} approved.
-            </div>
-            {% else %}
-            <div class="card shadow-sm">
-                <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-                    <h6 class="mb-0"><i class="fas fa-cogs me-1"></i>Fixture Settings</h6>
-                </div>
-                <div class="card-body">
-                    <form method="post" novalidate>
-                        {% csrf_token %}
-                        {% include 'tournaments/includes/form_errors.html' %}
-                        {% for field in form %}{% include 'tournaments/includes/form_field.html' %}{% endfor %}
-
-                        <div class="alert alert-info mt-3">
-                            <i class="fas fa-info-circle me-1"></i>
-                            <strong>{{ tournament.get_format_display }} format:</strong>
-                            {% if tournament.format == 'knockout' %}
-                            Single elimination bracket. Teams are randomly seeded.
-                            {% elif tournament.format == 'group_knockout' %}
-                            Teams divided into groups for round-robin play, followed by knockout stage for group winners.
-                            {% elif tournament.format == 'round_robin' %}
-                            Every team plays every other team once.
-                            {% elif tournament.format == 'swiss' %}
-                            Swiss system pairing.
-                            {% endif %}
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-2 mt-3">
-                            <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary" onclick="return confirm('{% if existing_match_count > 0 %}This will delete all existing fixtures and results. {% endif %}Generate fixtures for {{ team_count }} teams?')">
-                                <i class="fas fa-magic me-1"></i>Generate Fixtures
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">{{ tournament.name }}</span>
+        <h1 class="page-title h2">Generate Fixtures</h1>
+        <p class="page-subtitle">Build the tournament schedule from approved teams.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Fixtures</a>
     </div>
 </div>
 {% endblock %}
 
+{% block content %}
+<div class="form-narrow">
+    <div class="row g-3 stat-row">
+        <div class="col-4"><div class="stat-tile"><span class="stat-tile__label">Format</span><span class="stat-tile__value stat-tile__value--sm">{{ tournament.get_format_display }}</span></div></div>
+        <div class="col-4"><div class="stat-tile"><span class="stat-tile__label">Approved Teams</span><span class="stat-tile__value">{{ team_count }}</span></div></div>
+        <div class="col-4"><div class="stat-tile"><span class="stat-tile__label">Existing Matches</span><span class="stat-tile__value">{{ existing_match_count }}</span></div></div>
+    </div>
+
+    {% if existing_match_count > 0 %}
+    <div class="alert alert-warning" role="status">
+        <strong>Warning:</strong> This tournament already has <strong>{{ existing_match_count }}</strong> fixture(s).
+        Generating new fixtures will <strong>delete all existing matches</strong> (including any results) and create a fresh schedule.
+    </div>
+    {% endif %}
+
+    {% if team_count < 2 %}
+    <div class="alert alert-danger" role="alert">
+        You need at least <strong>2 approved teams</strong> to generate fixtures. Currently {{ team_count }} approved.
+    </div>
+    {% else %}
+    <form method="post" novalidate class="panel">
+        {% csrf_token %}
+        <div class="panel-header"><h2 class="panel-title"><i class="fas fa-gears" aria-hidden="true"></i>Fixture Settings</h2></div>
+        <div class="panel-body">
+            {% include 'tournaments/includes/form_errors.html' %}
+            {% for field in form %}{% include 'tournaments/includes/form_field.html' %}{% endfor %}
+            <div class="alert alert-info mb-0" role="note">
+                <strong>{{ tournament.get_format_display }} format:</strong>
+                {% if tournament.format == 'knockout' %}Single elimination bracket. Teams are randomly seeded.
+                {% elif tournament.format == 'group_knockout' %}Teams divided into groups for round-robin play, followed by knockout stage for group winners.
+                {% elif tournament.format == 'round_robin' %}Every team plays every other team once.
+                {% elif tournament.format == 'swiss' %}Swiss system pairing.{% endif %}
+            </div>
+        </div>
+        <div class="panel-footer form-actions">
+            <a href="{% url 'tournaments:tournament_fixtures' tournament.slug %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" data-confirm="{% if existing_match_count > 0 %}This will delete all existing fixtures and results. {% endif %}Generate fixtures for {{ team_count }} teams?"><i class="fas fa-wand-magic-sparkles me-1" aria-hidden="true"></i>Generate Fixtures</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/pages/admin.js' %}" defer></script>{% endblock %}

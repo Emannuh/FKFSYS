@@ -1,55 +1,49 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
 {% block title %}Reschedule Fixtures - Admin Dashboard{% endblock %}
-{% block content %}
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Dashboard</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Reschedule Fixtures</li>
-    </ol>
-</nav>
+{% block page_title %}Reschedule fixtures{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-<div class="container mt-4">
-    <h2 class="mb-4 text-primary">Reschedule Fixtures</h2>
-    <div class="card">
-        <div class="card-body">
-            {% if matches %}
-            <table class="table table-bordered table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Match</th>
-                        <th>Date</th>
-                        <th>Kickoff Time</th>
-                        <th>Venue</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for match in matches %}
-                    <tr>
-                        <td>{{ match.home_team }} vs {{ match.away_team }}</td>
-                        <td>{{ match.match_date|date:'M d, Y' }}</td>
-                        <td>{{ match.kickoff_time }}</td>
-                        <td>{{ match.venue }}</td>
-                        <td>{{ match.get_status_display }}</td>
-                        <td>
-                            <a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-sm btn-warning">
-                                <i class="fas fa-calendar-alt"></i> Reschedule
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p class="text-muted">No fixtures available for rescheduling.</p>
-            {% endif %}
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Fixtures</span>
+        <h1 class="page-title h2">Reschedule Fixtures</h1>
+        <p class="page-subtitle">Pick a fixture to change its date, kick-off time or round.</p>
     </div>
-    <div class="mt-4">
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
+    <div class="page-actions">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Dashboard</a>
     </div>
 </div>
+{% endblock %}
+
+{% block content %}
+<section class="panel" aria-labelledby="fixtures-title">
+    <div class="panel-header">
+        <h2 class="panel-title" id="fixtures-title"><i class="fas fa-calendar-days" aria-hidden="true"></i>Fixtures</h2>
+        <span class="count-pill count-pill--muted">{{ matches|length }}</span>
+    </div>
+    {% if matches %}
+    <div class="data-table-wrap data-table-wrap--tall">
+        <table class="table data-table mb-0">
+            <thead><tr><th scope="col">Match</th><th scope="col">Date</th><th scope="col" class="hide-sm">Kickoff Time</th><th scope="col" class="hide-sm">Venue</th><th scope="col">Status</th><th scope="col" class="text-end">Action</th></tr></thead>
+            <tbody>
+                {% for match in matches %}
+                <tr>
+                    <td class="match-cell">{{ match.home_team }}<span class="vs">vs</span>{{ match.away_team }}</td>
+                    <td class="col-min">{{ match.match_date|date:'M d, Y' }}</td>
+                    <td class="hide-sm">{{ match.kickoff_time|default:"TBD" }}</td>
+                    <td class="hide-sm">{{ match.venue }}</td>
+                    <td>{% match_badge match.status %}</td>
+                    <td class="actions"><a href="{% url 'matches:reschedule_match' match.id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-calendar-days me-1" aria-hidden="true"></i>Reschedule</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% empty_state icon="calendar-xmark" title="No fixtures available for rescheduling." message="" %}
+    {% endif %}
+</section>
 {% endblock %}

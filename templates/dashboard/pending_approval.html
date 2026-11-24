@@ -1,14 +1,39 @@
-{% extends "base.html" %}
+{% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
 {% block title %}Registration Pending — FKF Meru League{% endblock %}
+{% block page_title %}Registration pending{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Team registration</span>
+        <h1 class="page-title h2">Registration pending</h1>
+        <p class="page-subtitle">Your team dashboard becomes available once the team is approved.</p>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <h1 class="h3">Registration pending</h1>
-    <p>Your team <strong>{{ team.team_name }}</strong> is currently <strong>{{ team.get_status_display }}</strong>.</p>
-    <p>The league administration will review your registration. Your team dashboard becomes available once the team is approved.</p>
-    {% if not team.payment_status %}
-    <div class="alert alert-warning" role="alert">Your registration payment has not been verified yet.</div>
-    {% endif %}
-    <a href="{% url 'frontend:home' %}" class="btn btn-primary">Go to the home page</a>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="panel" aria-labelledby="pending-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="pending-title"><i class="fas fa-hourglass-half" aria-hidden="true"></i>{{ team.team_name }}</h2>
+                {% team_badge team.status %}
+            </div>
+            <div class="panel-body">
+                <p>Your team <strong>{{ team.team_name }}</strong> is currently <strong>{{ team.get_status_display }}</strong>.</p>
+                <p class="mb-0">The league administration will review your registration. Your team dashboard becomes available once the team is approved.</p>
+                {% if not team.payment_status %}
+                <div class="alert alert-warning mt-3 mb-0" role="alert">Your registration payment has not been verified yet.</div>
+                {% endif %}
+            </div>
+            <div class="panel-footer d-flex justify-content-end">
+                <a href="{% url 'frontend:home' %}" class="btn btn-primary">Go to the home page</a>
+            </div>
+        </section>
+    </div>
 </div>
 {% endblock %}

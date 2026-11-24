@@ -1,0 +1,137 @@
+/* ==========================================================================
+   Admin area: role dashboards, approvals, management and tournament admin.
+   Tokens only (see app.css section 1). Loaded per page via {% block extra_css %}.
+   ========================================================================== */
+
+/* --- Dashboard grid ------------------------------------------------------ */
+.dash-stack { display: grid; gap: var(--fkf-space-4); align-content: start; }
+.stat-row { margin-bottom: var(--fkf-space-4); }
+
+/* Stat tile as a link (whole tile clickable) */
+a.stat-tile { text-decoration: none; color: inherit; transition: border-color 0.15s var(--fkf-ease), transform 0.15s var(--fkf-ease); }
+a.stat-tile:hover { border-color: var(--fkf-border-strong); transform: translateY(-1px); color: inherit; }
+.stat-tile__value--sm { font-size: var(--fkf-text-lg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-tile__link { margin-top: auto; padding-top: var(--fkf-space-2); font-size: var(--fkf-text-xs); font-weight: 700; color: var(--fkf-accent-text); }
+.stat-tile--accent .stat-tile__link, .stat-tile--green .stat-tile__link, .stat-tile--dark .stat-tile__link { color: #fff; }
+
+/* --- Charts -------------------------------------------------------------- */
+.chart-box { position: relative; height: 240px; }
+.chart-box--sm { height: 200px; }
+.chart-box--lg { height: 300px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: var(--fkf-space-2) var(--fkf-space-4); margin: var(--fkf-space-3) 0 0; padding: 0; list-style: none; font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+.chart-legend li { display: inline-flex; align-items: center; gap: 0.4rem; }
+.chart-legend strong { color: var(--fkf-text); font-variant-numeric: tabular-nums; }
+
+/* --- Action list (quick links inside a panel) --------------------------- */
+.action-list { list-style: none; margin: 0; padding: 0; }
+.action-list > li + li { border-top: 1px solid var(--fkf-border); }
+.action-list a, .action-list button {
+  display: flex; align-items: center; gap: var(--fkf-space-3); width: 100%;
+  min-height: 48px; padding: var(--fkf-space-2) var(--fkf-space-4);
+  color: var(--fkf-text); background: none; border: 0; text-align: left;
+  font-size: var(--fkf-text-sm); font-weight: 600; text-decoration: none;
+}
+.action-list a:hover, .action-list button:hover { background: var(--fkf-surface-2); color: var(--fkf-text); }
+.action-icon {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--fkf-radius-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--fkf-surface-2); color: var(--fkf-text); border: 1px solid var(--fkf-border); font-size: 0.85rem;
+}
+.action-icon--accent { background: var(--fkf-accent-subtle); color: var(--fkf-accent-text); border-color: var(--fkf-accent-border); }
+.action-icon--green { background: var(--fkf-green-subtle); color: var(--fkf-green-text); border-color: transparent; }
+.action-label { flex: 1; min-width: 0; }
+.action-label small { display: block; font-weight: 500; color: var(--fkf-text-muted); font-size: var(--fkf-text-xs); }
+.action-chevron { color: var(--fkf-text-muted); font-size: 0.7rem; }
+
+/* Count pill (queue sizes next to links/titles) */
+.count-pill {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem;
+  padding: 0 0.45rem; border-radius: var(--fkf-radius-pill);
+  font-size: 0.72rem; font-weight: 800; font-variant-numeric: tabular-nums;
+  background: var(--fkf-accent); color: #fff;
+}
+.count-pill--warning { background: var(--fkf-warning-solid); color: var(--fkf-black); }
+.count-pill--muted { background: var(--fkf-surface-2); color: var(--fkf-text-muted); border: 1px solid var(--fkf-border); }
+
+/* --- Page header meta chips -------------------------------------------- */
+.header-meta { display: flex; flex-wrap: wrap; gap: var(--fkf-space-2); margin-top: var(--fkf-space-2); }
+.header-meta .chip { padding-left: 0.65rem; }
+.header-meta .chip i { color: var(--fkf-text-muted); }
+
+/* --- Registration window control (league admin) ------------------------- */
+.window-controls { display: grid; gap: var(--fkf-space-2); }
+.window-control { display: flex; align-items: center; gap: var(--fkf-space-3); }
+.window-control .reg-window-card { flex: 1; min-width: 0; }
+.window-control form { flex-shrink: 0; }
+.window-control .btn { min-width: 6.5rem; min-height: 36px; }
+@media (max-width: 575.98px) {
+  .window-control { flex-direction: column; align-items: stretch; }
+  .window-control .btn { width: 100%; }
+}
+
+/* --- Tables -------------------------------------------------------------- */
+.data-table .match-cell { font-weight: 600; min-width: 12rem; }
+.data-table .match-cell .vs { color: var(--fkf-text-muted); font-weight: 500; margin: 0 0.3rem; }
+.data-table .cell-sub { display: block; font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); font-weight: 500; }
+.data-table .actions { white-space: nowrap; text-align: right; }
+.data-table .actions .btn + .btn, .data-table .actions form + .btn, .data-table .actions .btn + form { margin-left: var(--fkf-space-1); }
+.data-table .actions form { display: inline-block; }
+.data-table tr.is-active > td:first-child { box-shadow: inset 3px 0 0 var(--fkf-green); }
+.table-loading { text-align: center; color: var(--fkf-text-muted); padding: var(--fkf-space-5) var(--fkf-space-4) !important; }
+.data-table-wrap--tall { --data-table-max-height: 420px; }
+
+/* --- Rules / notes list inside a panel --------------------------------- */
+.note-list { margin: 0; padding-left: 1.1rem; font-size: var(--fkf-text-sm); color: var(--fkf-text-muted); }
+.note-list li + li { margin-top: 0.25rem; }
+.note-list strong { color: var(--fkf-text); }
+
+/* --- Key/value list (summaries, detail pages) --------------------------- */
+.kv-list { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: var(--fkf-space-2) var(--fkf-space-4); margin: 0; font-size: var(--fkf-text-sm); }
+.kv-list dt { color: var(--fkf-text-muted); font-weight: 600; }
+.kv-list dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 575.98px) {
+  .kv-list { grid-template-columns: 1fr; gap: 0 0; }
+  .kv-list dd { margin-bottom: var(--fkf-space-2); }
+}
+
+/* --- Tournament cards (open tournaments) -------------------------------- */
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--fkf-space-3); }
+.mini-card { display: flex; flex-direction: column; gap: var(--fkf-space-1); padding: var(--fkf-space-3) var(--fkf-space-4); border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius); background: var(--fkf-surface); }
+.mini-card__title { font-weight: 700; font-size: var(--fkf-text-sm); margin: 0; }
+.mini-card__meta { font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); margin: 0; }
+.mini-card .btn { margin-top: var(--fkf-space-2); align-self: flex-start; }
+
+/* --- Score capsule (recent results) ------------------------------------ */
+.score-capsule {
+  display: inline-block; min-width: 3.4rem; padding: 0.1rem 0.5rem; border-radius: 6px; text-align: center;
+  background: var(--fkf-black); color: #fff; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+[data-bs-theme="dark"] .score-capsule { background: #fff; color: var(--fkf-black); }
+
+/* --- Narrow form pages (confirmations, small forms) -------------------- */
+.form-narrow { max-width: 720px; }
+.form-actions { display: flex; flex-wrap: wrap; gap: var(--fkf-space-2); justify-content: flex-end; }
+.danger-panel { border-color: var(--fkf-accent-border); }
+.danger-panel .panel-header { background: var(--fkf-accent-subtle); }
+
+/* --- Filter bar --------------------------------------------------------- */
+.filter-bar { display: flex; flex-wrap: wrap; gap: var(--fkf-space-2); align-items: flex-end; }
+.filter-bar > * { flex: 1 1 10rem; }
+.filter-bar > .filter-bar__actions { flex: 0 0 auto; display: flex; gap: var(--fkf-space-2); }
+
+/* --- Mobile tweaks ------------------------------------------------------ */
+@media (max-width: 575.98px) {
+  .chart-box { height: 210px; }
+  .page-actions { width: 100%; }
+  .page-actions .btn { flex: 1 1 auto; }
+}
+
+/* Black tile would vanish on the dark page: lift it to a raised surface */
+[data-bs-theme="dark"] .stat-tile--dark { background: var(--fkf-surface-3); border-color: var(--fkf-border-strong); border-top-color: #fff; }
+
+/* Form field wrapper (admin_dashboard/_field.html): unstyled widgets such as file inputs */
+.admin-field input[type="file"]:not(.form-control) {
+  display: block; width: 100%; padding: 0.375rem 0.5rem; font-size: var(--fkf-text-sm);
+  color: var(--fkf-text); background: var(--fkf-surface); border: 1px solid var(--fkf-border-strong); border-radius: var(--fkf-radius-sm);
+}
+.admin-field a { overflow-wrap: anywhere; }

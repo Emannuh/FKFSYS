@@ -1,200 +1,115 @@
-{% extends 'base.html' %}
+{% extends "base_dashboard.html" %}
+{% load static %}
 
 {% block title %}{{ title }}{% endblock %}
+{% block page_title %}Match report{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Approve reports</span>
+        <h1 class="page-title h2">Match Report #{{ report.id }}</h1>
+        <p class="page-subtitle">{{ report.match.home_team.team_name }} vs {{ report.match.away_team.team_name }} &middot; {{ report.match.match_date|date:"F d, Y" }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'admin_dashboard:approve_reports' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Reports</a>
+        {% if request.user.is_staff and report.status == 'pending' %}
+        <form method="POST" action="{% url 'admin_dashboard:approve_reports' %}">
+            {% csrf_token %}
+            <input type="hidden" name="report_id" value="{{ report.id }}">
+            <input type="hidden" name="action" value="reject">
+            <button type="submit" class="btn btn-outline-danger"><i class="fas fa-xmark me-1" aria-hidden="true"></i>Reject</button>
+        </form>
+        <form method="POST" action="{% url 'admin_dashboard:approve_reports' %}">
+            {% csrf_token %}
+            <input type="hidden" name="report_id" value="{{ report.id }}">
+            <input type="hidden" name="action" value="approve">
+            <button type="submit" class="btn btn-success"><i class="fas fa-check me-1" aria-hidden="true"></i>Approve</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard:approve_reports' %}">Approve Reports</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Report #{{ report.id }}</li>
-        </ol>
-    </nav>
+<div class="row g-4">
+    <div class="col-lg-8 dash-stack">
+        <section class="panel" aria-labelledby="result-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="result-title"><i class="fas fa-futbol" aria-hidden="true"></i>Match Result</h2>
+                <span class="badge status-badge {% if report.status == 'pending' %}status-warning{% elif report.status == 'approved' %}status-success{% elif report.status == 'rejected' %}status-danger{% else %}status-neutral{% endif %}">{{ report.get_status_display }}</span>
+            </div>
+            <div class="panel-body">
+                <div class="fixture-card">
+                    <span class="fixture-card__team"><span>{{ report.match.home_team.team_name }}</span></span>
+                    <span class="fixture-card__centre"><span class="fixture-card__score">{{ report.home_score }}&ndash;{{ report.away_score }}</span></span>
+                    <span class="fixture-card__team fixture-card__team--away"><span>{{ report.match.away_team.team_name }}</span></span>
+                    <span class="fixture-card__meta">
+                        <span>{% if report.home_score > report.away_score %}{{ report.match.home_team.team_name }} Wins{% elif report.away_score > report.home_score %}{{ report.match.away_team.team_name }} Wins{% else %}Draw{% endif %}</span>
+                        <span>{{ report.match.venue }}</span>
+                    </span>
+                </div>
+            </div>
+        </section>
 
-    <div class="card">
-        <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;">
-            <h2 class="mb-0">Match Report #{{ report.id }}</h2>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h4>Match Details</h4>
-                    <table class="table table-bordered">
-                        <tr>
-                            <th style="width: 40%;">Home Team:</th>
-                            <td>{{ report.match.home_team.name }}</td>
-                        </tr>
-                        <tr>
-                            <th>Away Team:</th>
-                            <td>{{ report.match.away_team.name }}</td>
-                        </tr>
-                        <tr>
-                            <th>Match Date:</th>
-                            <td>{{ report.match.match_date|date:"F d, Y" }}</td>
-                        </tr>
-                        <tr>
-                            <th>Venue:</th>
-                            <td>{{ report.match.venue }}</td>
-                        </tr>
-                        <tr>
-                            <th>Kick-off Time:</th>
-                            <td>{{ report.match.kickoff_time|time:"H:i" }}</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div class="col-md-6">
-                    <h4>Match Result</h4>
-                    <div class="text-center mb-4">
-                        <div class="display-4">
-                            {{ report.home_score }} - {{ report.away_score }}
-                        </div>
-                        <div class="text-muted">
-                            {% if report.home_score > report.away_score %}
-                                {{ report.match.home_team.name }} Wins
-                            {% elif report.away_score > report.home_score %}
-                                {{ report.match.away_team.name }} Wins
-                            {% else %}
-                                Draw
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <h4>Report Status</h4>
-                    <p>
-                        <span class="badge 
-                            {% if report.status == 'pending' %}bg-warning
-                            {% elif report.status == 'approved' %}bg-success
-                            {% elif report.status == 'rejected' %}bg-danger
-                            {% else %}bg-secondary{% endif %}">
-                            {{ report.get_status_display }}
-                        </span>
-                    </p>
-                </div>
+        {% if report.notes %}
+        <section class="panel" aria-labelledby="notes-title">
+            <div class="panel-header"><h2 class="panel-title" id="notes-title"><i class="fas fa-note-sticky" aria-hidden="true"></i>Additional Notes</h2></div>
+            <div class="panel-body">{{ report.notes|linebreaks }}</div>
+        </section>
+        {% endif %}
+
+        {% if report.attachments.exists %}
+        <section class="panel" aria-labelledby="att-title">
+            <div class="panel-header"><h2 class="panel-title" id="att-title"><i class="fas fa-paperclip" aria-hidden="true"></i>Attachments</h2></div>
+            <ul class="action-list">
+                {% for attachment in report.attachments.all %}
+                <li><a href="{{ attachment.file.url }}" target="_blank" rel="noopener"><span class="action-icon"><i class="fas fa-file" aria-hidden="true"></i></span><span class="action-label">{{ attachment.filename }}</span></a></li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4 dash-stack">
+        <section class="panel" aria-labelledby="match-title">
+            <div class="panel-header"><h2 class="panel-title" id="match-title"><i class="fas fa-calendar" aria-hidden="true"></i>Match Details</h2></div>
+            <div class="panel-body">
+                <dl class="kv-list">
+                    <dt>Home Team</dt><dd>{{ report.match.home_team.team_name }}</dd>
+                    <dt>Away Team</dt><dd>{{ report.match.away_team.team_name }}</dd>
+                    <dt>Match Date</dt><dd>{{ report.match.match_date|date:"F d, Y" }}</dd>
+                    <dt>Venue</dt><dd>{{ report.match.venue }}</dd>
+                    <dt>Kick-off Time</dt><dd>{{ report.match.kickoff_time|default:"TBD" }}</dd>
+                </dl>
             </div>
-            
-            <hr>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <h4>Referee Information</h4>
-                    <table class="table table-bordered">
-                        <tr>
-                            <th style="width: 40%;">Referee:</th>
-                            <td>
-                                {% if report.referee %}
-                                    {{ report.referee.full_name }}
-                                    {% if not report.referee.user %}
-                                        <small class="text-danger d-block">⚠️ No user account linked - referee cannot login</small>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="text-danger">❌ No referee assigned</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Referee ID:</th>
-                            <td>
-                                {% if report.referee and report.referee.referee_id %}
-                                    {{ report.referee.referee_id }}
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Submitted:</th>
-                            <td>{{ report.submitted_at|date:"F d, Y H:i" }}</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div class="col-md-6">
-                    {% if report.approved_by %}
-                    <h4>Approval Details</h4>
-                    <table class="table table-bordered">
-                        <tr>
-                            <th style="width: 40%;">Approved By:</th>
-                            <td>
-                                {% if report.approved_by %}
-                                    {{ report.approved_by.get_full_name|default:report.approved_by.username }}
-                                {% else %}
-                                    <span class="text-muted">Not approved yet</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Approved At:</th>
-                            <td>
-                                {% if report.approved_at %}
-                                    {{ report.approved_at|date:"F d, Y H:i" }}
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            </td>
-                        </tr>
-                    </table>
-                    {% endif %}
-                </div>
+        </section>
+
+        <section class="panel" aria-labelledby="ref-title">
+            <div class="panel-header"><h2 class="panel-title" id="ref-title"><i class="fas fa-user-tie" aria-hidden="true"></i>Referee Information</h2></div>
+            <div class="panel-body">
+                <dl class="kv-list">
+                    <dt>Referee</dt>
+                    <dd>{% if report.referee %}{{ report.referee.full_name }}{% if not report.referee.user %}<span class="d-block small text-danger">No user account linked - referee cannot login</span>{% endif %}{% else %}<span class="text-danger">No referee assigned</span>{% endif %}</dd>
+                    <dt>Referee ID</dt><dd>{% if report.referee and report.referee.referee_id %}{{ report.referee.referee_id }}{% else %}N/A{% endif %}</dd>
+                    <dt>Submitted</dt><dd>{{ report.submitted_at|date:"F d, Y H:i" }}</dd>
+                </dl>
             </div>
-            
-            {% if report.notes %}
-            <hr>
-            <div class="mt-3">
-                <h4>Additional Notes</h4>
-                <div class="card">
-                    <div class="card-body bg-light">
-                        {{ report.notes|linebreaks }}
-                    </div>
-                </div>
+        </section>
+
+        {% if report.approved_by %}
+        <section class="panel" aria-labelledby="approval-title">
+            <div class="panel-header"><h2 class="panel-title" id="approval-title"><i class="fas fa-circle-check" aria-hidden="true"></i>Approval Details</h2></div>
+            <div class="panel-body">
+                <dl class="kv-list">
+                    <dt>Approved By</dt><dd>{{ report.approved_by.get_full_name|default:report.approved_by.username }}</dd>
+                    <dt>Approved At</dt><dd>{% if report.approved_at %}{{ report.approved_at|date:"F d, Y H:i" }}{% else %}N/A{% endif %}</dd>
+                </dl>
             </div>
-            {% endif %}
-            
-            {% if report.attachments.exists %}
-            <hr>
-            <div class="mt-3">
-                <h4>Attachments</h4>
-                <ul class="list-group">
-                    {% for attachment in report.attachments.all %}
-                    <li class="list-group-item">
-                        <a href="{{ attachment.file.url }}" target="_blank">
-                            <i class="fas fa-file"></i> {{ attachment.filename }}
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-            
-            <div class="mt-4">
-                <a href="{% url 'admin_dashboard:approve_reports' %}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Reports
-                </a>
-                
-                {% if request.user.is_staff and report.status == 'pending' %}
-                <div class="btn-group float-end" role="group">
-                    <form method="POST" action="{% url 'admin_dashboard:approve_reports' %}" class="d-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="report_id" value="{{ report.id }}">
-                        <input type="hidden" name="action" value="approve">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-check"></i> Approve
-                        </button>
-                    </form>
-                    
-                    <form method="POST" action="{% url 'admin_dashboard:approve_reports' %}" class="d-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="report_id" value="{{ report.id }}">
-                        <input type="hidden" name="action" value="reject">
-                        <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-times"></i> Reject
-                        </button>
-                    </form>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+        </section>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

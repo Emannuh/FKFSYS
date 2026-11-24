@@ -1,188 +1,125 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
 
 {% block title %}Statistics - Admin Dashboard{% endblock %}
+{% block page_title %}Statistics{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block content %}
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Dashboard</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Statistics Dashboard</li>
-    </ol>
-</nav>
-
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="text-primary">Statistics Dashboard</h2>
-        <p class="lead">League statistics and analytics</p>
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Reports</span>
+        <h1 class="page-title h2">Statistics Dashboard</h1>
+        <p class="page-subtitle">League statistics and analytics.</p>
     </div>
-</div>
-
-<!-- Top Scorers -->
-<div class="card mb-4">
-    <div class="card-header ch-red">
-        <h5 class="mb-0">Top Goal Scorers</h5>
+    <div class="page-actions">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Dashboard</a>
     </div>
-    <div class="card-body">
-        {% if top_scorers %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Player</th>
-                        <th>Team</th>
-                        <th>Position</th>
-                        <th>Goals</th>
-                        <th>Matches</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for player in top_scorers %}
-                    <tr>
-                        <td>{{ forloop.counter }}</td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                {% if player.photo %}
-                                <img src="{{ player.photo.url }}" alt="{{ player.full_name }}" 
-                                     class="player-photo me-2">
-                                {% endif %}
-                                <div>
-                                    <strong>{{ player.full_name }}</strong><br>
-                                    <small>#{{ player.jersey_number }}</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td>{{ player.team.team_name }}</td>
-                        <td>{{ player.get_position_display }}</td>
-                        <td><span class="badge bg-primary" style="font-size: 1.1rem;">{{ player.goals_scored }}</span></td>
-                        <td>{{ player.matches_played }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-4">
-            <p class="text-muted">No goal scorers data available</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<!-- Discipline Statistics -->
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header ch-red">
-                <h5 class="mb-0">Most Yellow Cards</h5>
-            </div>
-            <div class="card-body">
-                {% if most_yellows %}
-                <div class="list-group">
-                    {% for player in most_yellows %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <div>
-                                <strong>{{ player.full_name }}</strong><br>
-                                <small>{{ player.team.team_name }}</small>
-                            </div>
-                            <span class="badge bg-warning text-dark" style="font-size: 1.1rem;">{{ player.yellow_cards }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <p class="text-muted">No yellow cards data available</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header ch-red">
-                <h5 class="mb-0">Most Red Cards</h5>
-            </div>
-            <div class="card-body">
-                {% if most_reds %}
-                <div class="list-group">
-                    {% for player in most_reds %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <div>
-                                <strong>{{ player.full_name }}</strong><br>
-                                <small>{{ player.team.team_name }}</small>
-                            </div>
-                            <span class="badge bg-danger" style="font-size: 1.1rem;">{{ player.red_cards }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <p class="text-muted">No red cards data available</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Zone Statistics -->
-<div class="card">
-    <div class="card-header ch-red">
-        <h5 class="mb-0">Zone Statistics</h5>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Zone</th>
-                        <th>Total Matches</th>
-                        <th>Completed</th>
-                        <th>Completion Rate</th>
-                        <th>Teams</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for stat in zone_stats %}
-                    <tr>
-                        <td>
-                            <strong>{{ stat.zone.name }}</strong><br>
-                            <small class="text-muted">{{ stat.zone.description }}</small>
-                        </td>
-                        <td>{{ stat.total_matches }}</td>
-                        <td>{{ stat.completed_matches }}</td>
-                        <td>
-                            <div class="progress">
-                                <div class="progress-bar" role="progressbar" 
-                                     style="width: {{ stat.completion_rate }}%">
-                                    {{ stat.completion_rate|floatformat:1 }}%
-                                </div>
-                            </div>
-                        </td>
-                        <td>{{ stat.zone.team_set.count }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-4">
-                            <p class="text-muted">No zone statistics available</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div class="mt-4">
-    <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Back to Dashboard
-    </a>
 </div>
 {% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8 dash-stack">
+        <section class="panel" aria-labelledby="zones-title">
+            <div class="panel-header"><h2 class="panel-title" id="zones-title"><i class="fas fa-map" aria-hidden="true"></i>Zone Statistics</h2></div>
+            {% if zone_stats %}
+            <div class="panel-body">
+                <div class="chart-box">
+                    <canvas id="zoneChart" data-chart="bar" role="img" aria-label="Completed matches per zone"
+                            data-labels='[{% for stat in zone_stats %}"{{ stat.zone.name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
+                            data-values="[{% for stat in zone_stats %}{{ stat.completed_matches|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}]"
+                            data-colors="red,green,black,graphite"></canvas>
+                </div>
+            </div>
+            {% endif %}
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
+                    <thead><tr><th scope="col">Zone</th><th scope="col" class="num">Total Matches</th><th scope="col" class="num">Completed</th><th scope="col">Completion Rate</th><th scope="col" class="num">Teams</th></tr></thead>
+                    <tbody>
+                        {% for stat in zone_stats %}
+                        <tr>
+                            <td><span class="fw-semibold">{{ stat.zone.name }}</span>{% if stat.zone.description %}<span class="cell-sub">{{ stat.zone.description }}</span>{% endif %}</td>
+                            <td class="num">{{ stat.total_matches }}</td>
+                            <td class="num">{{ stat.completed_matches }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" role="progressbar" aria-label="{{ stat.zone.name }} completion" aria-valuenow="{{ stat.completion_rate|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" style="width: {{ stat.completion_rate|floatformat:0 }}%"></div>
+                                    </div>
+                                    <span class="small fw-semibold">{{ stat.completion_rate|floatformat:1 }}%</span>
+                                </div>
+                            </td>
+                            <td class="num">{{ stat.zone.team_set.count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="table-loading">No zone statistics available</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel" aria-labelledby="scorers-title">
+            <div class="panel-header"><h2 class="panel-title" id="scorers-title"><i class="fas fa-futbol" aria-hidden="true"></i>Top Goal Scorers</h2></div>
+            {% if top_scorers %}
+            <div class="data-table-wrap">
+                <table class="table data-table league-table mb-0">
+                    <thead><tr><th scope="col" class="pos">#</th><th scope="col">Player</th><th scope="col" class="hide-sm">Team</th><th scope="col" class="hide-sm">Position</th><th scope="col" class="num">Goals</th><th scope="col" class="num">Matches</th></tr></thead>
+                    <tbody>
+                        {% for player in top_scorers %}
+                        <tr{% if forloop.first %} class="is-leader"{% endif %}>
+                            <td class="pos">{{ forloop.counter }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if player.photo %}<img src="{{ player.photo.url }}" alt="{{ player.full_name }}" class="team-crest">{% endif %}
+                                    <div><span class="fw-semibold">{{ player.full_name }}</span><span class="cell-sub">#{{ player.jersey_number }}</span></div>
+                                </div>
+                            </td>
+                            <td class="hide-sm">{{ player.team.team_name }}</td>
+                            <td class="hide-sm">{{ player.get_position_display }}</td>
+                            <td class="num pts">{{ player.goals_scored }}</td>
+                            <td class="num">{{ player.matches_played }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            {% empty_state icon="futbol" title="No goal scorers data available" message="" %}
+            {% endif %}
+        </section>
+    </div>
+
+    <div class="col-lg-4 dash-stack">
+        <section class="panel" aria-labelledby="yellow-title">
+            <div class="panel-header"><h2 class="panel-title" id="yellow-title"><i class="fas fa-square" aria-hidden="true"></i>Most Yellow Cards</h2></div>
+            {% if most_yellows %}
+            <ol class="rank-list">
+                {% for player in most_yellows %}
+                <li><span class="rank">{{ forloop.counter }}</span><span class="who"><strong>{{ player.full_name }}</strong><span>{{ player.team.team_name }}</span></span><span class="value">{{ player.yellow_cards }}</span></li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            {% empty_state icon="square" title="No yellow cards data available" message="" %}
+            {% endif %}
+        </section>
+
+        <section class="panel" aria-labelledby="red-title">
+            <div class="panel-header"><h2 class="panel-title" id="red-title"><i class="fas fa-square" aria-hidden="true"></i>Most Red Cards</h2></div>
+            {% if most_reds %}
+            <ol class="rank-list">
+                {% for player in most_reds %}
+                <li><span class="rank">{{ forloop.counter }}</span><span class="who"><strong>{{ player.full_name }}</strong><span>{{ player.team.team_name }}</span></span><span class="value">{{ player.red_cards }}</span></li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            {% empty_state icon="square" title="No red cards data available" message="" %}
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/pages/admin.js' %}" defer></script>{% endblock %}

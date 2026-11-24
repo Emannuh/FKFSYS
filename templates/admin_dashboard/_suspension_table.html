@@ -1,0 +1,35 @@
+{% load fkf_tags %}{% comment %}
+Card-based suspension list. Include with: players, title, icon, card ("red"|"yellow"), default_reason, empty, show_end (bool).
+{% endcomment %}
+<section class="panel" aria-label="{{ title }}">
+    <div class="panel-header">
+        <h2 class="panel-title"><i class="fas fa-{{ icon }}" aria-hidden="true"></i>{{ title }}</h2>
+        <span class="count-pill count-pill--muted">{{ players|length }}</span>
+    </div>
+    {% if players %}
+    <div class="data-table-wrap">
+        <table class="table data-table mb-0">
+            <thead><tr><th scope="col">Player</th><th scope="col" class="hide-sm">Team</th><th scope="col" class="num">{% if card == "red" %}Red Cards{% else %}Yellow Cards{% endif %}</th><th scope="col" class="hide-sm">Suspension Reason</th>{% if show_end %}<th scope="col" class="hide-sm">Suspension End</th>{% endif %}<th scope="col" class="text-end">Actions</th></tr></thead>
+            <tbody>
+                {% for player in players %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if player.photo %}<img src="{{ player.photo.url }}" alt="{{ player.full_name }}" class="team-crest">{% else %}<span class="team-crest" aria-hidden="true">{{ player.jersey_number }}</span>{% endif %}
+                            <div><span class="fw-semibold">{{ player.full_name }}</span><span class="cell-sub">#{{ player.jersey_number }} &middot; {{ player.position }}</span></div>
+                        </div>
+                    </td>
+                    <td class="hide-sm">{{ player.team.team_name }}</td>
+                    <td class="num fw-bold">{% if card == "red" %}{{ player.red_cards }}{% else %}{{ player.yellow_cards }}{% endif %}</td>
+                    <td class="hide-sm">{% if player.suspension_reason %}{{ player.suspension_reason }}{% else %}<span class="text-body-secondary">{{ default_reason }}</span>{% endif %}</td>
+                    {% if show_end %}<td class="hide-sm col-min">{% if player.suspension_end %}{{ player.suspension_end|date:"M d, Y" }}{% else %}<span class="text-body-secondary">Not set</span>{% endif %}</td>{% endif %}
+                    <td class="actions"><a href="{% url 'admin_dashboard:manage_suspension' player.id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-pen me-1" aria-hidden="true"></i>Manage</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% empty_state icon="circle-check" title=empty message="" %}
+    {% endif %}
+</section>

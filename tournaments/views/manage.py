@@ -34,8 +34,15 @@ APPROVED = TournamentTeamRegistration.Status.APPROVED
 @tournament_admin_required
 def admin_tournament_dashboard(request):
     """Central admin page listing all tournaments with quick stats."""
-    tournaments = with_approved_count(Tournament.objects.all())
-    return render(request, 'tournaments/admin_dashboard.html', {'tournaments': tournaments})
+    tournaments = list(with_approved_count(Tournament.objects.all()))
+    # Stat-tile counts (the template's {% with %} counters could not accumulate and always showed 0).
+    statuses = [t.status for t in tournaments]
+    return render(request, 'tournaments/admin_dashboard.html', {
+        'tournaments': tournaments,
+        'active_count': sum(s in ('ongoing', 'registration') for s in statuses),
+        'registration_count': statuses.count('registration'),
+        'completed_count': statuses.count('completed'),
+    })
 
 
 @tournament_admin_required

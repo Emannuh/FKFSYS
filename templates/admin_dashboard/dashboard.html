@@ -1,286 +1,186 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends "base_dashboard.html" %}
+{% load static fkf_tags %}
 
 {% block title %}Super Admin Dashboard — FKF Meru County League{% endblock %}
+{% block page_title %}Admin dashboard{% endblock %}
+{% block content_theme %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/admin.css' %}">{% endblock %}
 
-{% block extra_css %}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Super admin</span>
+        <h1 class="page-title h2">League overview</h1>
+        <p class="page-subtitle">Teams, matches, payments and approvals across the FKF Meru County League.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-outline-secondary"><i class="fas fa-user-shield me-1" aria-hidden="true"></i>Users &amp; roles</a>
+        <a href="{% url 'admin_dashboard:approve_registrations' %}" class="btn btn-primary"><i class="fas fa-user-check me-1" aria-hidden="true"></i>Review registrations{% if pending_registrations > 0 %} <span class="badge text-bg-light ms-1">{{ pending_registrations }}</span>{% endif %}</a>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-
-<!-- Welcome Banner -->
-<div class="dash-welcome" data-aos="fade-down">
-    <div class="d-flex align-items-center gap-3 mb-3">
-        <span class="badge-role"><i class="fas fa-shield-alt me-1"></i> Super Admin</span>
+<div class="row g-3 stat-row">
+    <div class="col-6 col-xl-3">
+        <a class="stat-tile" href="{% url 'admin_dashboard:approve_registrations' %}">
+            <span class="stat-tile__label"><i class="fas fa-users" aria-hidden="true"></i>Total teams</span>
+            <span class="stat-tile__value">{{ total_teams|default:"0" }}</span>
+            <span class="stat-tile__meta">{{ registered_teams|default:"0" }} approved &middot; {{ pending_teams|default:"0" }} pending</span>
+        </a>
     </div>
-    <h1><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
-    <p>FKF Meru County League Management System — Full Administrative Access</p>
-</div>
-
-<!-- Stats Row 1 -->
-<div class="row g-3 mb-4">
-    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="0">
-        <div class="stat-card stat-gradient-blue">
-            <div class="stat-icon"><i class="fas fa-users"></i></div>
-            <h6>Total Teams</h6>
-            <h2>{{ total_teams|default:"0" }}</h2>
-            <small>{{ registered_teams|default:"0" }} approved &bull; {{ pending_teams|default:"0" }} pending</small>
+    <div class="col-6 col-xl-3">
+        <div class="stat-tile">
+            <span class="stat-tile__label"><i class="fas fa-money-bill-wave" aria-hidden="true"></i>Total revenue</span>
+            <span class="stat-tile__value">KSh {{ total_revenue|default:0|floatformat:"-2g" }}</span>
+            <span class="stat-tile__meta">{{ total_payments|default:"0" }} payments completed</span>
         </div>
     </div>
-    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="80">
-        <div class="stat-card stat-gradient-green">
-            <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
-            <h6>Total Revenue</h6>
-            <h2 style="font-size:1.6rem;">KSh {{ total_revenue|default:"0" }}</h2>
-            <small>{{ total_payments|default:"0" }} payments completed</small>
-        </div>
+    <div class="col-6 col-xl-3">
+        <a class="stat-tile" href="{% url 'referees:pending_reports' %}">
+            <span class="stat-tile__label"><i class="fas fa-clipboard-check" aria-hidden="true"></i>Pending approvals</span>
+            <span class="stat-tile__value">{{ pending_reports|default:"0" }}</span>
+            <span class="stat-tile__meta">Reports &middot; {{ pending_registrations|default:"0" }} registrations</span>
+        </a>
     </div>
-    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="160">
-        <div class="stat-card stat-gradient-orange">
-            <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
-            <h6>Pending Approvals</h6>
-            <h2>{{ pending_reports|default:"0" }}</h2>
-            <small>Reports &bull; {{ pending_registrations|default:"0" }} registrations</small>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="240">
-        <div class="stat-card stat-gradient-red">
-            <div class="stat-icon"><i class="fas fa-futbol"></i></div>
-            <h6>Matches Played</h6>
-            <h2>{{ completed_matches|default:"0" }}</h2>
-            <small>{{ total_matches|default:"0" }} total &bull; {{ total_players|default:"0" }} players</small>
-        </div>
+    <div class="col-6 col-xl-3">
+        <a class="stat-tile stat-tile--dark" href="{% url 'matches:manage_matches' %}">
+            <span class="stat-tile__label"><i class="fas fa-futbol" aria-hidden="true"></i>Matches played</span>
+            <span class="stat-tile__value">{{ completed_matches|default:"0" }}</span>
+            <span class="stat-tile__meta">{{ total_matches|default:"0" }} total &middot; {{ total_players|default:"0" }} players</span>
+        </a>
     </div>
 </div>
 
-<!-- Stats Row 2 -->
-<div class="row g-3 mb-4">
-    <div class="col-xl-3 col-md-6" data-aos="fade-up">
-        <div class="stat-card stat-gradient-purple">
-            <div class="stat-icon"><i class="fas fa-whistle"></i></div>
-            <h6>Referees</h6>
-            <h2>{{ total_referees|default:"0" }}</h2>
-            <small>{{ pending_referee_approvals|default:"0" }} pending approval</small>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="80">
-        <div class="stat-card stat-gradient-teal">
-            <div class="stat-icon"><i class="fas fa-trophy"></i></div>
-            <h6>Tournaments</h6>
-            <h2>{{ total_tournaments|default:"0" }}</h2>
-            <small>Active competitions</small>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="160">
-        <div class="stat-card" style="background:linear-gradient(135deg,#f72585,#b5179e);color:white;">
-            <div class="stat-icon"><i class="fas fa-ban"></i></div>
-            <h6>Suspensions</h6>
-            <h2>{{ active_suspensions|default:"0" }}</h2>
-            <small>Active suspensions</small>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6" data-aos="fade-up" data-aos-delay="240">
-        <div class="stat-card" style="background:linear-gradient(135deg,#06d6a0,#118577);color:white;">
-            <div class="stat-icon"><i class="fas fa-exchange-alt"></i></div>
-            <h6>Pending Transfers</h6>
-            <h2>{{ pending_transfers|default:"0" }}</h2>
-            <small>Awaiting action</small>
-        </div>
-    </div>
-</div>
-
-<!-- Quick Actions + Recent Matches -->
-<div class="row g-4 mb-4">
-    <!-- Quick Actions -->
-    <div class="col-lg-5" data-aos="fade-right">
-        <div class="card h-100">
-            <div class="card-header d-flex align-items-center gap-2" style="background:linear-gradient(90deg,#c8102e,#0a0a0b);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
-                <i class="fas fa-bolt"></i><span class="fw-bold">Quick Actions</span>
-            </div>
-            <div class="card-body p-3">
-                <div class="alert alert-danger d-flex align-items-center gap-3 mb-3" style="border-radius:12px;">
-                    <i class="fas fa-users-cog fa-lg"></i>
-                    <div>
-                        <strong>User Management</strong>
-                        <div class="mt-1">
-                            <a href="{% url 'admin_dashboard:manage_league_admins' %}" class="btn btn-danger btn-sm">
-                                <i class="fas fa-user-shield me-1"></i>Manage Users &amp; Roles
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="d-flex flex-column gap-2">
-                    <a href="{% url 'admin_dashboard:approve_registrations' %}" class="quick-action-btn">
-                        <span class="qa-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-user-check"></i></span>
-                        <span class="flex-grow-1">Approve Registrations</span>
-                        {% if pending_registrations > 0 %}<span class="badge bg-danger">{{ pending_registrations }}</span>{% endif %}
-                    </a>
-                    <a href="{% url 'admin_dashboard:assign_zones' %}" class="quick-action-btn">
-                        <span class="qa-icon bg-success bg-opacity-10 text-success"><i class="fas fa-map-marker-alt"></i></span>
-                        <span>Assign Zones</span>
-                    </a>
-                    <a href="{% url 'admin_dashboard:manage_transfers' %}" class="quick-action-btn">
-                        <span class="qa-icon" style="background:rgba(110,110,115,0.15);color:#4a4a4f;"><i class="fas fa-exchange-alt"></i></span>
-                        <span class="flex-grow-1">Manage Transfers</span>
-                        {% if pending_transfers > 0 %}<span class="badge bg-warning text-dark">{{ pending_transfers }}</span>{% endif %}
-                    </a>
-                    <a href="{% url 'admin_dashboard:view_suspensions' %}" class="quick-action-btn">
-                        <span class="qa-icon bg-danger bg-opacity-10 text-danger"><i class="fas fa-ban"></i></span>
-                        <span>Manage Suspensions</span>
-                    </a>
-                    <a href="{% url 'admin_dashboard:generate_fixtures_admin' %}" class="quick-action-btn">
-                        <span class="qa-icon" style="background:rgba(31,31,35,0.1);color:#1f1f23;"><i class="fas fa-random"></i></span>
-                        <span>Generate Fixtures</span>
-                    </a>
-                    <a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}" class="quick-action-btn">
-                        <span class="qa-icon" style="background:rgba(114,9,183,0.1);color:#0a0a0b;"><i class="fas fa-calendar-alt"></i></span>
-                        <span>Reschedule Fixtures</span>
-                    </a>
-                    <a href="{% url 'matches:manage_matches' %}" class="quick-action-btn">
-                        <span class="qa-icon" style="background:rgba(6,214,160,0.12);color:#118577;"><i class="fas fa-futbol"></i></span>
-                        <span>Manage Matches</span>
-                    </a>
-                    <a href="{% url 'referees:pending_reports' %}" class="quick-action-btn">
-                        <span class="qa-icon" style="background:rgba(247,37,133,0.1);color:#f72585;"><i class="fas fa-clipboard-check"></i></span>
-                        <span class="flex-grow-1">Approve Match Reports</span>
-                        {% if pending_reports > 0 %}<span class="badge bg-danger">{{ pending_reports }}</span>{% endif %}
-                    </a>
-                    <a href="{% url 'admin_dashboard:activity_logs' %}" class="quick-action-btn">
-                        <span class="qa-icon bg-secondary bg-opacity-10 text-secondary"><i class="fas fa-history"></i></span>
-                        <span>Activity Logs</span>
-                    </a>
-                    <a href="{% url 'admin_dashboard:statistics_dashboard' %}" class="quick-action-btn">
-                        <span class="qa-icon" style="background:rgba(0,119,182,0.12);color:#0a0a0b;"><i class="fas fa-chart-bar"></i></span>
-                        <span>Statistics Dashboard</span>
-                    </a>
-                    <a href="{% url 'admin:index' %}" class="quick-action-btn">
-                        <span class="qa-icon bg-dark bg-opacity-10 text-dark"><i class="fas fa-tools"></i></span>
-                        <span>Django Admin Panel</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Matches -->
-    <div class="col-lg-7" data-aos="fade-left">
-        <div class="card h-100">
-            <div class="card-header d-flex align-items-center justify-content-between" style="background:linear-gradient(90deg,#0a0a0b,#2a2a2e);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
-                <div class="d-flex align-items-center gap-2"><i class="fas fa-futbol"></i><span class="fw-bold">Recent Matches</span></div>
-                <a href="{% url 'matches:manage_matches' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border-radius:8px;font-size:0.8rem;">View All</a>
-            </div>
-            <div class="card-body p-3">
-                {% if recent_matches %}
-                <div class="d-flex flex-column gap-3">
-                    {% for match in recent_matches %}
-                    <div class="match-result-card">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="badge bg-light text-dark" style="font-size:0.72rem;">{{ match.zone.name|default:"League" }}</span>
-                            <div class="d-flex align-items-center gap-2">
-                                {% if match.status == 'live' %}<span class="live-badge">LIVE</span>{% endif %}
-                                <small class="text-muted">{{ match.match_date|date:"M d, Y" }}</small>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between">
-                            <span class="fw-bold text-truncate" style="max-width:120px;">{{ match.home_team }}</span>
-                            <span class="score-badge">{{ match.home_score }} — {{ match.away_score }}</span>
-                            <span class="fw-bold text-truncate text-end" style="max-width:120px;">{{ match.away_team }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-5 text-muted">
-                    <i class="fas fa-futbol fa-3x mb-3 opacity-25"></i>
-                    <p>No recent matches yet</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Payments + Referee Grid -->
 <div class="row g-4">
-    <div class="col-lg-6" data-aos="fade-up">
-        <div class="card">
-            <div class="card-header" style="background:linear-gradient(90deg,#00843d,#006b31);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
-                <div class="d-flex align-items-center gap-2"><i class="fas fa-money-bill-wave"></i><span class="fw-bold">Recent Payments</span></div>
+    <div class="col-lg-8 dash-stack">
+        <section class="panel" aria-labelledby="overview-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="overview-title"><i class="fas fa-chart-column" aria-hidden="true"></i>Workload</h2>
+                <a href="{% url 'admin_dashboard:statistics_dashboard' %}">Statistics <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i></a>
             </div>
-            <div class="card-body p-0">
-                {% if recent_payments %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead><tr><th>Team</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
-                        <tbody>
-                            {% for payment in recent_payments %}
-                            <tr>
-                                <td class="fw-500">{{ payment.team.team_name|truncatechars:18 }}</td>
-                                <td class="text-success fw-bold">KSh {{ payment.amount }}</td>
-                                <td class="text-muted small">{{ payment.transaction_date|date:"M d, Y" }}</td>
-                                <td>{% if payment.mpesa_receipt_number %}<span class="badge bg-success">Confirmed</span>{% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="panel-body">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-5">
+                        <div class="chart-box chart-box--sm">
+                            <canvas id="teamsChart" data-chart="doughnut" role="img" aria-label="Team status: {{ registered_teams|default:0 }} approved, {{ pending_teams|default:0 }} pending"
+                                    data-labels='["Approved","Pending"]'
+                                    data-values="[{{ registered_teams|default:0 }}, {{ pending_teams|default:0 }}]"
+                                    data-colors="green,red"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="chart-box chart-box--sm">
+                            <canvas id="queueChart" data-chart="hbar" role="img" aria-label="Open queues"
+                                    data-labels='["Match reports","Registrations","Transfers","Referees","Suspensions"]'
+                                    data-values="[{{ pending_reports|default:0 }}, {{ pending_registrations|default:0 }}, {{ pending_transfers|default:0 }}, {{ pending_referee_approvals|default:0 }}, {{ active_suspensions|default:0 }}]"
+                                    data-colors="red,black,graphite,green,grey"></canvas>
+                        </div>
+                    </div>
                 </div>
-                {% else %}
-                <div class="text-center py-5 text-muted">
-                    <i class="fas fa-receipt fa-3x mb-3 opacity-25"></i>
-                    <p>No recent payments</p>
-                </div>
-                {% endif %}
             </div>
-        </div>
+        </section>
+
+        <section class="panel" aria-labelledby="matches-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="matches-title"><i class="fas fa-futbol" aria-hidden="true"></i>Recent results</h2>
+                <a href="{% url 'matches:manage_matches' %}">Manage matches <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i></a>
+            </div>
+            {% if recent_matches %}
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
+                    <thead><tr><th scope="col">Date</th><th scope="col">Home</th><th scope="col" class="text-center">Score</th><th scope="col">Away</th><th scope="col" class="hide-sm">Zone</th></tr></thead>
+                    <tbody>
+                        {% for match in recent_matches %}
+                        <tr>
+                            <td class="col-min text-body-secondary">{{ match.match_date|date:"j M Y" }}</td>
+                            <td class="fw-semibold">{{ match.home_team }}</td>
+                            <td class="text-center col-min"><span class="score-capsule">{{ match.home_score }}&ndash;{{ match.away_score }}</span></td>
+                            <td class="fw-semibold">{{ match.away_team }}</td>
+                            <td class="hide-sm text-body-secondary">{{ match.zone.name|default:"League" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            {% empty_state icon="futbol" title="No results yet" message="Completed matches appear here." %}
+            {% endif %}
+        </section>
+
+        <section class="panel" aria-labelledby="payments-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="payments-title"><i class="fas fa-receipt" aria-hidden="true"></i>Recent payments</h2>
+            </div>
+            {% if recent_payments %}
+            <div class="data-table-wrap">
+                <table class="table data-table mb-0">
+                    <thead><tr><th scope="col">Team</th><th scope="col" class="num">Amount</th><th scope="col" class="hide-sm">Date</th><th scope="col">Status</th></tr></thead>
+                    <tbody>
+                        {% for payment in recent_payments %}
+                        <tr>
+                            <td class="fw-semibold">{{ payment.team.team_name|truncatechars:28 }}</td>
+                            <td class="num fw-semibold">KSh {{ payment.amount|floatformat:"-2g" }}</td>
+                            <td class="hide-sm text-body-secondary">{{ payment.transaction_date|date:"j M Y" }}</td>
+                            <td>{% if payment.mpesa_receipt_number %}<span class="badge status-badge status-success">Confirmed</span>{% else %}<span class="badge status-badge status-warning">Pending</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            {% empty_state icon="receipt" title="No recent payments" message="Completed M-Pesa payments appear here." %}
+            {% endif %}
+        </section>
     </div>
 
-    <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
-        <div class="card">
-            <div class="card-header" style="background:linear-gradient(90deg,#1f1f23,#0a0a0b);color:white;border-radius:14px 14px 0 0;padding:1rem 1.5rem;">
-                <div class="d-flex align-items-center gap-2"><i class="fas fa-whistle"></i><span class="fw-bold">Referee &amp; Tournament</span></div>
+    <div class="col-lg-4 dash-stack">
+        <section class="panel" aria-labelledby="queue-title">
+            <div class="panel-header"><h2 class="panel-title" id="queue-title"><i class="fas fa-inbox" aria-hidden="true"></i>Needs action</h2></div>
+            <ul class="action-list">
+                <li><a href="{% url 'admin_dashboard:approve_registrations' %}"><span class="action-icon action-icon--accent"><i class="fas fa-user-check" aria-hidden="true"></i></span><span class="action-label">Approve registrations</span>{% if pending_registrations > 0 %}<span class="count-pill">{{ pending_registrations }}</span>{% endif %}<i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'referees:pending_reports' %}"><span class="action-icon action-icon--accent"><i class="fas fa-clipboard-check" aria-hidden="true"></i></span><span class="action-label">Approve match reports</span>{% if pending_reports > 0 %}<span class="count-pill">{{ pending_reports }}</span>{% endif %}<i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin_dashboard:manage_transfers' %}"><span class="action-icon"><i class="fas fa-right-left" aria-hidden="true"></i></span><span class="action-label">Manage transfers</span>{% if pending_transfers > 0 %}<span class="count-pill count-pill--warning">{{ pending_transfers }}</span>{% endif %}<i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'referees:pending_referees' %}"><span class="action-icon"><i class="fas fa-user-clock" aria-hidden="true"></i></span><span class="action-label">Pending referees<small>{{ total_referees|default:"0" }} referees registered</small></span>{% if pending_referee_approvals > 0 %}<span class="count-pill count-pill--warning">{{ pending_referee_approvals }}</span>{% endif %}<i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin_dashboard:view_suspensions' %}"><span class="action-icon"><i class="fas fa-ban" aria-hidden="true"></i></span><span class="action-label">Suspensions</span>{% if active_suspensions > 0 %}<span class="count-pill count-pill--muted">{{ active_suspensions }}</span>{% endif %}<i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="ops-title">
+            <div class="panel-header"><h2 class="panel-title" id="ops-title"><i class="fas fa-sliders" aria-hidden="true"></i>League operations</h2></div>
+            <ul class="action-list">
+                <li><a href="{% url 'admin_dashboard:assign_zones' %}"><span class="action-icon action-icon--green"><i class="fas fa-map-location-dot" aria-hidden="true"></i></span><span class="action-label">Assign zones</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin_dashboard:generate_fixtures_admin' %}"><span class="action-icon action-icon--green"><i class="fas fa-shuffle" aria-hidden="true"></i></span><span class="action-label">Generate fixtures</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin_dashboard:reschedule_fixtures_admin' %}"><span class="action-icon action-icon--green"><i class="fas fa-calendar-days" aria-hidden="true"></i></span><span class="action-label">Reschedule fixtures</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'matches:manage_matches' %}"><span class="action-icon"><i class="fas fa-futbol" aria-hidden="true"></i></span><span class="action-label">Manage matches</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'referees:matches_needing_officials' %}"><span class="action-icon"><i class="fas fa-user-tie" aria-hidden="true"></i></span><span class="action-label">Appoint officials</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'referees:all_referees' %}"><span class="action-icon"><i class="fas fa-list" aria-hidden="true"></i></span><span class="action-label">All referees</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'teams:admin_manage_players' %}"><span class="action-icon"><i class="fas fa-users" aria-hidden="true"></i></span><span class="action-label">Manage players</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="tourn-title">
+            <div class="panel-header">
+                <h2 class="panel-title" id="tourn-title"><i class="fas fa-trophy" aria-hidden="true"></i>Tournaments</h2>
+                <span class="count-pill count-pill--muted">{{ total_tournaments|default:"0" }}</span>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <a href="{% url 'referees:pending_referees' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
-                            <i class="fas fa-user-clock fa-2x text-warning mb-2"></i>
-                            <span style="font-size:0.8rem;font-weight:600;">Pending Referees</span>
-                            {% if pending_referee_approvals > 0 %}<span class="badge bg-warning text-dark mt-1">{{ pending_referee_approvals }}</span>{% endif %}
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a href="{% url 'referees:all_referees' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
-                            <i class="fas fa-list fa-2x text-primary mb-2"></i>
-                            <span style="font-size:0.8rem;font-weight:600;">All Referees</span>
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a href="{% url 'referees:matches_needing_officials' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
-                            <i class="fas fa-user-tie fa-2x text-success mb-2"></i>
-                            <span style="font-size:0.8rem;font-weight:600;">Appoint Officials</span>
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a href="{% url 'tournaments:admin_dashboard' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
-                            <i class="fas fa-trophy fa-2x text-warning mb-2"></i>
-                            <span style="font-size:0.8rem;font-weight:600;">Tournament Admin</span>
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a href="{% url 'teams:admin_manage_players' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
-                            <i class="fas fa-users fa-2x text-danger mb-2"></i>
-                            <span style="font-size:0.8rem;font-weight:600;">Manage Players</span>
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a href="{% url 'tournaments:create_tournament' %}" class="quick-action-btn flex-column align-items-center text-center" style="padding:16px 10px;">
-                            <i class="fas fa-plus-circle fa-2x text-info mb-2"></i>
-                            <span style="font-size:0.8rem;font-weight:600;">Create Tournament</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <ul class="action-list">
+                <li><a href="{% url 'tournaments:admin_dashboard' %}"><span class="action-icon"><i class="fas fa-trophy" aria-hidden="true"></i></span><span class="action-label">Tournament admin</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'tournaments:create_tournament' %}"><span class="action-icon action-icon--accent"><i class="fas fa-plus" aria-hidden="true"></i></span><span class="action-label">Create tournament</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="system-title">
+            <div class="panel-header"><h2 class="panel-title" id="system-title"><i class="fas fa-shield-halved" aria-hidden="true"></i>System</h2></div>
+            <ul class="action-list">
+                <li><a href="{% url 'admin_dashboard:manage_league_admins' %}"><span class="action-icon"><i class="fas fa-user-shield" aria-hidden="true"></i></span><span class="action-label">Users &amp; roles</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin_dashboard:activity_logs' %}"><span class="action-icon"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i></span><span class="action-label">Activity logs</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin_dashboard:statistics_dashboard' %}"><span class="action-icon"><i class="fas fa-chart-bar" aria-hidden="true"></i></span><span class="action-label">Statistics</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+                <li><a href="{% url 'admin:index' %}"><span class="action-icon"><i class="fas fa-screwdriver-wrench" aria-hidden="true"></i></span><span class="action-label">Django admin panel</span><i class="fas fa-chevron-right action-chevron" aria-hidden="true"></i></a></li>
+            </ul>
+        </section>
     </div>
 </div>
-
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/pages/admin.js' %}" defer></script>{% endblock %}
