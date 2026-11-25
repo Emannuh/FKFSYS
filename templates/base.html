@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 {% load static site_navigation %}
-<html lang="en" data-bs-theme="light">
+<html lang="en-KE">
 <head>
     {% include "partials/_head_assets.html" %}
     <title>{% block title %}FKF Meru County League{% endblock %}</title>
@@ -9,7 +9,7 @@
 <body class="site-layout">
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
-    <header>
+    <header data-bs-theme="light">
         <nav class="site-nav navbar navbar-expand-lg" aria-label="Main">
             <div class="container">
                 <a class="navbar-brand site-brand" href="{% url 'frontend:home' %}">

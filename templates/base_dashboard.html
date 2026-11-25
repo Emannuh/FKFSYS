@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 {% load static site_navigation fkf_tags %}
-<html lang="en" data-bs-theme="light">
+<html lang="en-KE">
 <head>
     {% include "partials/_head_assets.html" %}
     <title>{% block title %}FKF Meru County League{% endblock %}</title>
@@ -85,7 +85,7 @@
     </div>
 
     {% include "partials/_body_scripts.html" %}
-    {% block chart_js %}<script src="{% static 'vendor/chartjs-4.4.0/chart.umd.js' %}"></script>{% endblock %}
+    {% block chart_js %}{% endblock %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

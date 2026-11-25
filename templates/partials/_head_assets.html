@@ -7,12 +7,19 @@ Page-specific CSS goes in the layout's {% block extra_css %}, not here.
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<meta name="description" content="{% block meta_description %}Official FKF Meru County League platform — fixtures, results, standings and registrations for every zone in Meru County, Kenya.{% endblock %}">
+<meta name="theme-color" content="#0a0a0b">
+<meta property="og:site_name" content="FKF Meru County League">
+<meta property="og:title" content="{% block og_title %}FKF Meru County League{% endblock %}">
+<meta property="og:description" content="{% block og_description %}Official FKF Meru County League platform — fixtures, results, standings and registrations for every zone in Meru County, Kenya.{% endblock %}">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+<link rel="manifest" href="{% static 'site.webmanifest' %}">
 <script src="{% static 'js/theme.js' %}"></script>
 <link rel="stylesheet" href="{% static 'vendor/bootstrap-5.3.8/css/bootstrap.min.css' %}">
-<link rel="stylesheet" href="{% static 'vendor/fontawesome-6.5.0/css/all.min.css' %}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="{% static 'vendor/aos-2.3.1/aos.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/fontawesome-6.7.2/css/all.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/inter.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/aos-2.3.4/aos.css' %}">
 <link rel="stylesheet" href="{% static 'vendor/nprogress-0.2.0/nprogress.css' %}">
 <link rel="stylesheet" href="{% static 'css/app.css' %}">

@@ -1,0 +1,21 @@
+/*
+ * Inter Variable Font — self-hosted (vendor/inter-5.1.1)
+ * Source: @fontsource/inter v5.1.1 (SIL Open Font License 1.1)
+ *
+ * Uses a single variable font file covering weights 100–900.
+ * The `font-weight: 100 900` range means one file replaces all the separate
+ * weight files previously fetched from fonts.googleapis.com.
+ *
+ * To update: download a new woff2 from @fontsource/inter and place it in
+ * static/vendor/inter-{version}/files/, then update the src path below.
+ */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../vendor/inter-5.1.1/files/inter-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
