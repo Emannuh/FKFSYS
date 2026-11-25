@@ -741,14 +741,14 @@ a.chip:hover { border-color: var(--fkf-border-strong); color: var(--fkf-text); }
 .countdown-timer, .countdown-small { font-size: var(--fkf-text-xs); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fkf-accent-text); margin-top: 2px; }
 
 /* --- Hub hero (home) ---------------------------------------------------- */
-.hub-hero { background: var(--fkf-bg); color: var(--fkf-text); padding-block: var(--fkf-space-6); border-bottom: 1px solid var(--fkf-border); }
-.hub-hero h1 { color: var(--fkf-text); margin: 0 0 var(--fkf-space-2); }
-.hub-hero p { color: var(--fkf-text-muted); margin: 0; max-width: 56ch; }
-.hub-hero .page-eyebrow { color: var(--fkf-accent-text); }
+.hub-hero { background: #f6f6f3; color: #111113; padding-block: var(--fkf-space-6); border-bottom: 1px solid #e0e3e7; }
+.hub-hero h1 { color: #111113; margin: 0 0 var(--fkf-space-2); }
+.hub-hero p { color: #59616a; margin: 0; max-width: 56ch; }
+.hub-hero .page-eyebrow { color: #b30e29; }
 .hub-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--fkf-space-2); }
-.hub-stat { background: var(--fkf-surface); border: 1px solid var(--fkf-border); border-radius: var(--fkf-radius); padding: var(--fkf-space-3); }
-.hub-stat strong { display: block; color: var(--fkf-text); font-size: var(--fkf-text-xl); font-weight: 800; font-variant-numeric: tabular-nums; }
-.hub-stat span { font-size: var(--fkf-text-xs); color: var(--fkf-text-muted); }
+.hub-stat { background: #ffffff; border: 1px solid #e0e3e7; border-radius: var(--fkf-radius); padding: var(--fkf-space-3); }
+.hub-stat strong { display: block; color: #111113; font-size: var(--fkf-text-xl); font-weight: 800; font-variant-numeric: tabular-nums; }
+.hub-stat span { font-size: var(--fkf-text-xs); color: #59616a; }
 
 /* --- Ranked list (top scorers) ----------------------------------------- */
 .rank-list { list-style: none; margin: 0; padding: 0; }
@@ -863,29 +863,29 @@ h1, .h1, h2, .h2 { font-weight: 800; letter-spacing: -0.025em; }
 .db-sidebar { border-right: 0; box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06); }
 .db-topbar { box-shadow: 0 1px 0 var(--fkf-border); border-bottom: 0; }
 
-/* Hero: light, airy, brand-tinted — not a black stage */
+/* Hero: always light — fixed colours, never inherits dark-mode tokens */
 .hub-hero {
   position: relative; overflow: hidden; border-bottom: 0;
   padding-block: var(--fkf-space-8) var(--fkf-space-7);
   background:
-    radial-gradient(60% 120% at 100% 0%, rgba(var(--fkf-accent-rgb), 0.10) 0%, transparent 55%),
-    radial-gradient(50% 110% at 0% 100%, rgba(var(--fkf-green-rgb), 0.10) 0%, transparent 55%),
-    var(--fkf-bg);
+    radial-gradient(60% 120% at 100% 0%, rgba(200, 16, 46, 0.09) 0%, transparent 55%),
+    radial-gradient(50% 110% at 0% 100%, rgba(0, 132, 61, 0.09) 0%, transparent 55%),
+    #f6f6f3;
+  color: #111113;
 }
 .hub-hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--fkf-flag-h); background: var(--fkf-flag); }
-.hub-hero h1 { font-size: clamp(1.9rem, 4.2vw, 3rem); letter-spacing: -0.03em; color: var(--fkf-text); }
-.hub-hero p { color: var(--fkf-text-muted); }
-.hub-hero .page-eyebrow { color: var(--fkf-accent-text); }
+.hub-hero h1 { font-size: clamp(1.9rem, 4.2vw, 3rem); letter-spacing: -0.03em; color: #111113; }
+.hub-hero p { color: #59616a; }
+.hub-hero .page-eyebrow { color: #b30e29; }
 .hub-stat {
-  background: var(--fkf-surface); border: 1px solid var(--fkf-border);
-  border-top: 3px solid var(--fkf-green);
-  box-shadow: var(--fkf-shadow-sm);
+  background: #ffffff; border: 1px solid #e0e3e7;
+  border-top: 3px solid #00843d;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
 }
-.hub-stat:nth-child(2) { border-top-color: var(--fkf-red); }
-.hub-stat:nth-child(3) { border-top-color: var(--fkf-black); }
-[data-bs-theme="dark"] .hub-stat:nth-child(3) { border-top-color: #fff; }
-.hub-stat strong { font-size: clamp(1.4rem, 2.6vw, 2rem); letter-spacing: -0.02em; color: var(--fkf-text); }
-.hub-stat span { color: var(--fkf-text-muted); }
+.hub-stat:nth-child(2) { border-top-color: #c8102e; }
+.hub-stat:nth-child(3) { border-top-color: #0a0a0b; }
+.hub-stat strong { font-size: clamp(1.4rem, 2.6vw, 2rem); letter-spacing: -0.02em; color: #111113; }
+.hub-stat span { color: #59616a; }
 
 /* Green as the second brand colour */
 .btn-success, .btn-brand-green {

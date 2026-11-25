@@ -65,6 +65,7 @@ def _user_and_path(context: template.Context) -> tuple[Any, str]:
 # ── Public layout ─────────────────────────────────────────────────────────
 
 _PUBLIC_NAV: list[NavItem] = [
+    {'title': 'Home', 'icon': 'fas fa-house', 'url_name': 'frontend:home'},
     {'title': 'Fixtures', 'icon': 'fas fa-calendar', 'url_name': 'matches:fixtures'},
     {'title': 'Tables', 'icon': 'fas fa-table', 'url_name': 'matches:league_tables'},
     {'title': 'Teams', 'icon': 'fas fa-users', 'url_name': 'teams:all_teams'},
