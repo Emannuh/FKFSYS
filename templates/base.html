@@ -6,10 +6,10 @@
     <title>{% block title %}FKF Meru County League{% endblock %}</title>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="site-layout">
+<body class="site-layout" data-bs-theme="light">
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
-    <header data-bs-theme="light">
+    <header>
         <nav class="site-nav navbar navbar-expand-lg" aria-label="Main">
             <div class="container">
                 <a class="navbar-brand site-brand" href="{% url 'frontend:home' %}">
@@ -65,7 +65,7 @@
 
     {% include "partials/_page_chrome.html" %}
 
-    <main id="main-content" class="site-main" tabindex="-1" {% block content_theme %}data-bs-theme="light"{% endblock %}>
+    <main id="main-content" class="site-main" tabindex="-1">
         <div class="container">
             {% if messages %}<div class="messages-container mb-4" role="status">{% include "partials/_messages.html" %}</div>{% endif %}
             {% block page_header %}{% endblock %}
